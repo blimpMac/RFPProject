@@ -1,0 +1,17 @@
+begin;
+select plan(13);
+select has_table('public','rfp_requests','rfp_requests exists');
+select has_table('public','form_responses','form_responses exists');
+select has_table('public','migration_source_snapshots','immutable snapshots exist');
+select has_function('public','next_rfp_number',array[]::text[],'atomic number function exists');
+select has_function('public','consume_department_review',array['text','text','text'],'atomic department decision exists');
+select has_function('public','finance_workflow_action',array['uuid','text','text','text','uuid','date','text'],'finance workflow exists');
+select has_function('public','record_submission_attempt',array['text','integer','integer'],'atomic public rate limit exists');
+select col_type_is('public','rfp_requests','amount','numeric(14,2)','money is exact numeric');
+select col_is_pk('public','rfp_requests','id','request UUID is primary key');
+select col_is_unique('public','rfp_requests','rfp_number','human RFP number is unique');
+select policies_are('public','rfp_requests',array['requests_admin_read','requests_finance_read','requests_department_read'],'request access policies are explicit');
+select policies_are('public','user_roles',array['roles_staff_read','roles_admin_write'],'roles cannot be self-granted');
+select results_eq($$select public.next_rfp_number() ~ '^RFP-[0-9]{4,}$'$$,array[true],'RFP format is preserved');
+select * from finish();
+rollback;

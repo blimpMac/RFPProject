@@ -1,61 +1,100 @@
-# RFP Desk — Request & Approval Monitoring
+# RFP Monitoring System
 
-A clean responsive website for submitting RFPs and viewing a protected monitoring dashboard. The app uses the **existing** Google Sheets workbook as its record system, with Google Drive for supporting documents and Gmail for approval emails.
+A complete React, Netlify, and Supabase replacement for the former Google Sheets / Apps Script workflow. Google Sheets is used only as a one-time migration source. Runtime requests, approvals, documents, roles, audit history, email delivery, and reporting live in Supabase.
 
-## What is included
-- Public request form matching the source spreadsheet's question set.
-- Up to 10 supported images/PDFs, maximum **3 MB combined**, enforced both in the browser and on the server. This conservative limit keeps Apps Script/Gmail/Netlify request payloads reliable. To support larger uploads, use authenticated direct-to-storage uploads with a backend.
-- Supervisor email with the request summary, inline images for supported formats and file attachments, and a signed 14-day review link.
-- Separate approval confirmation page; a simple email link GET cannot silently approve anything.
-- Tracking at submission, department decision, finance review, and the historical Approval Log.
-- Protected dashboard with approval pie chart, decision duration, finance status counts, search and filters.
-- No test credentials embedded in public source.
+## What is implemented
 
-## Initial Google Sheets structure
-The existing workbook ID is configured in 'google-apps-script/Code.gs'. It retains:
-- Form Responses 1
-- RFP Tracker (26 original columns)
-- Approver Master
-- Approval Log
+- Public responsive RFP form with server validation, idempotency, rate limiting, active-approver lookup, private direct uploads, progress, and generated RFP number.
+- Up to 10 JPG, PNG, WEBP, GIF, or PDF attachments with backend-issued signed upload credentials and private signed downloads.
+- Atomic PostgreSQL numbering that continues after the highest migrated `RFP-####` value.
+- One-time supervisor links that open a review page but never decide by `GET`; approval/rejection is an atomic, single-use `POST` action.
+- Separate department and finance workflows, including documentation requests, planned check dates, change reasons, signatory, and release stages.
+- SMTP email queue with deduplication, claim locking, exponential retry, delivery IDs, and failure logging.
+- Supabase Auth roles: Administrator, Department Approver, and Finance Reviewer.
+- RLS on every application table, private Storage, audit triggers, and immutable approval/source snapshots.
+- Dashboard, five-tab Monitoring Sheets workspace, Approvals, Document Management, and Settings.
+- CSV/XLSX exports, sorting, search, pagination, sticky identifiers and headers, column visibility, details, and mobile horizontal scrolling.
+- Idempotent five-worksheet XLSX migration with complete source snapshots, deterministic relationship matching, row maps, counts, and verification.
 
-The RFP type and department dropdowns follow the existing sample values and reasonable variants. Fields or choices in the Google Form that are not represented in its response sheet could not be inspected directly; compare manually before public rollout.
+## Architecture
 
-**Important status semantics:** Supervisor approval moves the tracker to Pending Finance Review. It **does not** mark finance approval or payment completed.
+```text
+Browser (React/Vite/TypeScript)
+  ├─ Supabase Auth session
+  ├─ private signed Storage upload
+  └─ /api/*
+       └─ Netlify Function (service-role operations and authorization)
+            ├─ Supabase PostgreSQL + RLS + transactions
+            ├─ Supabase private Storage
+            └─ SMTP queue worker (Nodemailer)
+```
 
-## 1. Configure the Google Apps Script backend
-1. Log into the Google account that owns or can edit the monitoring spreadsheet and send the emails.
-2. Visit https://script.google.com/ and create a script project.
-3. Replace its 'Code.gs' content with 'google-apps-script/Code.gs'.
-4. Under Project Settings → Script Properties add:
-   - 'RFP_SHARED_SECRET': a cryptographically random string, 32+ bytes (must match Netlify).
-   - 'RFP_SITE_URL': the exact published Netlify URL, e.g. 'https://your-site.netlify.app'.
-   - 'RFP_SUPERVISOR_EMAIL' (optional): set the private pilot/test recipient address in Script Properties. If omitted, the script uses the active approver email from column C of 'Approver Master'.
-5. Deploy → New deployment → Web app. Choose Execute as **Me**, access **Anyone**. The endpoint is publicly reachable, but every POST action requires the secret which is stored only in private Netlify settings.
-6. Authorize Sheets, Drive and Gmail scopes and copy the deployment URL ending in '/exec'.
-7. The script creates a private folder for uploaded attachments in the executing account's Drive. Files are attached to supervisor emails; Drive links in the tracker remain private unless manually shared.
-8. Supervisor emails are resolved from the active department row in 'Approver Master'. For a test recipient, set the optional 'RFP_SUPERVISOR_EMAIL' Script Property. Never hardcode a real email in repository source.
+The Supabase secret key and SMTP credentials are used only by Netlify Functions and scripts. They must never use a `VITE_` prefix. Legacy anon/service-role aliases remain optional for older Supabase projects.
 
-## 2. Configure Netlify and connect GitHub
-1. In Netlify choose **Add new project → Import an existing project → GitHub → blimpMac/RFPProject**.
-2. Select branch 'main'. Publish directory 'public'. Netlify uses the supplied 'netlify.toml'; no build command is needed.
-3. In Site configuration → Environment variables, set all five values shown in '.env.example'. Set 'APPS_SCRIPT_URL' to your deployed script URL and use the exact same 'RFP_SHARED_SECRET' as above.
-4. Set 'ADMIN_EMAIL' and a long unique 'ADMIN_PASSWORD' for protected dashboard access. Keep the password private.
-5. Deploy, then set 'RFP_SITE_URL' in Apps Script to the actual Netlify domain and **re-deploy the Apps Script version** if necessary.
-6. Open '/admin/' and log in. Test '/review/' using the emailed link.
-7. Send a small **test** request; verify the new row in the tracker, Form Responses, Approval Log, the supervisor email and the requestor notification. Verify the decision changes the right row and records a date.
-8. After this smoke test, make sure appropriate company administrators have access to the script and storage account.
+## Repository layout
 
-## Security & operational notes
-- Protect access to the Apps Script editor and its Script Properties. The Google account should have MFA, and the app should be operated by a dedicated company account.
-- Admin sessions use signed, secure, HttpOnly cookies lasting eight hours. Netlify credentials must never appear in website files.
-- Review links are bearer credentials and must stay private. They are signed, expire in 14 days, and their action is a server-verified POST. The sheet/script lock blocks second or conflicting decisions.
-- A rejected request remains recorded in the tracker and log. Approval does not automatically move the request through finance; finance workflow remains in the original Sheet.
-- Use private email attachments for file preview instead of making Drive documents publicly readable. Inline email previews support compatible images; PDF files attach for recipient preview. Drive links may require the storage account's authorization.
-- No rate limiting, CAPTCHA, antivirus scanning, granular admin roles or full audit-security review has yet been added. Use additional protections before making the form available to an unrestricted external audience.
-- A failed email may be reported as a notification warning after a request/decision is safely written. Retrying submission can create a second request; always check the tracker before submitting again.
-- Apps Script and Gmail have provider quotas. The 3 MB limit is intentional, not a Netlify platform maximum.
-- Netlify deployment and Google authorization are **not automatic** simply by pushing this repository. Complete steps 1–2 and test the workflow.
-- Netlify scans deployed repository files against environment variable values. Keep real admin and supervisor email addresses in Netlify environment variables and Apps Script properties, not in documentation or public source code. Do not disable Netlify secret scanning to bypass this protection.
+```text
+src/                    React application, pages, layout, tables, auth, UI
+netlify/functions/      API, scheduled email worker, abandoned-upload cleanup
+netlify/lib/            config, validation, auth, rate limits, Supabase helpers
+netlify/email/          branded templates and SMTP delivery
+supabase/migrations/    schema, RLS, Storage policies, atomic workflow functions
+supabase/tests/         pgTAP database contract tests
+scripts/migration/      complete workbook and historical attachment importers
+scripts/setup/          database and first-admin automation
+scripts/verification/   database and source/target reconciliation
+tests/                  Vitest unit and contract tests
+```
 
-## Development
-'netlify dev' serves the site/functions locally after installing Netlify CLI. Set variables using a local '.env' ignored by Git. No browser-side Google credentials are required.
+## Local development
+
+Requirements: Node.js 24+, npm, and a Supabase project.
+
+1. `npm install`
+2. Copy `.env.draft` to `.env` and replace placeholders. Never commit `.env`.
+3. `npm run db:setup`
+4. `npm run admin:bootstrap`
+5. `npm run dev`
+
+The public form is `/`; staff sign-in is `/admin/login`.
+
+## Setup order
+
+1. Complete [ENV_SETUP.md](ENV_SETUP.md).
+2. Apply the database with `npm run db:setup`.
+3. Export the source Google workbook once as `.xlsx` and run the steps in [MIGRATION.md](MIGRATION.md).
+4. Bootstrap the first administrator.
+5. Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and `npm run db:test`.
+6. Follow [DEPLOYMENT.md](DEPLOYMENT.md).
+
+No individual SQL statements or tables need to be copied by hand. The migrations create the schema, database functions, RLS policies, private bucket, and defaults together.
+
+## Security notes
+
+- Public submission is mediated by the Netlify API; anonymous clients cannot call privileged database functions.
+- Client IPs are HMAC-hashed for rate limiting and are never stored in plaintext.
+- File type and size are checked before issuing signed uploads. Storage is private.
+- Review credentials are random 256-bit tokens; only hashes are stored in `approval_tokens`.
+- Review tokens are single-use and expire. Decisions lock both token and request rows.
+- Ordinary users cannot grant roles. Only the service API after an Administrator check writes `user_roles`.
+- Approval logs and migration source snapshots reject updates/deletes at the database layer.
+- A queue record being `queued` or `retry` is not presented as delivery; only SMTP success sets `sent`.
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Netlify local frontend/functions runtime |
+| `npm run build` | TypeScript check plus production Vite build |
+| `npm run lint` | ESLint |
+| `npm test` | Unit and static security-contract tests |
+| `npm run db:setup` | Link the configured Supabase project and push every migration |
+| `npm run admin:bootstrap` | Invite/grant the first administrator |
+| `npm run migrate:workbook -- source.xlsx` | Back up and import the complete five-tab workbook |
+| `npm run migrate:attachments` | Transfer accessible historical Drive files into private Storage |
+| `npm run migrate:verify -- source.xlsx` | Reconcile source and target counts/IDs |
+| `npm run db:test` | Verify target tables, bucket privacy, and next sequence |
+
+## Known authorization boundary
+
+The repository contains no company records or credentials. Live Supabase setup, historical import, Google Drive downloads, SMTP delivery, Netlify deployment, and GitHub push require the account-specific credentials documented in the handoff files. Scripts fail clearly instead of claiming those actions succeeded.
