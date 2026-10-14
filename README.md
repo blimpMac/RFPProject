@@ -29,10 +29,11 @@ The RFP type and department dropdowns follow the existing sample values and reas
 4. Under Project Settings → Script Properties add:
    - 'RFP_SHARED_SECRET': a cryptographically random string, 32+ bytes (must match Netlify).
    - 'RFP_SITE_URL': the exact published Netlify URL, e.g. 'https://your-site.netlify.app'.
+   - 'RFP_SUPERVISOR_EMAIL' (optional): set the private pilot/test recipient address in Script Properties. If omitted, the script uses the active approver email from column C of 'Approver Master'.
 5. Deploy → New deployment → Web app. Choose Execute as **Me**, access **Anyone**. The endpoint is publicly reachable, but every POST action requires the secret which is stored only in private Netlify settings.
 6. Authorize Sheets, Drive and Gmail scopes and copy the deployment URL ending in '/exec'.
 7. The script creates a private folder for uploaded attachments in the executing account's Drive. Files are attached to supervisor emails; Drive links in the tracker remain private unless manually shared.
-8. The script currently routes supervisor emails to the sample address 'dricianfranciscordon@gmail.com' for testing. Change 'DEFAULT_SUPERVISOR' to the production recipient/lookup policy once ready.
+8. Supervisor emails are resolved from the active department row in 'Approver Master'. For a test recipient, set the optional 'RFP_SUPERVISOR_EMAIL' Script Property. Never hardcode a real email in repository source.
 
 ## 2. Configure Netlify and connect GitHub
 1. In Netlify choose **Add new project → Import an existing project → GitHub → blimpMac/RFPProject**.
@@ -54,6 +55,7 @@ The RFP type and department dropdowns follow the existing sample values and reas
 - A failed email may be reported as a notification warning after a request/decision is safely written. Retrying submission can create a second request; always check the tracker before submitting again.
 - Apps Script and Gmail have provider quotas. The 3 MB limit is intentional, not a Netlify platform maximum.
 - Netlify deployment and Google authorization are **not automatic** simply by pushing this repository. Complete steps 1–2 and test the workflow.
+- Netlify scans deployed repository files against environment variable values. Keep real admin and supervisor email addresses in Netlify environment variables and Apps Script properties, not in documentation or public source code. Do not disable Netlify secret scanning to bypass this protection.
 
 ## Development
 'netlify dev' serves the site/functions locally after installing Netlify CLI. Set variables using a local '.env' ignored by Git. No browser-side Google credentials are required.

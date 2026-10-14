@@ -5,13 +5,14 @@
  * Script Properties required:
  *   RFP_SHARED_SECRET = same private secret configured in Netlify
  *   RFP_SITE_URL      = your actual https://...netlify.app URL
+ * Optional:
+ *   RFP_SUPERVISOR_EMAIL = override address for supervisor testing
  *
  * This script preserves the existing four monitoring sheet tabs.
  */
 const SHEET_ID = '1MS8PhbPQA_XbULWAefow4bMsP3s7z-KEp0K9YMJHvTE';
 const FOLDER_NAME = 'RFP Desk Secure Attachments';
 const TIMEZONE = 'Asia/Manila';
-const DEFAULT_SUPERVISOR = 'dricianfranciscordon@gmail.com';
 
 function prop(key) {
   return PropertiesService.getScriptProperties().getProperty(key) || '';
@@ -136,10 +137,19 @@ function activeApprover(department) {
     String(item[3]).toLowerCase() === 'yes'
   );
 
-  // During testing, route supervisor approval emails to the sample address.
+  // Optional private test override; otherwise use Approver Master column C.
+  const overrideEmail = prop('RFP_SUPERVISOR_EMAIL').trim();
+  const email = overrideEmail || (match ? String(match[2]).trim() : '');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error(
+      'No supervisor email available. Configure RFP_SUPERVISOR_EMAIL ' +
+      'or add an active department approver in Approver Master.'
+    );
+  }
+
   return {
-    name: match ? match[1] : 'Pilot Approver',
-    email: DEFAULT_SUPERVISOR
+    name: match ? String(match[1]) : 'Approving Supervisor',
+    email: email
   };
 }
 
@@ -460,9 +470,9 @@ function loadDashboard() {
 }
 
 /**
- * NOTE: DEFAULT_SUPERVISOR uses the requested sample email.
- * To switch to actual approving heads in Approver Master, change
- * activeApprover() to use match[2] as the email.
+ * Supervisor notifications use the active Approver Master email by default.
+ * Optionally set RFP_SUPERVISOR_EMAIL in Script Properties for pilot testing.
  *
- * The existing sheet tabs and previous rows are not deleted or replaced.
+ * No supervisor or administrator address is stored in public code.
+ * The existing sheet tabs and previous rows are never deleted or replaced.
  */
