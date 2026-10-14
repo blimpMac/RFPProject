@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102843">
+  <meta name="description" content="Submit, approve and monitor requests for payment.">
+  <title>RFP Desk | Request & Approval Monitoring</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="RFP Desk home"><span class="brand-mark">R</span><span><strong>RFP Desk</strong><small>REQUEST MANAGEMENT</small></span></a>
+      <nav class="top-nav" aria-label="Main navigation">
+        <a data-nav="request" href="/">New request</a>
+        <a data-nav="admin" href="/admin/">Admin dashboard</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main">
+    <section id="request-view" class="view page-shell">
+      <div class="page-intro">
+        <span class="eyebrow"><span class="dot"></span> REQUEST FOR PAYMENT</span>
+        <h1>Request made simple.</h1>
+        <p>Send your payment request and supporting documents for supervisor review. You’ll receive the decision by email.</p>
+      </div>
+      <div class="form-layout">
+        <article class="panel form-panel">
+          <div class="section-head"><span class="number">01</span><div><h2>Request information</h2><p>Complete the required fields below.</p></div></div>
+          <form id="request-form" novalidate>
+            <div class="fields two">
+              <label>Requestor name <span class="required">*</span><input name="requestorName" maxlength="120" autocomplete="name" placeholder="Full name" required></label>
+              <label>Email address <span class="required">*</span><input name="requestorEmail" type="email" maxlength="160" autocomplete="email" placeholder="name@company.com" required></label>
+              <label>Department <span class="required">*</span><select name="department" required><option value="">Select department</option><option>Sales</option><option>Operations</option><option>Engineering</option><option>IT</option><option>HR</option><option>Admin</option><option>Finance</option><option>Other</option></select></label>
+              <label>Project / Class <span class="required">*</span><input name="project" maxlength="150" placeholder="e.g. Project 1024" required></label>
+              <label>RFP type <span class="required">*</span><select name="rfpType" required><option value="">Select request type</option><option>Request for Payment</option><option>Supplier Payment</option><option>Project Expense</option><option>Reimbursement</option><option>Cash Advance</option><option>Other</option></select></label>
+              <label>Supplier / Payee <span class="required">*</span><input name="payee" maxlength="150" placeholder="Recipient or supplier name" required></label>
+              <label>Amount (PHP) <span class="required">*</span><div class="prefix-field"><span>₱</span><input name="amount" type="number" min="0.01" max="1000000000" step="0.01" placeholder="0.00" required></div></label>
+              <label>Required payment date <span class="required">*</span><input id="payment-date" name="requiredDate" type="date" required></label>
+            </div>
+            <label class="textarea-label">Purpose / Description <span class="required">*</span><textarea name="purpose" rows="4" maxlength="1800" placeholder="Describe what this payment covers and why it is needed." required></textarea></label>
+            <div class="section-head upload-head"><span class="number">02</span><div><h2>Supporting documents</h2><p>Upload up to 10 images or PDF documents.</p></div></div>
+            <label class="drop-area" for="files">
+              <span class="upload-icon" aria-hidden="true">↑</span><strong>Choose files to upload</strong>
+              <span>PDF, JPG, PNG, WEBP, GIF, HEIC, TIFF or BMP</span>
+              <small>Up to 10 files · 3 MB combined for this deployment</small>
+            </label>
+            <input id="files" type="file" accept="image/*,.pdf,.heic,.heif,.tif,.tiff,.bmp" multiple class="sr-only">
+            <div id="file-list" class="file-list" aria-live="polite"></div>
+            <div class="form-footer">
+              <p><span class="lock-icon">◆</span> Documents are shared with the designated supervisor for review.</p>
+              <button class="primary-button" type="submit" id="submit-btn">Submit request <span>→</span></button>
+            </div>
+            <div id="form-message" class="notice" role="status" aria-live="polite" hidden></div>
+          </form>
+        </article>
+        <aside class="side-column">
+          <div class="panel sidebar-card"><div class="side-icon">↗</div><h3>What happens next?</h3>
+            <ol class="steps"><li><strong>Request submitted</strong><span>Your information is logged in the RFP Tracker.</span></li><li><strong>Supervisor review</strong><span>The assigned supervisor receives your details and file previews.</span></li><li><strong>Email notification</strong><span>Receive a decision and next steps directly in your inbox.</span></li></ol>
+          </div>
+          <div class="support-note"><span class="support-asterisk">✳</span><div><strong>Have your files ready</strong><p>Include invoices, receipts, or supporting documents to help your request move faster.</p></div></div>
+        </aside>
+      </div>
+    </section>
+    <section id="review-view" class="view page-shell" hidden>
+      <div class="page-intro"><span class="eyebrow"><span class="dot"></span> SUPERVISOR REVIEW</span><h1>Review this request.</h1><p>Confirm the details below before accepting or rejecting this payment request.</p></div>
+      <article class="panel review-card"><div id="review-content" class="loading-state">Loading request…</div>
+        <form id="decision-form" hidden><label>Remarks / Clarification <span class="muted">(required for rejection)</span><textarea id="decision-remarks" rows="3" maxlength="1000" placeholder="Add a note for the requestor"></textarea></label><div class="decision-actions"><button type="button" id="reject-btn" class="reject-button">Reject request</button><button type="button" id="approve-btn" class="primary-button">Approve request <span>✓</span></button></div></form>
+        <div id="review-message" class="notice" role="status" aria-live="polite" hidden></div>
+      </article>
+    </section>
+    <section id="admin-view" class="view page-shell" hidden>
+      <div class="page-intro admin-intro"><span class="eyebrow"><span class="dot"></span> ADMIN WORKSPACE</span><h1>RFP monitoring overview.</h1><p>Track approval outcomes, turnaround times and the status of every request.</p></div>
+      <article class="panel login-card" id="login-panel"><div class="login-badge">⌁</div><h2>Admin sign in</h2><p>Authorized monitoring access only.</p>
+        <form id="login-form"><label>Email address<input name="email" type="email" autocomplete="username" required placeholder="admin@company.com"></label><label>Password<input name="password" type="password" autocomplete="current-password" required placeholder="Enter password"></label><button type="submit" class="primary-button full">Sign in →</button><div id="login-message" class="notice" role="status" hidden></div></form>
+      </article>
+      <div id="dashboard" hidden>
+        <div class="dashboard-actions"><span id="sync-label">Google Sheets • RFP Tracker</span><div><button id="refresh-btn" class="secondary-button" type="button">↻ Refresh</button><button id="logout-btn" class="text-button" type="button">Sign out</button></div></div>
+        <div class="metric-grid">
+          <div class="panel metric-card"><span>Total requests</span><strong id="metric-total">—</strong><small>Recorded requests</small></div>
+          <div class="panel metric-card"><span>Supervisor approved</span><strong id="metric-approved">—</strong><small>Department decisions</small></div>
+          <div class="panel metric-card"><span>Rejected</span><strong id="metric-rejected">—</strong><small>Department rejections</small></div>
+          <div class="panel metric-card"><span>Average decision time</span><strong id="metric-days">—</strong><small>Submission to supervisor decision</small></div>
+        </div>
+        <div class="analytics-grid">
+          <article class="panel analytics-panel"><div class="panel-heading"><h2>Approval breakdown</h2><p>Supervisor decision distribution</p></div><div class="chart-wrap"><div id="approval-chart" class="donut-chart" role="img" aria-label="Approval distribution"><div class="donut-hole"><strong id="chart-total">0</strong><small>requests</small></div></div><div class="chart-legend"><div><span class="legend-swatch approved"></span>Approved <strong id="legend-approved">0%</strong></div><div><span class="legend-swatch pending"></span>Pending <strong id="legend-pending">0%</strong></div><div><span class="legend-swatch rejected"></span>Rejected <strong id="legend-rejected">0%</strong></div></div></div></article>
+          <article class="panel analytics-panel"><div class="panel-heading"><h2>Turnaround insights</h2><p>Based on recorded submission and decision dates</p></div><div class="turnaround"><div><span>Fastest decision</span><strong id="fastest-days">—</strong></div><div><span>Slowest decision</span><strong id="slowest-days">—</strong></div><div><span>Awaiting finance review</span><strong id="finance-pending">—</strong></div><div><span>Approved for payment</span><strong id="finance-approved">—</strong></div></div></article>
+        </div>
+        <article class="panel table-panel"><div class="table-header"><div><h2>All requests</h2><p>Live records from the original tracker sheet.</p></div><div class="table-filters"><input id="search-requests" type="search" placeholder="Search RFP or requestor" aria-label="Search requests"><select id="status-filter" aria-label="Filter approval status"><option value="all">All decisions</option><option value="approved">Approved</option><option value="pending">Pending</option><option value="rejected">Rejected</option></select></div></div><div class="table-scroll"><table><thead><tr><th>RFP number</th><th>Requestor</th><th>Amount</th><th>Submitted</th><th>Supervisor</th><th>Final status</th><th>Decision time</th></tr></thead><tbody id="request-rows"></tbody></table></div><div class="table-bottom" id="row-count"></div></article>
+        <div id="dashboard-message" class="notice" role="status" hidden></div>
+      </div>
+    </section>
+  </main>
+  <footer class="footer"><span>© 2026 RFP Desk</span><span>Secure request & approval monitoring</span></footer>
+  <script src="/app.js" defer></script>
+</body></html>
