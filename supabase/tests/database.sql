@@ -11,7 +11,7 @@ select col_type_is('public','rfp_requests','amount','numeric(14,2)','money is ex
 select col_is_pk('public','rfp_requests','id','request UUID is primary key');
 select col_is_unique('public','rfp_requests','rfp_number','human RFP number is unique');
 select policies_are('public','rfp_requests',array['requests_admin_read','requests_finance_read','requests_department_read'],'request access policies are explicit');
-select policies_are('public','user_roles',array['roles_staff_read','roles_admin_write'],'roles cannot be self-granted');
+select policies_are('public','user_roles',array['roles_staff_read','roles_super_admin_write'],'roles cannot be self-granted');
 select results_eq($$select public.next_rfp_number() ~ '^RFP-[0-9]{4,}$'$$,array[true],'RFP format is preserved');
 select * from finish();
 rollback;

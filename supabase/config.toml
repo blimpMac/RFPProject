@@ -1,7 +1,7 @@
 project_id = "rfp-project"
 
 [auth]
-additional_redirect_urls = ["https://greenlightrfp.netlify.app/admin", "https://greenlightrfp.netlify.app/admin/login", "http://localhost:5173/**", "http://localhost:8888/**"]
+additional_redirect_urls = ["https://greenlightrfp.netlify.app/admin", "https://greenlightrfp.netlify.app/admin/login", "https://greenlightrfp.netlify.app/admin/reset-password", "http://localhost:5173/**", "http://localhost:8888/**"]
 site_url = "https://greenlightrfp.netlify.app"
 
 [auth.email]
