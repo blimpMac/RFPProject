@@ -6,7 +6,7 @@ import { randomToken, seal, sha256 } from '../lib/crypto.js';
 import { assertSameOrigin, ensureMethod, HttpError, json, readJson, responseError, routeOf } from '../lib/http.js';
 import { requireStaff } from '../lib/auth.js';
 import { enforceSubmissionLimit } from '../lib/rate-limit.js';
-import { completeAttachmentSchema, decisionSchema, finalizeSchema, financeSchema, startSchema } from '../lib/validation.js';
+import { completeAttachmentSchema, decisionSchema, departmentRereviewSchema, finalizeSchema, financeSchema, resubmitSchema, startSchema } from '../lib/validation.js';
 
 const administrativeRoles=['super_administrator','administrator'];
 const assignableRoles=['administrator','department_approver','finance_reviewer'] as const;
@@ -62,6 +62,11 @@ export const handler: Handler = async (event) => {
       if(error) throw new HttpError(409,error.message);
       return json(200,{ok:true,...data});
     }
+    if(route==='submissions/resubmit'){
+      ensureMethod(event,'POST');const input=resubmitSchema.parse(readJson(event));const reviewToken=randomToken();const expires=new Date(Date.now()+c.REVIEW_TOKEN_HOURS*60*60_000).toISOString();
+      const{data,error}=await db.rpc('resubmit_returned_request',{p_request_id:input.requestId,p_tracking_hash:sha256(input.trackingToken),p_review_token_hash:sha256(reviewToken),p_review_token_ciphertext:seal(reviewToken),p_review_expires_at:expires,p_correction_note:input.correctionNote});
+      if(error)throw new HttpError(409,error.message);return json(200,{ok:true,request:data});
+    }
     if(route.startsWith('track/')){
       ensureMethod(event,'GET');const token=decodeURIComponent(route.slice(6));if(token.length<20)throw new HttpError(403,'Invalid tracking credential.');
       const{data:req,error}=await db.from('rfp_requests').select('id,rfp_number,submitted_at,requestor_name,department,amount,required_payment_date,department_approval,finance_review,final_status,last_action,planned_check_date').eq('public_tracking_hash',sha256(token)).single();if(error||!req)throw new HttpError(404,'Request not found.');
@@ -115,6 +120,12 @@ export const handler: Handler = async (event) => {
     if(route==='finance/action'){
       ensureMethod(event,'POST'); const staff=await requireStaff(event,[...administrativeRoles,'finance_reviewer']); const input=financeSchema.parse(readJson(event));
       const {data,error}=await db.rpc('finance_workflow_action',{p_request_id:input.requestId,p_action:input.action,p_remarks:input.remarks,p_actor_email:staff.user.email,p_actor_user_id:staff.user.id,p_planned_check_date:input.plannedCheckDate||null,p_change_reason:input.changeReason||null}); if(error) throw new HttpError(409,error.message); return json(200,{ok:true,request:data});
+    }
+    if(route==='department/action'){
+      ensureMethod(event,'POST');const staff=await requireStaff(event,[...administrativeRoles,'department_approver']);const input=departmentRereviewSchema.parse(readJson(event));
+      const request=await db.from('rfp_requests').select('approver_email,final_status').eq('id',input.requestId).single();if(request.error||!request.data)throw new HttpError(404,'Request not found.');
+      const isAdmin=staff.roles.some((role)=>administrativeRoles.includes(role));if(!isAdmin&&request.data.approver_email.toLowerCase()!==staff.user.email?.toLowerCase())throw new HttpError(403,'This request is assigned to a different Department Approver.');
+      const{data,error}=await db.rpc('department_rereview_action',{p_request_id:input.requestId,p_decision:input.decision,p_remarks:input.remarks,p_actor_email:staff.user.email,p_actor_user_id:staff.user.id});if(error)throw new HttpError(409,error.message);return json(200,{ok:true,request:data});
     }
     if(route==='attachments/url'){
       ensureMethod(event,'POST'); await requireStaff(event); const input=z.object({attachmentId:z.uuid()}).parse(readJson(event));

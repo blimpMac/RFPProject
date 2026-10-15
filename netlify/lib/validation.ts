@@ -19,3 +19,5 @@ export const completeAttachmentSchema = z.object({ requestId: z.uuid(), tracking
 export const finalizeSchema = z.object({ requestId: z.uuid(), trackingToken: z.string().min(20) });
 export const decisionSchema = z.object({ token: z.string().min(20), decision: z.enum(['approve','reject']), remarks: z.string().trim().max(1500).default('') });
 export const financeSchema = z.object({ requestId: z.uuid(), action: z.enum(['approve','reject','request_documents','payment_processing','check_preparation','awaiting_signatory','check_released','payment_released']), remarks: z.string().trim().max(1500).default(''), plannedCheckDate: z.iso.date().nullable().optional(), changeReason: z.string().trim().max(1000).nullable().optional() });
+export const resubmitSchema = z.object({ requestId: z.uuid(), trackingToken: z.string().min(20), correctionNote: z.string().trim().min(2).max(1500) });
+export const departmentRereviewSchema = z.object({ requestId: z.uuid(), decision: z.enum(['approve','reject']), remarks: z.string().trim().max(1500).default('') });

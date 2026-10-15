@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { describe,expect,it } from 'vitest';
 import { financeSchema } from '../netlify/lib/validation';
 
-const sql = fs.readFileSync('supabase/migrations/202610150006_super_admin_and_process_flow.sql','utf8');
+const sql = ['202610150006_super_admin_and_process_flow.sql','202610150007_return_workflow_loops.sql'].map((file)=>fs.readFileSync(`supabase/migrations/${file}`,'utf8')).join('\n');
 const api = fs.readFileSync('netlify/functions/api.ts','utf8');
 
 describe('seven-stage RFP workflow contract',()=>{
@@ -13,6 +13,8 @@ describe('seven-stage RFP workflow contract',()=>{
     expect(sql).toContain("previous_status not in ('Processing','Payment Processing')");
     expect(sql).toContain("previous_status not in ('Check Approval','Awaiting Signatory')");
     expect(sql).toContain("previous_status not in ('Check Released','Payment Released')");
+    expect(sql).toContain('resubmit_returned_request');
+    expect(sql).toContain('department_rereview_action');
   });
 
   it('restricts account removal to the protected super administrator model',()=>{
