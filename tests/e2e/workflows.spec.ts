@@ -10,6 +10,7 @@ test('requestor can complete the public submission workflow',async({page})=>{
   await page.goto('/');
   await expect(page.getByAltText('GREENLIGHT POWER')).toBeVisible();
   await expect(page.getByAltText(/GEMCOR/)).toBeVisible();
+  await expect(page.getByRole('link',{name:'View RFPProject repository on GitHub'})).toHaveAttribute('href','https://github.com/blimpMac/RFPProject');
   await page.getByLabel('Requestor Name').fill('Test Requestor');
   await page.getByLabel('Requestor Email').fill('requestor@example.com');
   await page.getByLabel('Department').selectOption('Finance');
@@ -64,8 +65,10 @@ test('requestor can correct and resubmit a returned request',async({page})=>{
 test('dark mode is readable and persists across staff navigation',async({page})=>{
   await page.route('**/api/public-config',route=>route.fulfill({json:publicConfig}));
   await page.goto('/');
+  const lightHeader=await page.locator('header').evaluate((node)=>getComputedStyle(node).backgroundColor);
   await page.getByRole('button',{name:'Switch to dark mode'}).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+  await expect.poll(()=>page.locator('header').evaluate((node)=>getComputedStyle(node).backgroundColor)).not.toBe(lightHeader);
   await page.getByRole('link',{name:'Staff Login'}).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
   await expect(page.getByRole('heading',{name:'Sign in to your account'})).toBeVisible();
