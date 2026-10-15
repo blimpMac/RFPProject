@@ -1,6 +1,6 @@
 # RFP Monitoring System
 
-A complete React, Netlify, and Supabase replacement for the former Google Sheets / Apps Script workflow. Google Sheets is used only as a one-time migration source. Runtime requests, approvals, documents, roles, audit history, email delivery, and reporting live in Supabase.
+A complete React, Vercel, and Supabase replacement for the former Google Sheets / Apps Script workflow. Google Sheets is used only as a one-time migration source. Runtime requests, approvals, documents, roles, audit history, email delivery, and reporting live in Supabase.
 
 ## What is implemented
 
@@ -23,21 +23,20 @@ Browser (React/Vite/TypeScript)
   ├─ Supabase Auth session
   ├─ private signed Storage upload
   └─ /api/*
-       └─ Netlify Function (service-role operations and authorization)
+       └─ Vercel Functions (service-role operations and authorization)
             ├─ Supabase PostgreSQL + RLS + transactions
             ├─ Supabase private Storage
             └─ SMTP queue worker (Nodemailer)
 ```
 
-The Supabase secret key and SMTP credentials are used only by Netlify Functions and scripts. They must never use a `VITE_` prefix. Legacy anon/service-role aliases remain optional for older Supabase projects.
+The Supabase secret key and SMTP credentials are used only by Vercel Functions and scripts. They must never use a `VITE_` prefix. Legacy anon/service-role aliases remain optional for older Supabase projects.
 
 ## Repository layout
 
 ```text
 src/                    React application, pages, layout, tables, auth, UI
-netlify/functions/      API, scheduled email worker, abandoned-upload cleanup
-netlify/lib/            config, validation, auth, rate limits, Supabase helpers
-netlify/email/          branded templates and SMTP delivery
+api/                    Vercel API adapter and protected scheduled jobs
+server/                 API, config, validation, auth, email, and Supabase helpers
 supabase/migrations/    schema, RLS, Storage policies, atomic workflow functions
 supabase/tests/         pgTAP database contract tests
 scripts/migration/      complete workbook and historical attachment importers
@@ -72,7 +71,7 @@ No individual SQL statements or tables need to be copied by hand. The migrations
 
 ## Security notes
 
-- Public submission is mediated by the Netlify API; anonymous clients cannot call privileged database functions.
+- Public submission is mediated by the Vercel API; anonymous clients cannot call privileged database functions.
 - Client IPs are HMAC-hashed for rate limiting and are never stored in plaintext.
 - File type and size are checked before issuing signed uploads. Storage is private.
 - Review credentials are random 256-bit tokens; only hashes are stored in `approval_tokens`.
@@ -85,7 +84,8 @@ No individual SQL statements or tables need to be copied by hand. The migrations
 
 | Command | Purpose |
 |---|---|
-| `npm run dev` | Netlify local frontend/functions runtime |
+| `npm run dev` | Vite frontend development server |
+| `npm run dev:vercel` | Local Vercel frontend/functions runtime |
 | `npm run build` | TypeScript check plus production Vite build |
 | `npm run lint` | ESLint |
 | `npm test` | Unit and static security-contract tests |
@@ -98,4 +98,4 @@ No individual SQL statements or tables need to be copied by hand. The migrations
 
 ## Deployment status
 
-The Supabase schema and structured workbook migration are live and verified. Historical Drive files remain marked `source_access_required` because the connected account cannot read them. SMTP credentials and the initial administrator identity still require explicit operator configuration; see the runbooks in `docs/`.
+Production is deployed at `https://greenlight-rfp.vercel.app` with Supabase Auth, database, private Storage, API functions, account roles, reset-password redirects, and daily maintenance jobs configured. SMTP delivery remains disabled until a verified SMTP account and app password are supplied; queued workflow notifications cannot be delivered without those credentials.

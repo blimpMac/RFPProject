@@ -1,12 +1,11 @@
-import type { Handler } from '@netlify/functions';
 import { z } from 'zod';
-import { adminClient } from '../lib/supabase.js';
-import { config } from '../lib/config.js';
-import { randomToken, seal, sha256 } from '../lib/crypto.js';
-import { assertSameOrigin, ensureMethod, HttpError, json, readJson, responseError, routeOf } from '../lib/http.js';
-import { requireStaff } from '../lib/auth.js';
-import { enforceSubmissionLimit } from '../lib/rate-limit.js';
-import { completeAttachmentSchema, decisionSchema, departmentRereviewSchema, finalizeSchema, financeSchema, resubmitSchema, startSchema } from '../lib/validation.js';
+import { adminClient } from './lib/supabase.js';
+import { config } from './lib/config.js';
+import { randomToken, seal, sha256 } from './lib/crypto.js';
+import { assertSameOrigin, ensureMethod, HttpError, json, readJson, responseError, routeOf, type ApplicationHandler } from './lib/http.js';
+import { requireStaff } from './lib/auth.js';
+import { enforceSubmissionLimit } from './lib/rate-limit.js';
+import { completeAttachmentSchema, decisionSchema, departmentRereviewSchema, finalizeSchema, financeSchema, resubmitSchema, startSchema } from './lib/validation.js';
 
 const administrativeRoles=['super_administrator','administrator'];
 const assignableRoles=['administrator','department_approver','finance_reviewer'] as const;
@@ -17,7 +16,7 @@ const tableMap: Record<string,{table:string;order:string;roles?:string[]}> = {
   documents:{table:'request_attachments',order:'created_at',roles:[...administrativeRoles,'finance_reviewer']},
 };
 
-export const handler: Handler = async (event) => {
+export const handler: ApplicationHandler = async (event) => {
   try {
     assertSameOrigin(event);
     const route=routeOf(event); const db=adminClient(); const c=config();

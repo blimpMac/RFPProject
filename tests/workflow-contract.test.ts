@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import { describe,expect,it } from 'vitest';
-import { financeSchema } from '../netlify/lib/validation';
+import { financeSchema } from '../server/lib/validation';
 
 const sql = ['202610150006_super_admin_and_process_flow.sql','202610150007_return_workflow_loops.sql'].map((file)=>fs.readFileSync(`supabase/migrations/${file}`,'utf8')).join('\n');
-const api = fs.readFileSync('netlify/functions/api.ts','utf8');
+const api = fs.readFileSync('server/api.ts','utf8');
 
 describe('seven-stage RFP workflow contract',()=>{
   it('keeps finance actions in their required sequence',()=>{

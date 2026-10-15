@@ -1,10 +1,9 @@
-import type { HandlerEvent } from '@netlify/functions';
 import { adminClient } from './supabase.js';
 import { config } from './config.js';
 import { clientHash } from './crypto.js';
-import { HttpError } from './http.js';
+import { HttpError, type ApplicationEvent } from './http.js';
 
-export async function enforceSubmissionLimit(event: HandlerEvent) {
+export async function enforceSubmissionLimit(event: ApplicationEvent) {
   const c = config();
   const ip = event.headers['x-nf-client-connection-ip'] || event.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
   const hash = clientHash(ip);

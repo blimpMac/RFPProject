@@ -1,40 +1,45 @@
-# Netlify deployment
+# Vercel deployment
 
 ## Prerequisites
 
-- Existing GitHub repository `blimpMac/RFPProject` with this branch pushed normally (never force-push).
+- Existing GitHub repository `blimpMac/RFPProject` with changes pushed normally (never force-push).
 - Configured Supabase project with migrations applied.
-- Verified SMTP account (Gmail requires MFA and an app password where supported).
+- Verified SMTP account for workflow email delivery (Gmail requires MFA and an app password where supported).
 - Completed migration verification.
 
-## Netlify configuration
+## Vercel configuration
 
-1. In Netlify choose **Add new project → Import an existing project → GitHub**.
-2. Select `blimpMac/RFPProject`, branch `main`.
-3. `netlify.toml` supplies:
-   - Build: `npm run build`
-   - Publish: `dist`
-   - Functions: `netlify/functions`
-   - Node: latest `24.x` (the current Netlify build/functions runtime family)
-   - SPA fallback and `/api/*` function routing
-   - CSP, HSTS, frame, MIME, referrer, and permissions headers
-   - scheduled email queue and abandoned-upload cleanup
-4. Add every runtime value from [ENVIRONMENT.md](ENVIRONMENT.md) in Netlify. Mark server values as secrets. Do not set setup-only database or Google credentials unless a deliberate one-time deploy task needs them.
-5. Keep Netlify secret scanning enabled.
-6. Deploy from `main`.
+1. Import `blimpMac/RFPProject` into Vercel and select the production branch `main`.
+2. Keep the framework preset on Vite and Node.js on `24.x`.
+3. `vercel.json` supplies the production build, output directory, SPA routes, `/api/*` routing, security headers, and scheduled maintenance jobs.
+4. Add the browser and runtime values from [ENVIRONMENT.md](ENVIRONMENT.md). Mark `SUPABASE_SECRET_KEY`, `APPROVAL_TOKEN_ENCRYPTION_KEY`, `CRON_SECRET`, and SMTP credentials as sensitive.
+5. Set both `SITE_URL` and `VITE_SITE_URL` to the exact production origin.
+6. Deploy. Environment-variable changes apply only to the next deployment.
+
+The Hobby plan runs each cron at most once per day. The repository therefore schedules email processing and abandoned-upload cleanup daily. Use Vercel Pro or an external scheduler if email queue latency must be shorter.
+
+## Supabase Auth
+
+Set the Supabase Auth site URL to the Vercel production origin and allow these redirect paths:
+
+- `/admin`
+- `/admin/login`
+- `/admin/reset-password`
+
+The committed `supabase/config.toml` contains the production values and can be applied with `supabase config push --yes`.
 
 ## Post-deploy checks
 
-- `/` submits a small test request and returns an RFP number.
-- `/track/:token` shows only the bearer-authorized request history.
-- The attachment exists in the private bucket and cannot be opened without a signed link.
-- The request immediately appears in `/admin/monitoring`.
-- Supervisor email status becomes `sent`, not merely `queued`.
-- `/review/:token` displays details; opening it does not decide anything.
-- A decision can be submitted once and produces one Approval Log row and one requestor notification.
-- Finance actions, planned check dates, and audit rows persist.
-- `/admin`, `/admin/monitoring`, `/admin/approvals`, `/admin/documents`, and `/admin/settings` survive direct browser refresh.
+- `/`, `/admin/login`, and `/admin/reset-password` return the SPA without Vercel account authentication.
+- `/api/public-config` returns JSON and `/api/me` rejects unauthenticated requests.
+- Every staff account can sign in and receives only its configured roles.
+- The super administrator can list users and remove only non-protected accounts.
+- `/api/monitoring/documents` loads and `/api/attachments/url` issues a working private signed link.
+- A small public request can upload an attachment and returns an RFP number.
+- The request appears in `/admin/monitoring` and follows the department/finance workflow.
+- Workflow email status becomes `sent`, not merely `queued`, after SMTP is configured.
+- Direct refreshes work for `/admin`, `/review/:token`, and `/track/:token`.
 
 ## Rollback
 
-Netlify can republish a prior deploy without rewriting database history. Database migrations are forward-only; create a reviewed corrective migration instead of editing a migration already applied to production.
+Vercel can promote a prior production deployment without rewriting database history. Database migrations are forward-only; create a reviewed corrective migration instead of editing a migration already applied to production.

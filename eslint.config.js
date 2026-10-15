@@ -19,5 +19,5 @@ export default tseslint.config(
       'react-refresh/only-export-components': 'off',
     },
   },
-  { files: ['netlify/**/*.ts', 'scripts/**/*.ts'], languageOptions: { globals: { process: 'readonly', Buffer: 'readonly', console: 'readonly' } } },
+  { files: ['api/**/*.ts', 'server/**/*.ts', 'scripts/**/*.ts'], languageOptions: { globals: { process: 'readonly', Buffer: 'readonly', console: 'readonly', Request: 'readonly', Response: 'readonly', URL: 'readonly', URLSearchParams: 'readonly', Headers: 'readonly', fetch: 'readonly' } } },
 );

@@ -16,7 +16,7 @@ describe('server configuration', () => {
     vi.stubEnv('SMTP_PASSWORD', '');
     vi.stubEnv('SMTP_FROM_EMAIL', '');
 
-    const { config } = await import('../netlify/lib/config');
+    const { config } = await import('../server/lib/config');
     const result = config();
 
     expect(result.SMTP_HOST).toBeUndefined();

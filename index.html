@@ -5,7 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#102a43" />
     <meta name="description" content="Submit, review and monitor requests for payment." />
+    <link rel="icon" type="image/png" href="/brands/greenlight-power.png" />
+    <link rel="apple-touch-icon" href="/brands/greenlight-power.png" />
     <title>RFP Monitoring System</title>
+    <script>
+      (() => {
+        const saved = localStorage.getItem('rfp-theme');
+        const theme = saved === 'light' || saved === 'dark' ? saved : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

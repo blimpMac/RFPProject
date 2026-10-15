@@ -5,5 +5,5 @@
     "esModuleInterop": true, "resolveJsonModule": true, "types": ["node"],
     "composite": true, "noEmit": true
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "netlify/**/*.ts", "scripts/**/*.ts"]
+  "include": ["vite.config.ts", "playwright.config.ts", "api/**/*.ts", "server/**/*.ts", "scripts/**/*.ts"]
 }

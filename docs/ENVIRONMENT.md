@@ -1,6 +1,6 @@
 # Environment setup
 
-Store local values only in the ignored `.env` file. Netlify values belong in **Site configuration → Environment variables**. No committed environment sample is maintained; this guide is the canonical variable inventory.
+Store local values only in the ignored `.env` file. Deployment values belong in **Vercel Project Settings -> Environment Variables**. No committed environment sample is maintained; this guide is the canonical variable inventory.
 
 ## Browser-safe values
 
@@ -24,6 +24,7 @@ Store local values only in the ignored `.env` file. Netlify values belong in **S
 | `SMTP_USER`, `SMTP_PASSWORD` | Authorized SMTP account and app password |
 | `SMTP_FROM_EMAIL` | Branded sender, e.g. `RFP Desk <notifications@example.com>` |
 | `SITE_URL` | Exact deployed origin used in secure links |
+| `CRON_SECRET` | Random secret Vercel uses to authorize scheduled maintenance requests |
 
 ## Setup/migration-only secrets
 

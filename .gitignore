@@ -2,6 +2,7 @@ node_modules/
 .tooling/
 dist/
 .netlify/
+.vercel/
 coverage/
 playwright-report/
 test-results/

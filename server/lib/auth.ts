@@ -1,10 +1,9 @@
-import type { HandlerEvent } from '@netlify/functions';
 import type { User } from '@supabase/supabase-js';
 import { adminClient } from './supabase.js';
-import { HttpError } from './http.js';
+import { HttpError, type ApplicationEvent } from './http.js';
 
 export type Staff = { user: User; roles: string[] };
-export async function requireStaff(event: HandlerEvent, allowed?: string[]): Promise<Staff> {
+export async function requireStaff(event: ApplicationEvent, allowed?: string[]): Promise<Staff> {
   const token = event.headers.authorization?.replace(/^Bearer\s+/i, '');
   if (!token) throw new HttpError(401, 'Please sign in.');
   const db = adminClient();
