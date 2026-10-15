@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Greenlight Power">
+  <rect width="64" height="64" rx="14" fill="#102a43"/>
+  <circle cx="41" cy="32" r="18" fill="#0878c9"/>
+  <circle cx="33" cy="32" r="18" fill="#079eae"/>
+  <circle cx="24" cy="32" r="18" fill="#00c875"/>
+  <path d="M25 19c-8 0-13 5.6-13 13s5 13 13 13c5.2 0 9.4-2.2 11.8-5.4V30H24v5h7v2.2c-1.4 1.6-3.4 2.6-6 2.6-4.7 0-7.7-3.1-7.7-7.8s3-7.8 7.7-7.8c2.8 0 5 1.2 6.5 3l4.4-3.9C33.1 20.4 29.5 19 25 19Z" fill="#fff" fill-opacity=".96"/>
+</svg>

@@ -75,3 +75,12 @@ test('dark mode is readable and persists across staff navigation',async({page})=
   await expect(page.getByLabel('Work email')).toBeVisible();
   await expect(page.getByLabel('Password')).toBeVisible();
 });
+
+test('browser tab uses the dedicated Greenlight favicon',async({page})=>{
+  await page.route('**/api/public-config',route=>route.fulfill({json:publicConfig}));
+  await page.goto('/');
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href','/favicon.svg');
+  const response=await page.request.get('/favicon.svg');
+  expect(response.ok()).toBe(true);
+  expect(response.headers()['content-type']).toContain('image/svg+xml');
+});
