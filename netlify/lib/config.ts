@@ -1,17 +1,18 @@
 import { z } from 'zod';
 
 const optionalKey=z.preprocess((value)=>value===''?undefined:value,z.string().min(20).optional());
+const optionalString=z.preprocess((value)=>value===''?undefined:value,z.string().min(1).optional());
 const schema = z.object({
   SUPABASE_URL: z.string().url(),
   SUPABASE_SECRET_KEY: optionalKey,
   SUPABASE_SERVICE_ROLE_KEY: optionalKey,
   APPROVAL_TOKEN_ENCRYPTION_KEY: z.string().min(32),
-  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_HOST: optionalString,
   SMTP_PORT: z.coerce.number().int().positive().default(465),
   SMTP_SECURE: z.string().default('true').transform((v) => v === 'true'),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASSWORD: z.string().optional(),
-  SMTP_FROM_EMAIL: z.string().optional(),
+  SMTP_USER: optionalString,
+  SMTP_PASSWORD: optionalString,
+  SMTP_FROM_EMAIL: optionalString,
   SITE_URL: z.string().url(),
   MAX_UPLOAD_FILES: z.coerce.number().int().min(0).max(10).default(10),
   MAX_UPLOAD_SIZE_MB: z.coerce.number().positive().max(50).default(10),
