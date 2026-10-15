@@ -23,12 +23,12 @@ describe('secure review attachments', () => {
         required_payment_date: '2026-10-22',
         final_status: 'Pending Department Approval',
       },
-      attachments: [{
-        id: 'attachment-id',
-        original_filename: 'rfp-attachment-preview-test.png',
+      attachments: Array.from({ length: 10 }, (_, index) => ({
+        id: `attachment-${index}`,
+        original_filename: index === 0 ? 'rfp-attachment-preview-test.png' : `receipt-${index}.png`,
         mime_type: 'image/png',
-        url: 'https://storage.example.test/signed-preview',
-      }],
+        url: `https://storage.example.test/signed-preview-${index}`,
+      })),
     });
 
     render(
@@ -38,7 +38,8 @@ describe('secure review attachments', () => {
     );
 
     const preview = await screen.findByRole('img', { name: 'rfp-attachment-preview-test.png' });
-    expect(preview).toHaveAttribute('src', 'https://storage.example.test/signed-preview');
-    expect(screen.getByRole('link', { name: 'Open' })).toHaveAttribute('href', 'https://storage.example.test/signed-preview');
+    expect(preview).toHaveAttribute('src', 'https://storage.example.test/signed-preview-0');
+    expect(await screen.findAllByRole('img')).toHaveLength(9);
+    expect(screen.getAllByRole('link', { name: 'Open' })[0]).toHaveAttribute('href', 'https://storage.example.test/signed-preview-0');
   });
 });
