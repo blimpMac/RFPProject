@@ -43,6 +43,7 @@ supabase/tests/         pgTAP database contract tests
 scripts/migration/      complete workbook and historical attachment importers
 scripts/setup/          database and first-admin automation
 scripts/verification/   database and source/target reconciliation
+docs/                   environment, migration, and deployment runbooks
 tests/                  Vitest unit and contract tests
 ```
 
@@ -51,7 +52,7 @@ tests/                  Vitest unit and contract tests
 Requirements: Node.js 24+, npm, and a Supabase project.
 
 1. `npm install`
-2. Copy `.env.draft` to `.env` and replace placeholders. Never commit `.env`.
+2. Configure the ignored `.env` described in [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md). Never commit `.env`.
 3. `npm run db:setup`
 4. `npm run admin:bootstrap`
 5. `npm run dev`
@@ -60,12 +61,12 @@ The public form is `/`; staff sign-in is `/admin/login`.
 
 ## Setup order
 
-1. Complete [ENV_SETUP.md](ENV_SETUP.md).
+1. Complete [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
 2. Apply the database with `npm run db:setup`.
-3. Export the source Google workbook once as `.xlsx` and run the steps in [MIGRATION.md](MIGRATION.md).
+3. Export the source Google workbook once as `.xlsx` and run the steps in [docs/MIGRATION.md](docs/MIGRATION.md).
 4. Bootstrap the first administrator.
 5. Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and `npm run db:test`.
-6. Follow [DEPLOYMENT.md](DEPLOYMENT.md).
+6. Follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 No individual SQL statements or tables need to be copied by hand. The migrations create the schema, database functions, RLS policies, private bucket, and defaults together.
 
@@ -95,6 +96,6 @@ No individual SQL statements or tables need to be copied by hand. The migrations
 | `npm run migrate:verify -- source.xlsx` | Reconcile source and target counts/IDs |
 | `npm run db:test` | Verify target tables, bucket privacy, and next sequence |
 
-## Known authorization boundary
+## Deployment status
 
-The repository contains no company records or credentials. Live Supabase setup, historical import, Google Drive downloads, SMTP delivery, Netlify deployment, and GitHub push require the account-specific credentials documented in the handoff files. Scripts fail clearly instead of claiming those actions succeeded.
+The Supabase schema and structured workbook migration are live and verified. Historical Drive files remain marked `source_access_required` because the connected account cannot read them. SMTP credentials and the initial administrator identity still require explicit operator configuration; see the runbooks in `docs/`.

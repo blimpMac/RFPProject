@@ -1,6 +1,6 @@
 # Migration verification report
 
-Status: **Source inspected; live Supabase migration not run (credentials unavailable).**
+Status: **Structured migration complete and verified against the production Supabase project.**
 
 Source workbook: `RFP Request Form (Responses)`  
 Source ID: `1MS8PhbPQA_XbULWAefow4bMsP3s7z-KEp0K9YMJHvTE`  
@@ -8,11 +8,11 @@ Inspection date: 2026-10-14 (Asia/Manila)
 
 | Worksheet | Populated source records | Imported rows | Status |
 |---|---:|---:|---|
-| Form Responses 1 | 5 | Not run | Ready; expected 4 deterministic matches and 1 unmatched response |
-| RFP Tracker | 4 | Not run | Ready |
-| Approver Master | 8 | Not run | Ready |
-| Approval Log | 7 | Not run | Ready |
-| Recommended Process Flow | 10 structured records (12 populated rows including 2 section headings) | Not run | Ready; A1:P16 positional snapshot supported |
+| Form Responses 1 | 5 | 5 | Complete; 4 deterministic matches and 1 unmatched response |
+| RFP Tracker | 4 | 4 | Complete |
+| Approver Master | 8 | 8 | Complete |
+| Approval Log | 7 | 7 | Complete |
+| Recommended Process Flow | 10 structured records (12 populated rows including 2 section headings) | 10 | Complete; 256 A1:P16 positional cells preserved |
 
 ## Reconciliation baseline
 
@@ -20,14 +20,14 @@ Inspection date: 2026-10-14 (Asia/Manila)
 - Required next sequence: `RFP-0005`
 - Historical tracker attachment references: 4
 - Additional unmatched form attachment reference: 1 (retained in the form response record)
-- Historical files successfully copied to Supabase Storage: **0 — not attempted without Supabase/Drive authorization**
-- Historical files inaccessible or pending: **4 tracker references plus 1 unmatched form reference pending authorization/verification**
-- Duplicate source rows: not detected during the authenticated read; the importer will verify by row hash.
+- Historical files successfully copied to Supabase Storage: **0**
+- Historical files inaccessible or pending: **4 tracker references**; all four return Drive `404 file not found` for the connected account. The additional unmatched form attachment reference remains preserved in its source record.
+- Duplicate source rows: none; the completed import is protected by source checksum and row hashes.
 - Approved/rejected history: one finance-approved request and two department-approved log events were observed; the importer preserves the source values/dates verbatim.
 
-## Completion gate
+## Completion evidence
 
-This report must not be changed to “complete” until both commands succeed against the authorized project:
+Both commands succeeded against project `chchtjolsnlelgxbgkip` on 2026-10-15 (Asia/Manila):
 
 ```powershell
 npm run migrate:verify -- "C:\secure\complete-workbook.xlsx"

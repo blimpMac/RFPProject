@@ -19,7 +19,7 @@
    - SPA fallback and `/api/*` function routing
    - CSP, HSTS, frame, MIME, referrer, and permissions headers
    - scheduled email queue and abandoned-upload cleanup
-4. Add every runtime value from `.env.draft` in Netlify. Mark server values as secrets. Do not set setup-only database/Google credentials unless a deliberate one-time deploy task needs them.
+4. Add every runtime value from [ENVIRONMENT.md](ENVIRONMENT.md) in Netlify. Mark server values as secrets. Do not set setup-only database or Google credentials unless a deliberate one-time deploy task needs them.
 5. Keep Netlify secret scanning enabled.
 6. Deploy from `main`.
 

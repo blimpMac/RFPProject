@@ -7,8 +7,6 @@ playwright-report/
 test-results/
 .env
 .env.*
-!.env.example
-!.env.draft
 *.local
 *.tsbuildinfo
 migration-data/

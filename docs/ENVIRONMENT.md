@@ -1,6 +1,6 @@
 # Environment setup
 
-Start from `.env.draft`. Store local values in `.env`; Netlify values belong in **Site configuration → Environment variables**. `.gitignore` excludes real environment files.
+Store local values only in the ignored `.env` file. Netlify values belong in **Site configuration → Environment variables**. No committed environment sample is maintained; this guide is the canonical variable inventory.
 
 ## Browser-safe values
 

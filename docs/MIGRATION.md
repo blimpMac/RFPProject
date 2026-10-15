@@ -16,7 +16,7 @@ Download the Google workbook as Microsoft Excel (`.xlsx`) with an account that c
 
 ## 2. Apply the target schema
 
-Configure the variables in `ENV_SETUP.md`, then run:
+Configure the variables in [ENVIRONMENT.md](ENVIRONMENT.md), then run:
 
 ```powershell
 npm run db:setup
@@ -60,4 +60,4 @@ npm run db:test
 
 The verifier compares worksheet counts to target rows, lists original RFP numbers, counts unmatched forms and historical attachments, and writes a machine-readable ignored report to `migration-archive/verification-report.json`.
 
-The committed [MIGRATION_REPORT.md](MIGRATION_REPORT.md) records the pre-migration source inspection and must only be marked complete after these commands pass against the authorized Supabase project.
+The committed [MIGRATION_REPORT.md](MIGRATION_REPORT.md) records the completed reconciliation and remaining attachment-access exception.
