@@ -24,4 +24,10 @@ describe('seven-stage RFP workflow contract',()=>{
       expect(api).toContain(email);
     }
   });
+  it('offers only staff and department-approver account creation',()=>{
+    expect(api).toContain("z.literal('staff')");
+    expect(api).toContain("z.literal('approver')");
+    expect(api).toContain("role=accessRole(input.accessLevel)");
+    expect(api).toContain('/admin/reset-password');
+  });
 });

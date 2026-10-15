@@ -24,7 +24,11 @@
     "migrate:workbook": "tsx scripts/migration/import-workbook.ts",
     "migrate:attachments": "tsx scripts/migration/migrate-attachments.ts",
     "migrate:verify": "tsx scripts/verification/verify-migration.ts",
-    "admin:bootstrap": "tsx scripts/setup/bootstrap-admin.ts"
+    "admin:bootstrap": "tsx scripts/setup/bootstrap-admin.ts",
+    "mock:access": "node --env-file=.env --import tsx scripts/setup/create-mock-access.ts",
+    "test:email-delivery": "node --env-file=.env --import tsx scripts/verification/send-test-emails.ts",
+    "test:mock-access": "node --env-file=.env --import tsx scripts/verification/verify-mock-access.ts",
+    "test:auth-email": "node --env-file=.env --import tsx scripts/verification/send-auth-recovery-tests.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

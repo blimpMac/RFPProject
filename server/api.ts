@@ -4,12 +4,16 @@ import { config } from './lib/config.js';
 import { randomToken, seal, sha256 } from './lib/crypto.js';
 import { assertSameOrigin, ensureMethod, HttpError, json, readJson, responseError, routeOf, type ApplicationHandler } from './lib/http.js';
 import { requireStaff } from './lib/auth.js';
+import { accessRole, canAccessDepartment, isDepartmentOnly, normalizeDepartment } from './lib/staff-access.js';
 import { enforceSubmissionLimit } from './lib/rate-limit.js';
 import { completeAttachmentSchema, decisionSchema, departmentRereviewSchema, finalizeSchema, financeSchema, resubmitSchema, startSchema } from './lib/validation.js';
 
 const administrativeRoles=['super_administrator','administrator'];
-const assignableRoles=['administrator','department_approver','finance_reviewer'] as const;
 const protectedStaffEmails=new Set(['gpigemcorqbbackup@gmail.com','dricianfranciscordon@gmail.com','cerealman637@gmail.com']);
+const staffAccountSchema=z.discriminatedUnion('accessLevel',[
+  z.object({email:z.email(),fullName:z.string().min(2).max(160),accessLevel:z.literal('staff'),department:z.string().max(100).optional()}),
+  z.object({email:z.email(),fullName:z.string().min(2).max(160),accessLevel:z.literal('approver'),department:z.string().min(1).max(100)}),
+]);
 const tableMap: Record<string,{table:string;order:string;roles?:string[]}> = {
   requests:{table:'rfp_requests',order:'submitted_at'}, forms:{table:'form_responses',order:'source_timestamp',roles:administrativeRoles},
   approvers:{table:'approvers',order:'department',roles:administrativeRoles}, logs:{table:'approval_logs',order:'occurred_at'}, flow:{table:'process_flow_steps',order:'display_order'},
@@ -96,13 +100,13 @@ export const handler: ApplicationHandler = async (event) => {
       throw new HttpError(405,'Method not allowed.');
     }
     if(route==='me'){
-      ensureMethod(event,'GET'); const staff=await requireStaff(event); return json(200,{ok:true,user:{id:staff.user.id,email:staff.user.email},roles:staff.roles});
+      ensureMethod(event,'GET'); const staff=await requireStaff(event); return json(200,{ok:true,user:{id:staff.user.id,email:staff.user.email},roles:staff.roles,profile:staff.profile});
     }
     if(route==='dashboard'){
       ensureMethod(event,'GET'); const staff=await requireStaff(event);
       let requestQuery=db.from('rfp_requests').select('id,rfp_number,submitted_at,department,amount,final_status,department_approval_at,finance_review_at').not('submitted_at','is',null).order('submitted_at',{ascending:false}).limit(5000);
-      const departmentOnly=staff.roles.includes('department_approver')&&!staff.roles.some((r)=>[...administrativeRoles,'finance_reviewer'].includes(r));
-      if(departmentOnly)requestQuery=requestQuery.eq('approver_email',staff.user.email||'');
+      const departmentOnly=isDepartmentOnly(staff.roles);
+      if(departmentOnly){const department=normalizeDepartment(staff.profile.department);if(!department)throw new HttpError(403,'Your approver account is missing a department.');requestQuery=requestQuery.eq('normalized_department',department)}
       const [{data:metrics,error},{data:requests}]=await Promise.all([db.from('dashboard_metrics').select('*').single(),requestQuery]); if(error) throw error;
       const requestIds=(requests||[]).map((r)=>r.id);let logsQuery=db.from('approval_logs').select('*').order('occurred_at',{ascending:false}).limit(8);if(departmentOnly)logsQuery=requestIds.length?logsQuery.in('request_id',requestIds):logsQuery.eq('request_id','00000000-0000-0000-0000-000000000000');const{data:logs}=await logsQuery;
       return json(200,{ok:true,metrics,requests:requests||[],recentActivity:logs||[]});
@@ -112,8 +116,8 @@ export const handler: ApplicationHandler = async (event) => {
       const staff=await requireStaff(event,spec.roles);
       const page=Math.max(1,Number(event.queryStringParameters?.page)||1),pageSize=Math.min(200,Math.max(10,Number(event.queryStringParameters?.pageSize)||50));
       let query=db.from(spec.table).select('*',{count:'exact'}).order(spec.order,{ascending:false}).range((page-1)*pageSize,page*pageSize-1);
-      if(key==='requests'&&staff.roles.includes('department_approver')&&!staff.roles.some((r)=>[...administrativeRoles,'finance_reviewer'].includes(r))) query=query.eq('approver_email',staff.user.email || '');
-      if(key==='logs'&&staff.roles.includes('department_approver')&&!staff.roles.some((r)=>[...administrativeRoles,'finance_reviewer'].includes(r))){const assigned=await db.from('rfp_requests').select('id').eq('approver_email',staff.user.email||'');const ids=(assigned.data||[]).map((r)=>r.id);query=ids.length?query.in('request_id',ids):query.eq('request_id','00000000-0000-0000-0000-000000000000')}
+      if(key==='requests'&&isDepartmentOnly(staff.roles)){const department=normalizeDepartment(staff.profile.department);if(!department)throw new HttpError(403,'Your approver account is missing a department.');query=query.eq('normalized_department',department)}
+      if(key==='logs'&&isDepartmentOnly(staff.roles)){const department=normalizeDepartment(staff.profile.department);if(!department)throw new HttpError(403,'Your approver account is missing a department.');const assigned=await db.from('rfp_requests').select('id').eq('normalized_department',department);const ids=(assigned.data||[]).map((r)=>r.id);query=ids.length?query.in('request_id',ids):query.eq('request_id','00000000-0000-0000-0000-000000000000')}
       const {data,error,count}=await query; if(error) throw error; return json(200,{ok:true,rows:data||[],count,page,pageSize});
     }
     if(route==='finance/action'){
@@ -122,13 +126,14 @@ export const handler: ApplicationHandler = async (event) => {
     }
     if(route==='department/action'){
       ensureMethod(event,'POST');const staff=await requireStaff(event,[...administrativeRoles,'department_approver']);const input=departmentRereviewSchema.parse(readJson(event));
-      const request=await db.from('rfp_requests').select('approver_email,final_status').eq('id',input.requestId).single();if(request.error||!request.data)throw new HttpError(404,'Request not found.');
-      const isAdmin=staff.roles.some((role)=>administrativeRoles.includes(role));if(!isAdmin&&request.data.approver_email.toLowerCase()!==staff.user.email?.toLowerCase())throw new HttpError(403,'This request is assigned to a different Department Approver.');
+      const request=await db.from('rfp_requests').select('department,final_status').eq('id',input.requestId).single();if(request.error||!request.data)throw new HttpError(404,'Request not found.');
+      const isAdmin=staff.roles.some((role)=>administrativeRoles.includes(role));if(!isAdmin&&!canAccessDepartment(staff.profile.department,request.data.department))throw new HttpError(403,'This request belongs to a different department.');
       const{data,error}=await db.rpc('department_rereview_action',{p_request_id:input.requestId,p_decision:input.decision,p_remarks:input.remarks,p_actor_email:staff.user.email,p_actor_user_id:staff.user.id});if(error)throw new HttpError(409,error.message);return json(200,{ok:true,request:data});
     }
     if(route==='attachments/url'){
-      ensureMethod(event,'POST'); await requireStaff(event); const input=z.object({attachmentId:z.uuid()}).parse(readJson(event));
-      const {data:item}=await db.from('request_attachments').select('storage_path').eq('id',input.attachmentId).eq('status','available').single(); if(!item?.storage_path) throw new HttpError(404,'Document not found.');
+      ensureMethod(event,'POST'); const staff=await requireStaff(event); const input=z.object({attachmentId:z.uuid()}).parse(readJson(event));
+      const {data:item}=await db.from('request_attachments').select('storage_path,request_id').eq('id',input.attachmentId).eq('status','available').single(); if(!item?.storage_path) throw new HttpError(404,'Document not found.');
+      if(isDepartmentOnly(staff.roles)){const request=await db.from('rfp_requests').select('department').eq('id',item.request_id).single();if(request.error||!request.data||!canAccessDepartment(staff.profile.department,request.data.department))throw new HttpError(403,'This document belongs to a different department.')}
       const signed=await db.storage.from('rfp-attachments').createSignedUrl(item.storage_path,300); if(signed.error) throw signed.error; return json(200,{ok:true,url:signed.data.signedUrl});
     }
     if(route==='approvers'){
@@ -138,24 +143,27 @@ export const handler: ApplicationHandler = async (event) => {
       throw new HttpError(405,'Method not allowed.');
     }
     if(route==='staff-users'){
-      const staff=await requireStaff(event,administrativeRoles);
+      const staff=await requireStaff(event,['super_administrator']);
       if(event.httpMethod==='GET'){
         const listed=await db.auth.admin.listUsers({page:1,perPage:1000}); if(listed.error) throw listed.error;
-        const {data:roleRows,error}=await db.from('user_roles').select('user_id,role'); if(error) throw error;
-        const users=listed.data.users.map((user)=>({id:user.id,email:user.email,createdAt:user.created_at,lastSignInAt:user.last_sign_in_at,roles:(roleRows||[]).filter((r)=>r.user_id===user.id).map((r)=>r.role),protected:protectedStaffEmails.has(user.email?.toLowerCase()||'')}));
-        return json(200,{ok:true,users,canRemove:staff.roles.includes('super_administrator')});
+        const [{data:roleRows,error:roleError},{data:profiles,error:profileError}]=await Promise.all([db.from('user_roles').select('user_id,role'),db.from('profiles').select('id,full_name,department,active')]);if(roleError)throw roleError;if(profileError)throw profileError;
+        const users=listed.data.users.map((user)=>{const roles=(roleRows||[]).filter((r)=>r.user_id===user.id).map((r)=>r.role);const profile=(profiles||[]).find((p)=>p.id===user.id);return{id:user.id,email:user.email,createdAt:user.created_at,lastSignInAt:user.last_sign_in_at,roles,fullName:profile?.full_name||null,department:profile?.department||null,active:profile?.active??true,accessLevel:roles.includes('department_approver')?'approver':roles.includes('finance_reviewer')?'staff':null,protected:protectedStaffEmails.has(user.email?.toLowerCase()||'')}});
+        return json(200,{ok:true,users,canRemove:true});
       }
       if(event.httpMethod==='POST'){
-        const input=z.object({email:z.email(),roles:z.array(z.enum(assignableRoles)).min(1)}).parse(readJson(event));
-        const invited=await db.auth.admin.inviteUserByEmail(input.email,{redirectTo:`${c.SITE_URL}/admin/login`}); if(invited.error) throw new HttpError(409,invited.error.message);
-        const {error}=await db.from('user_roles').insert(input.roles.map((role)=>({user_id:invited.data.user.id,role}))); if(error) throw error;
-        return json(201,{ok:true,user:{id:invited.data.user.id,email:invited.data.user.email,roles:input.roles}});
+        const input=staffAccountSchema.parse(readJson(event));const role=accessRole(input.accessLevel);const email=input.email.toLowerCase();
+        const invited=await db.auth.admin.inviteUserByEmail(email,{redirectTo:`${c.SITE_URL}/admin/reset-password`,data:{full_name:input.fullName,department:input.accessLevel==='approver'?input.department:null,access_level:input.accessLevel}}); if(invited.error) throw new HttpError(409,invited.error.message);
+        const department=input.accessLevel==='approver'?input.department:null;
+        const profile=await db.from('profiles').upsert({id:invited.data.user.id,email,full_name:input.fullName,department,active:true},{onConflict:'id'});if(profile.error){await db.auth.admin.deleteUser(invited.data.user.id);throw profile.error}
+        const assigned=await db.from('user_roles').insert({user_id:invited.data.user.id,role,granted_by:staff.user.id});if(assigned.error){await db.auth.admin.deleteUser(invited.data.user.id);throw assigned.error}
+        return json(201,{ok:true,user:{id:invited.data.user.id,email:invited.data.user.email,roles:[role],fullName:input.fullName,department,active:true,accessLevel:input.accessLevel}});
       }
       if(event.httpMethod==='PATCH'){
-        const input=z.object({userId:z.uuid(),roles:z.array(z.enum(assignableRoles)).min(1)}).parse(readJson(event));
+        const input=z.object({userId:z.uuid(),fullName:z.string().min(2).max(160),accessLevel:z.enum(['staff','approver']),department:z.string().max(100).optional(),active:z.boolean()}).refine((value)=>value.accessLevel!=='approver'||Boolean(value.department?.trim()),{message:'Department is required for approvers.',path:['department']}).parse(readJson(event));
         const existing=await db.from('user_roles').select('role').eq('user_id',input.userId);if(existing.error)throw existing.error;if(existing.data?.some((row)=>row.role==='super_administrator'))throw new HttpError(403,'The Super Administrator role cannot be modified here.');
         const {error:deleteError}=await db.from('user_roles').delete().eq('user_id',input.userId); if(deleteError) throw deleteError;
-        const {error}=await db.from('user_roles').insert(input.roles.map((role)=>({user_id:input.userId,role}))); if(error) throw error;
+        const {error}=await db.from('user_roles').insert({user_id:input.userId,role:accessRole(input.accessLevel),granted_by:staff.user.id}); if(error) throw error;
+        const profile=await db.from('profiles').update({full_name:input.fullName,department:input.accessLevel==='approver'?input.department:null,active:input.active}).eq('id',input.userId);if(profile.error)throw profile.error;
         return json(200,{ok:true});
       }
       if(event.httpMethod==='DELETE'){
