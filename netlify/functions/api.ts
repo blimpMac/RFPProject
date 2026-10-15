@@ -71,8 +71,15 @@ export const handler: Handler = async (event) => {
         const {data:tok}=await db.from('approval_tokens').select('request_id,expires_at,used_at,revoked_at').eq('token_hash',sha256(token)).single();
         if(!tok||tok.used_at||tok.revoked_at||new Date(tok.expires_at)<new Date()) throw new HttpError(410,'This review link is invalid, expired, or already used.');
         const {data:req,error}=await db.from('rfp_requests').select('id,rfp_number,requestor_name,requestor_email,department,project_class,rfp_type,supplier_payee,purpose_description,amount,required_payment_date,final_status').eq('id',tok.request_id).single(); if(error) throw error;
-        const {data:attachments}=await db.from('request_attachments').select('id,original_filename,mime_type').eq('request_id',tok.request_id).eq('status','available');
-        return json(200,{ok:true,request:req,attachments:attachments||[]});
+        const {data:attachments,error:attachmentError}=await db.from('request_attachments').select('id,original_filename,mime_type,storage_path').eq('request_id',tok.request_id).eq('status','available');
+        if(attachmentError)throw attachmentError;
+        const previews=await Promise.all((attachments||[]).map(async(item)=>{
+          if(!item.storage_path)return{id:item.id,original_filename:item.original_filename,mime_type:item.mime_type,url:null};
+          const signed=await db.storage.from('rfp-attachments').createSignedUrl(item.storage_path,900,{download:item.original_filename});
+          if(signed.error)throw signed.error;
+          return{id:item.id,original_filename:item.original_filename,mime_type:item.mime_type,url:signed.data.signedUrl};
+        }));
+        return json(200,{ok:true,request:req,attachments:previews});
       }
       if(event.httpMethod==='POST'){
         const input=decisionSchema.parse({...readJson(event) as object,token});
