@@ -1,40 +1,131 @@
 import { useCallback,useEffect,useMemo,useState } from 'react';
-import { KeyRound,Plus,Save,Trash2,UserPlus } from 'lucide-react';
-import { Button,Modal,Spinner,StatusBadge } from '../components/ui';
+import { ChevronLeft,ChevronRight,KeyRound,Search,Trash2,UserPlus } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
+import { Button,Modal,Spinner,StatusBadge } from '../components/ui';
 import { del,get,patch,post } from '../lib/api';
-import { supabase } from '../lib/supabase';
 
-type Approver={id:string;department:string;approver_name:string;approver_email:string;active:boolean};
 type AccessLevel='staff'|'approver';
-type StaffUser={id:string;email:string;roles:string[];createdAt:string;protected:boolean;fullName:string|null;department:string|null;active:boolean;accessLevel:AccessLevel|null};
-type Setting={key:string;value:Record<string,unknown>;description:string};
+type StaffUser={
+  id:string;email:string;roles:string[];protected:boolean;fullName:string|null;department:string|null;
+  assignedDepartments:string[];active:boolean;accessLevel:AccessLevel|null;
+};
+type Setting={key:string;value:Record<string,unknown>};
+type AccessFilter='all'|'administrator'|'approver'|'staff';
+const PAGE_SIZE=6;
 
 export function SettingsPage(){
-  const{roles}=useAuth();const isSuper=roles.includes('super_administrator');
-  const[tab,setTab]=useState<'approvers'|'accounts'|'configuration'>('approvers');
-  const[approvers,setApprovers]=useState<Approver[]>([]);const[users,setUsers]=useState<StaffUser[]>([]);const[settings,setSettings]=useState<Setting[]>([]);
-  const[loading,setLoading]=useState(true);const[error,setError]=useState('');const[notice,setNotice]=useState('');const[edit,setEdit]=useState<Partial<Approver>>();const[account,setAccount]=useState<StaffUser|'new'>();
-  const departments=useMemo(()=>{const row=settings.find((s)=>s.key==='submission_options');return Array.isArray(row?.value.departments)?row.value.departments as string[]:[]},[settings]);
-  const load=useCallback(async()=>{setLoading(true);setError('');try{const[a,s]=await Promise.all([get<{rows:Approver[]}>('monitoring/approvers?page=1&pageSize=200'),get<{settings:Setting[]}>('settings')]);setApprovers(a.rows);setSettings(s.settings);if(isSuper){const u=await get<{users:StaffUser[]}>('staff-users');setUsers(u.users)}}catch(e){setError(e instanceof Error?e.message:'Could not load settings.')}finally{setLoading(false)}},[isSuper]);
-  useEffect(()=>{void load()},[load]);if(loading)return <Spinner/>;
-  const removeUser=async(user:StaffUser)=>{if(!window.confirm(`Remove ${user.email}? This revokes login access and cannot be undone.`))return;setError('');try{await del('staff-users',{userId:user.id});await load()}catch(e){setError(e instanceof Error?e.message:'Could not remove account.')}};
-  const sendReset=async(user:StaffUser)=>{setError('');setNotice('');const{error:resetError}=await supabase.auth.resetPasswordForEmail(user.email,{redirectTo:`${window.location.origin}/admin/reset-password`});if(resetError)setError(resetError.message);else setNotice(`Password reset email requested for ${user.email}.`)};
-  const tabs=(isSuper?['approvers','accounts','configuration']:['approvers','configuration']) as Array<'approvers'|'accounts'|'configuration'>;
-  return <div className="space-y-4"><div><h1 className="text-2xl font-semibold">Settings</h1><p className="text-sm text-slate-500">Approvers, user access, departments, and workflow targets.</p></div><div className="flex gap-2 overflow-x-auto border-b">{tabs.map((t)=><button key={t} className={`border-b-2 px-3 py-2 text-sm capitalize ${tab===t?'border-[#173f6b] text-[#173f6b]':'border-transparent text-slate-500'}`} onClick={()=>setTab(t)}>{t}</button>)}</div>{error&&<p className="rounded bg-red-50 p-3 text-red-700">{error}</p>}{notice&&<p className="rounded bg-emerald-50 p-3 text-emerald-800">{notice}</p>}
-    {tab==='approvers'&&<section className="card overflow-hidden"><div className="flex flex-wrap items-center justify-between gap-3 border-b p-4"><div><h2 className="font-semibold">Primary approval contacts</h2><p className="mt-1 text-xs text-slate-500">These contacts receive the secure review email. Department approver accounts are managed separately.</p></div><Button onClick={()=>setEdit({active:true})}><Plus size={16}/>Add contact</Button></div><div className="overflow-x-auto"><table className="min-w-full text-sm"><thead className="bg-slate-50 text-left"><tr>{['Department','Approver Name','Email','Active',''].map((h)=><th className="px-4 py-3" key={h}>{h}</th>)}</tr></thead><tbody>{approvers.map((a)=><tr className="border-t" key={a.id}><td className="px-4 py-3 font-medium">{a.department}</td><td className="px-4 py-3">{a.approver_name}</td><td className="px-4 py-3">{a.approver_email}</td><td className="px-4 py-3"><StatusBadge>{a.active?'Active':'Inactive'}</StatusBadge></td><td className="px-4 py-3 text-right"><Button variant="secondary" onClick={()=>setEdit(a)}>Edit</Button></td></tr>)}</tbody></table></div></section>}
-    {tab==='accounts'&&isSuper&&<section className="card"><div className="flex flex-wrap items-center justify-between gap-3 border-b p-4"><div><h2 className="font-semibold">Staff access accounts</h2><p className="mt-1 text-xs text-slate-500">Approvers see only their department. Staff accounts handle finance and operational workflows.</p></div><Button onClick={()=>setAccount('new')}><UserPlus size={16}/>Add a staff account</Button></div><DepartmentCoverage users={users} departments={departments}/><div className="divide-y">{users.map((u)=><div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center" key={u.id}><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="truncate font-medium">{u.fullName||u.email}</p>{u.roles.includes('super_administrator')&&<StatusBadge>Super Administrator</StatusBadge>}{u.accessLevel&&<StatusBadge>{u.accessLevel==='approver'?'Department Approver':'Staff'}</StatusBadge>}{!u.active&&<StatusBadge>Inactive</StatusBadge>}{u.protected&&<span className="text-xs text-slate-500">Protected</span>}</div><p className="mt-1 break-all text-xs text-slate-500">{u.email}{u.department?` · ${u.department}`:''}</p></div><div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={()=>void sendReset(u)}><KeyRound size={16}/>Reset password</Button>{!u.roles.includes('super_administrator')&&<Button variant="secondary" onClick={()=>setAccount(u)}>Edit access</Button>}{!u.protected&&!u.roles.includes('super_administrator')&&<Button variant="danger" onClick={()=>void removeUser(u)}><Trash2 size={16}/>Remove</Button>}</div></div>)}</div></section>}
-    {tab==='configuration'&&<Configuration settings={settings} onSaved={load}/>} {edit&&<ApproverForm value={edit} onClose={()=>setEdit(undefined)} onSaved={async()=>{setEdit(undefined);await load()}}/>}{account&&<AccountForm value={account} departments={departments} onClose={()=>setAccount(undefined)} onSaved={async()=>{setAccount(undefined);setNotice(account==='new'?'Secure account invitation sent.':'Account access updated.');await load()}}/>}
-  </div>
+  const{roles}=useAuth();
+  const isSuper=roles.includes('super_administrator');
+  const[users,setUsers]=useState<StaffUser[]>([]);
+  const[departments,setDepartments]=useState<string[]>([]);
+  const[search,setSearch]=useState('');
+  const[statusFilter,setStatusFilter]=useState<'all'|'active'|'inactive'>('all');
+  const[accessFilter,setAccessFilter]=useState<AccessFilter>('all');
+  const[page,setPage]=useState(1);
+  const[loading,setLoading]=useState(true);
+  const[busyId,setBusyId]=useState('');
+  const[error,setError]=useState('');
+  const[notice,setNotice]=useState('');
+  const[account,setAccount]=useState<StaffUser|'new'>();
+
+  const load=useCallback(async()=>{
+    setLoading(true);setError('');
+    try{
+      const[accountResult,settingsResult]=await Promise.all([
+        get<{users:StaffUser[]}>('staff-users'),get<{settings:Setting[]}>('settings'),
+      ]);
+      setUsers(accountResult.users);
+      const submission=settingsResult.settings.find((setting)=>setting.key==='submission_options');
+      setDepartments(Array.isArray(submission?.value.departments)?submission.value.departments as string[]:[]);
+    }catch(cause){setError(cause instanceof Error?cause.message:'Could not load accounts.')}
+    finally{setLoading(false)}
+  },[]);
+  useEffect(()=>{if(isSuper)void load()},[isSuper,load]);
+  useEffect(()=>setPage(1),[accessFilter,search,statusFilter]);
+
+  const filteredUsers=useMemo(()=>{
+    const query=search.trim().toLowerCase();
+    return users.filter((user)=>{
+      const statusMatches=statusFilter==='all'||(statusFilter==='active'?user.active:!user.active);
+      const accessMatches=accessFilter==='all'
+        ||(accessFilter==='administrator'&&user.roles.some((role)=>['super_administrator','administrator'].includes(role)))
+        ||(accessFilter==='approver'&&user.accessLevel==='approver')
+        ||(accessFilter==='staff'&&user.accessLevel==='staff');
+      const searchMatches=!query||[user.fullName,user.email,user.department,...user.assignedDepartments,...user.roles].some((value)=>value?.toLowerCase().includes(query));
+      return statusMatches&&accessMatches&&searchMatches;
+    }).sort((a,b)=>(a.fullName||a.email).localeCompare(b.fullName||b.email));
+  },[accessFilter,search,statusFilter,users]);
+  const totalPages=Math.max(1,Math.ceil(filteredUsers.length/PAGE_SIZE));
+  const currentPage=Math.min(page,totalPages);
+  const firstVisible=(currentPage-1)*PAGE_SIZE;
+  const paginatedUsers=filteredUsers.slice(firstVisible,firstVisible+PAGE_SIZE);
+
+  async function sendReset(user:StaffUser){
+    setBusyId(user.id);setError('');setNotice('');
+    try{await post('staff-users/reset-password',{userId:user.id});setNotice('Password-reset email sent.')}
+    catch(cause){setError(cause instanceof Error?cause.message:'Could not send the password-reset email.')}
+    finally{setBusyId('')}
+  }
+
+  async function removeUser(user:StaffUser){
+    if(!window.confirm(`Delete ${user.fullName||'this account'}? This cannot be undone.`))return;
+    setBusyId(user.id);setError('');setNotice('');
+    try{await del('staff-users',{userId:user.id});setNotice('Account deleted.');await load()}
+    catch(cause){setError(cause instanceof Error?cause.message:'Could not delete the account.')}
+    finally{setBusyId('')}
+  }
+
+  if(!isSuper)return <Navigate to="/admin" replace/>;
+  if(loading)return <Spinner label="Loading accounts"/>;
+  return <div className="space-y-4">
+    <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-2xl font-semibold">Account Manager</h1><Button onClick={()=>setAccount('new')}><UserPlus size={16}/>Add account</Button></div>
+    {error&&<p className="rounded bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+    {notice&&<p className="rounded bg-emerald-50 p-3 text-sm text-emerald-800" role="status">{notice}</p>}
+    <section className="card overflow-hidden">
+      <div className="grid gap-3 border-b p-4 md:grid-cols-[minmax(14rem,1fr)_12rem_12rem]">
+        <div className="field"><label htmlFor="account-search">Search</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/><input id="account-search" className="input pl-9" value={search} onChange={(event)=>setSearch(event.target.value)} placeholder="Name, department, or email"/></div></div>
+        <div className="field"><label htmlFor="account-access-filter">Access</label><select id="account-access-filter" className="input" value={accessFilter} onChange={(event)=>setAccessFilter(event.target.value as AccessFilter)}><option value="all">All access</option><option value="administrator">Administrators</option><option value="approver">Approvers</option><option value="staff">Staff</option></select></div>
+        <div className="field"><label htmlFor="account-status-filter">Status</label><select id="account-status-filter" className="input" value={statusFilter} onChange={(event)=>setStatusFilter(event.target.value as typeof statusFilter)}><option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+      </div>
+      <div className="divide-y">{paginatedUsers.map((user)=><AccountRow key={user.id} user={user} busy={busyId===user.id} onEdit={()=>setAccount(user)} onReset={()=>void sendReset(user)} onRemove={()=>void removeUser(user)}/>)}{!paginatedUsers.length&&<p className="p-10 text-center text-sm text-slate-500">No matching accounts.</p>}</div>
+      {filteredUsers.length>0&&<div className="flex flex-wrap items-center justify-between gap-3 border-t bg-slate-50 px-4 py-3"><p className="text-sm text-slate-600">{firstVisible+1}–{Math.min(firstVisible+PAGE_SIZE,filteredUsers.length)} of {filteredUsers.length} · 6 per page</p><div className="flex items-center gap-2"><Button variant="secondary" disabled={currentPage===1} onClick={()=>setPage((value)=>Math.max(1,value-1))}><ChevronLeft size={16}/>Previous</Button><span className="min-w-24 text-center text-sm font-medium">Page {currentPage} of {totalPages}</span><Button variant="secondary" disabled={currentPage===totalPages} onClick={()=>setPage((value)=>Math.min(totalPages,value+1))}>Next<ChevronRight size={16}/></Button></div></div>}
+    </section>
+    {account&&<AccountForm value={account} departments={departments} onClose={()=>setAccount(undefined)} onSaved={async()=>{const added=account==='new';setAccount(undefined);setNotice(added?'Account invitation sent.':'Account updated.');await load()}}/>}
+  </div>;
 }
 
-function DepartmentCoverage({users,departments}:{users:StaffUser[];departments:string[]}){const counts=departments.map((department)=>({department,count:users.filter((user)=>user.active&&user.accessLevel==='approver'&&user.department?.toLowerCase()===department.toLowerCase()).length}));return <div className="border-b bg-slate-50 p-4"><h3 className="text-sm font-semibold">Active department approvers</h3><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{counts.map(({department,count})=><div className="flex items-center justify-between rounded-lg border bg-white px-3 py-2 text-sm" key={department}><span>{department}</span><span className={count>=3?'font-bold text-emerald-700':'font-bold text-amber-700'}>{count} / 3</span></div>)}</div></div>}
+function AccountRow({user,busy,onEdit,onReset,onRemove}:{user:StaffUser;busy:boolean;onEdit:()=>void;onReset:()=>void;onRemove:()=>void}){
+  const isAdministrator=user.roles.some((role)=>['super_administrator','administrator'].includes(role));
+  const accessLabel=user.roles.includes('super_administrator')?'Super Administrator':user.roles.includes('administrator')?'Administrator':user.accessLevel==='approver'?'Department Approver':'Staff';
+  return <article className="flex flex-col gap-3 p-4 xl:flex-row xl:items-center">
+    <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-semibold">{user.fullName||'Account'}</p><StatusBadge>{accessLabel}</StatusBadge><StatusBadge>{user.active?'Active':'Inactive'}</StatusBadge>{user.protected&&<StatusBadge>Protected</StatusBadge>}</div><p className="mt-1 truncate text-xs text-slate-500">{user.protected?'Email hidden':user.email}{user.department?` · ${user.department}`:''}</p></div>
+    <div className="flex flex-wrap gap-2"><Button variant="secondary" disabled={busy} onClick={onReset}><KeyRound size={16}/>Reset password</Button>{!isAdministrator&&!user.protected&&user.accessLevel&&<Button variant="secondary" disabled={busy} onClick={onEdit}>Edit</Button>}{!user.protected&&!user.roles.includes('super_administrator')&&<Button variant="danger" disabled={busy} onClick={onRemove}><Trash2 size={16}/>Delete</Button>}</div>
+  </article>;
+}
 
-function ApproverForm({value,onClose,onSaved}:{value:Partial<Approver>;onClose:()=>void;onSaved:()=>void}){const[state,setState]=useState(value);const[busy,setBusy]=useState(false);const[error,setError]=useState('');const save=async(e:React.FormEvent)=>{e.preventDefault();setBusy(true);try{const body={id:state.id,department:state.department,approverName:state.approver_name,approverEmail:state.approver_email,active:state.active??true};if(state.id)await patch('approvers',body);else await post('approvers',body);onSaved()}catch(e){setError(e instanceof Error?e.message:'Could not save.')}finally{setBusy(false)}};return <Modal title={state.id?'Edit approval contact':'Add approval contact'} onClose={onClose}><form onSubmit={save} className="space-y-4"><Text label="Department" value={state.department||''} onChange={(v)=>setState({...state,department:v})}/><Text label="Approver name" value={state.approver_name||''} onChange={(v)=>setState({...state,approver_name:v})}/><Text label="Approver email" type="email" value={state.approver_email||''} onChange={(v)=>setState({...state,approver_email:v})}/><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={state.active??true} onChange={(e)=>setState({...state,active:e.target.checked})}/>Active</label>{error&&<p className="error">{error}</p>}<div className="flex justify-end"><Button disabled={busy}>{busy?<Spinner label="Saving"/>:<><Save size={16}/>Save</>}</Button></div></form></Modal>}
+function AccountForm({value,departments,onClose,onSaved}:{value:StaffUser|'new';departments:string[];onClose:()=>void;onSaved:()=>void}){
+  const editing=value!=='new';
+  const[email,setEmail]=useState(editing?value.email:'');
+  const[fullName,setFullName]=useState(editing?value.fullName||'':'');
+  const[accessLevel,setAccessLevel]=useState<AccessLevel>(editing?value.accessLevel||'staff':'staff');
+  const[department,setDepartment]=useState(editing?value.department||'':'');
+  const[active,setActive]=useState(editing?value.active:true);
+  const[error,setError]=useState('');
+  const[busy,setBusy]=useState(false);
+  const submit=async(event:React.FormEvent)=>{
+    event.preventDefault();setBusy(true);setError('');
+    try{
+      const body={fullName,accessLevel,department:accessLevel==='approver'?department:undefined};
+      if(editing)await patch('staff-users',{...body,userId:value.id,active});
+      else await post('staff-users',{...body,email});
+      onSaved();
+    }catch(cause){setError(cause instanceof Error?cause.message:'Could not save the account.')}
+    finally{setBusy(false)}
+  };
+  return <Modal title={editing?'Edit account':'Add account'} onClose={onClose}><form onSubmit={submit} className="space-y-4"><Text label="Full name" value={fullName} onChange={setFullName}/><Text label="Work email" type="email" value={email} onChange={setEmail} disabled={editing}/><div className="field"><label htmlFor="account-access-level">Access</label><select id="account-access-level" className="input" value={accessLevel} onChange={(event)=>setAccessLevel(event.target.value as AccessLevel)}><option value="staff">Staff</option><option value="approver">Department Approver</option></select></div>{accessLevel==='approver'&&<div className="field"><label htmlFor="account-department">Department</label><select className="input" id="account-department" required value={department} onChange={(event)=>setDepartment(event.target.value)}><option value="">Select department</option>{departments.map((item)=><option key={item}>{item}</option>)}</select></div>}{editing&&<label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={active} onChange={(event)=>setActive(event.target.checked)}/>Active</label>}{error&&<p className="error">{error}</p>}<div className="flex justify-end gap-2"><Button type="button" variant="secondary" onClick={onClose}>Cancel</Button><Button disabled={busy||!fullName||!email||(accessLevel==='approver'&&!department)}>{busy?<Spinner/>:editing?'Save':'Send invite'}</Button></div></form></Modal>;
+}
 
-function AccountForm({value,departments,onClose,onSaved}:{value:StaffUser|'new';departments:string[];onClose:()=>void;onSaved:()=>void}){const editing=value!=='new';const[email,setEmail]=useState(editing?value.email:'');const[fullName,setFullName]=useState(editing?value.fullName||'':'');const[accessLevel,setAccessLevel]=useState<AccessLevel>(editing?value.accessLevel||'staff':'staff');const[department,setDepartment]=useState(editing?value.department||'':'');const[active,setActive]=useState(editing?value.active:true);const[error,setError]=useState('');const[busy,setBusy]=useState(false);const submit=async(e:React.FormEvent)=>{e.preventDefault();setBusy(true);setError('');try{const body={email,fullName,accessLevel,department:accessLevel==='approver'?department:undefined,active};if(editing)await patch('staff-users',{...body,userId:value.id});else await post('staff-users',body);onSaved()}catch(e){setError(e instanceof Error?e.message:'Account setup failed.')}finally{setBusy(false)}};return <Modal title={editing?'Edit staff access':'Add a staff account'} onClose={onClose}><form onSubmit={submit} className="space-y-4"><Text label="Full name" value={fullName} onChange={setFullName}/><Text label="Work email" type="email" value={email} onChange={setEmail} disabled={editing}/><fieldset><legend className="text-sm font-semibold">Access type</legend><div className="mt-2 grid gap-3 sm:grid-cols-2"><AccessChoice checked={accessLevel==='staff'} title="Add as Staff" description="Finance and operational workflow access." onChange={()=>setAccessLevel('staff')}/><AccessChoice checked={accessLevel==='approver'} title="Add as Approver" description="Restricted to requests from one department." onChange={()=>setAccessLevel('approver')}/></div></fieldset>{accessLevel==='approver'&&<div className="field"><label htmlFor="account-department">Department</label><select className="input" id="account-department" required value={department} onChange={(e)=>setDepartment(e.target.value)}><option value="">Select department</option>{departments.map((item)=><option key={item}>{item}</option>)}</select></div>}{editing&&<label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={active} onChange={(e)=>setActive(e.target.checked)}/>Account is active</label>}{!editing&&<p className="rounded bg-blue-50 p-3 text-sm text-blue-900">A secure invitation will be sent. The user sets their password through the link; no password is stored or displayed here.</p>}{error&&<p className="error">{error}</p>}<div className="flex justify-end"><Button disabled={busy||!fullName||!email||(accessLevel==='approver'&&!department)}>{busy?<Spinner/>:editing?'Save access':'Send secure invite'}</Button></div></form></Modal>}
-
-function AccessChoice({checked,title,description,onChange}:{checked:boolean;title:string;description:string;onChange:()=>void}){return <label className={`cursor-pointer rounded-lg border p-4 transition ${checked?'border-[#23558a] bg-blue-50 ring-1 ring-[#23558a]':'bg-white hover:border-slate-400'}`}><span className="flex items-start gap-3"><input className="mt-1" type="radio" name="access-level" checked={checked} onChange={onChange}/><span><span className="block font-semibold">{title}</span><span className="mt-1 block text-xs text-slate-600">{description}</span></span></span></label>}
-
-function Configuration({settings,onSaved}:{settings:Setting[];onSaved:()=>void}){const sub=settings.find((s)=>s.key==='submission_options');const workflow=settings.find((s)=>s.key==='workflow_targets');const[departments,setDepartments]=useState<string[]>(Array.isArray(sub?.value.departments)?sub!.value.departments as string[]:[]);const[types,setTypes]=useState<string[]>(Array.isArray(sub?.value.requestTypes)?sub!.value.requestTypes as string[]:[]);const[targets,setTargets]=useState<Record<string,number>>(workflow?.value as Record<string,number>||{});const[busy,setBusy]=useState(false);const save=async()=>{setBusy(true);await Promise.all([patch('settings',{key:'submission_options',value:{departments,requestTypes:types}}),patch('settings',{key:'workflow_targets',value:targets})]);await onSaved();setBusy(false)};return <section className="card p-5"><h2 className="font-semibold">Workflow configuration</h2><div className="mt-4 grid gap-5 md:grid-cols-2"><div className="field"><label>Departments (one per line)</label><textarea className="input min-h-40" value={departments.join('\n')} onChange={(e)=>setDepartments(e.target.value.split('\n').map((x)=>x.trim()).filter(Boolean))}/></div><div className="field"><label>RFP types (one per line)</label><textarea className="input min-h-40" value={types.join('\n')} onChange={(e)=>setTypes(e.target.value.split('\n').map((x)=>x.trim()).filter(Boolean))}/></div>{Object.entries(targets).map(([k,v])=><div className="field" key={k}><label>{k.replaceAll(/([A-Z])/g,' $1')}</label><input className="input" type="number" min="1" value={v} onChange={(e)=>setTargets({...targets,[k]:Number(e.target.value)})}/></div>)}</div><div className="mt-5 flex justify-end"><Button onClick={save} disabled={busy}>{busy?<Spinner/>:<><Save size={16}/>Save configuration</>}</Button></div></section>}
-function Text({label,value,onChange,type='text',disabled=false}:{label:string;value:string;onChange:(v:string)=>void;type?:string;disabled?:boolean}){return <div className="field"><label>{label}</label><input className="input" type={type} required disabled={disabled} value={value} onChange={(e)=>onChange(e.target.value)}/></div>}
+function Text({label,value,onChange,type='text',disabled=false}:{label:string;value:string;onChange:(value:string)=>void;type?:string;disabled?:boolean}){
+  return <div className="field"><label>{label}</label><input className="input" type={type} required disabled={disabled} value={value} onChange={(event)=>onChange(event.target.value)}/></div>;
+}

@@ -20,6 +20,7 @@ const schema = z.object({
   EMAIL_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(5),
   RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().positive().default(60),
   RATE_LIMIT_MAX_SUBMISSIONS: z.coerce.number().int().positive().default(8),
+  TEMP_TEST_RETENTION_HOURS: z.coerce.number().int().min(1).max(168).default(24),
 }).refine((value)=>Boolean(value.SUPABASE_SECRET_KEY||value.SUPABASE_SERVICE_ROLE_KEY),{message:'SUPABASE_SECRET_KEY is required (legacy SUPABASE_SERVICE_ROLE_KEY is also accepted).'});
 
 export type Config = z.infer<typeof schema>;

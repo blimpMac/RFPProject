@@ -26,6 +26,12 @@ Store local values only in the ignored `.env` file. Deployment values belong in 
 | `SITE_URL` | Exact deployed origin used in secure links |
 | `CRON_SECRET` | Random secret Vercel uses to authorize scheduled maintenance requests |
 
+Workflow notifications are written to the durable database queue first. When all
+four SMTP settings (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, and
+`SMTP_FROM_EMAIL`) are present, a submission or approval action immediately
+drains the notifications for that request; the Vercel cron remains a fallback.
+Without those settings, the queue is preserved without consuming retry attempts.
+
 ## Setup/migration-only secrets
 
 - `SUPABASE_ACCESS_TOKEN`: personal access token used by the Supabase CLI.

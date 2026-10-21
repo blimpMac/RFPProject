@@ -4,12 +4,15 @@ import { config } from './lib/config.js';
 import { randomToken, seal, sha256 } from './lib/crypto.js';
 import { assertSameOrigin, ensureMethod, HttpError, json, readJson, responseError, routeOf, type ApplicationHandler } from './lib/http.js';
 import { requireStaff } from './lib/auth.js';
-import { accessRole, canAccessDepartment, isDepartmentOnly, normalizeDepartment } from './lib/staff-access.js';
+import { accessRole, isDepartmentOnly, normalizeDepartment } from './lib/staff-access.js';
 import { enforceSubmissionLimit } from './lib/rate-limit.js';
 import { completeAttachmentSchema, decisionSchema, departmentRereviewSchema, finalizeSchema, financeSchema, resubmitSchema, startSchema } from './lib/validation.js';
+import { emailTemplateKeys, renderEmailPreview } from './email/templates.js';
+import { flushEmailQueueForRequest,sendEmailPreview } from './email/service.js';
+import { administrativeRoles,protectedAccountLabel,protectedStaffEmails } from './domain/access.js';
+import { getApprovingHeadOverview,getAssignedDepartments,getPublicApprovers,saveApprovingHeadAssignments } from './services/approving-heads.js';
+import { cancelPendingDepartmentReview,queueSubmissionReceipt } from './services/workflow-notifications.js';
 
-const administrativeRoles=['super_administrator','administrator'];
-const protectedStaffEmails=new Set(['gpigemcorqbbackup@gmail.com','dricianfranciscordon@gmail.com','cerealman637@gmail.com']);
 const staffAccountSchema=z.discriminatedUnion('accessLevel',[
   z.object({email:z.email(),fullName:z.string().min(2).max(160),accessLevel:z.literal('staff'),department:z.string().max(100).optional()}),
   z.object({email:z.email(),fullName:z.string().min(2).max(160),accessLevel:z.literal('approver'),department:z.string().min(1).max(100)}),
@@ -27,14 +30,14 @@ export const handler: ApplicationHandler = async (event) => {
     if(route==='public-config'){
       ensureMethod(event,'GET');
       const {data}=await db.from('system_settings').select('value').eq('key','submission_options').single();
-      const {data:approvers}=await db.from('approvers').select('department,approver_name').eq('active',true).order('department');
-      return json(200,{ok:true,options:data?.value||{},approvers:approvers||[],limits:{maxFiles:c.MAX_UPLOAD_FILES,maxSizeMb:c.MAX_UPLOAD_SIZE_MB}});
+      const approvers=await getPublicApprovers(db);
+      return json(200,{ok:true,options:data?.value||{},approvers,limits:{maxFiles:c.MAX_UPLOAD_FILES,maxSizeMb:c.MAX_UPLOAD_SIZE_MB}});
     }
     if(route==='submissions/start'){
       ensureMethod(event,'POST'); await enforceSubmissionLimit(event);
       const input=startSchema.parse(readJson(event));
       if(input.attachments.length>c.MAX_UPLOAD_FILES||input.attachments.some((f)=>f.size>c.MAX_UPLOAD_SIZE_MB*1024*1024)) throw new HttpError(400,'Attachment limit exceeded.');
-      const{data:optionRow,error:optionError}=await db.from('system_settings').select('value').eq('key','submission_options').single();if(optionError)throw optionError;const optionValue=optionRow.value as {departments?:string[];requestTypes?:string[]};const norm=(value:string)=>value.replace(/^[-–—\s]+/,'').trim().toLowerCase();if(!optionValue.departments?.some((v)=>norm(v)===norm(input.request.department))||!optionValue.requestTypes?.some((v)=>norm(v)===norm(input.request.rfpType)))throw new HttpError(400,'Department or RFP type is not an allowed option.');
+      const{data:optionRow,error:optionError}=await db.from('system_settings').select('value').eq('key','submission_options').single();if(optionError)throw optionError;const optionValue=optionRow.value as {departments?:string[];requestTypes?:string[]};const norm=(value:string)=>value.replace(/^[-–—\s]+/,'').trim().toLowerCase();if(!optionValue.departments?.some((v)=>norm(v)===norm(input.request.department))||!optionValue.requestTypes?.some((v)=>norm(v)===norm(input.request.rfpType)))throw new HttpError(400,'Department or Type is not an allowed option.');
       const trackingToken=randomToken();
       const {data,error}=await db.rpc('start_rfp_submission',{p_request:input.request,p_idempotency_key:input.idempotencyKey,p_tracking_hash:sha256(trackingToken),p_attachments:input.attachments});
       if(error) throw new HttpError(400,error.message);
@@ -63,12 +66,14 @@ export const handler: ApplicationHandler = async (event) => {
       const reviewToken=randomToken(); const expires=new Date(Date.now()+c.REVIEW_TOKEN_HOURS*60*60_000).toISOString();
       const {data,error}=await db.rpc('finalize_rfp_submission',{p_request_id:input.requestId,p_review_token_hash:sha256(reviewToken),p_review_token_ciphertext:seal(reviewToken),p_review_expires_at:expires});
       if(error) throw new HttpError(409,error.message);
-      return json(200,{ok:true,...data});
+      await queueSubmissionReceipt(db,input.requestId,data.rfpNumber,input.trackingToken);
+      const delivery=await flushEmailQueueForRequest(input.requestId);
+      return json(200,{ok:true,...data,delivery});
     }
     if(route==='submissions/resubmit'){
       ensureMethod(event,'POST');const input=resubmitSchema.parse(readJson(event));const reviewToken=randomToken();const expires=new Date(Date.now()+c.REVIEW_TOKEN_HOURS*60*60_000).toISOString();
       const{data,error}=await db.rpc('resubmit_returned_request',{p_request_id:input.requestId,p_tracking_hash:sha256(input.trackingToken),p_review_token_hash:sha256(reviewToken),p_review_token_ciphertext:seal(reviewToken),p_review_expires_at:expires,p_correction_note:input.correctionNote});
-      if(error)throw new HttpError(409,error.message);return json(200,{ok:true,request:data});
+      if(error)throw new HttpError(409,error.message);const delivery=await flushEmailQueueForRequest(input.requestId);return json(200,{ok:true,request:data,delivery});
     }
     if(route.startsWith('track/')){
       ensureMethod(event,'GET');const token=decodeURIComponent(route.slice(6));if(token.length<20)throw new HttpError(403,'Invalid tracking credential.');
@@ -85,17 +90,21 @@ export const handler: ApplicationHandler = async (event) => {
         const {data:attachments,error:attachmentError}=await db.from('request_attachments').select('id,original_filename,mime_type,storage_path').eq('request_id',tok.request_id).eq('status','available');
         if(attachmentError)throw attachmentError;
         const previews=await Promise.all((attachments||[]).map(async(item)=>{
-          if(!item.storage_path)return{id:item.id,original_filename:item.original_filename,mime_type:item.mime_type,url:null};
-          const signed=await db.storage.from('rfp-attachments').createSignedUrl(item.storage_path,900,{download:item.original_filename});
-          if(signed.error)throw signed.error;
-          return{id:item.id,original_filename:item.original_filename,mime_type:item.mime_type,url:signed.data.signedUrl};
+          if(!item.storage_path)return{id:item.id,original_filename:item.original_filename,mime_type:item.mime_type,url:null,download_url:null};
+          const [preview,download]=await Promise.all([
+            db.storage.from('rfp-attachments').createSignedUrl(item.storage_path,900),
+            db.storage.from('rfp-attachments').createSignedUrl(item.storage_path,900,{download:item.original_filename}),
+          ]);
+          if(preview.error)throw preview.error;
+          if(download.error)throw download.error;
+          return{id:item.id,original_filename:item.original_filename,mime_type:item.mime_type,url:preview.data.signedUrl,download_url:download.data.signedUrl};
         }));
         return json(200,{ok:true,request:req,attachments:previews});
       }
       if(event.httpMethod==='POST'){
         const input=decisionSchema.parse({...readJson(event) as object,token});
         const {data,error}=await db.rpc('consume_department_review',{p_token_hash:sha256(input.token),p_decision:input.decision,p_remarks:input.remarks});
-        if(error) throw new HttpError(409,error.message); return json(200,{ok:true,request:data});
+        if(error) throw new HttpError(409,error.message);await cancelPendingDepartmentReview(db,data.id);const delivery=await flushEmailQueueForRequest(data.id);return json(200,{ok:true,request:data,delivery});
       }
       throw new HttpError(405,'Method not allowed.');
     }
@@ -106,7 +115,7 @@ export const handler: ApplicationHandler = async (event) => {
       ensureMethod(event,'GET'); const staff=await requireStaff(event);
       let requestQuery=db.from('rfp_requests').select('id,rfp_number,submitted_at,department,amount,final_status,department_approval_at,finance_review_at').not('submitted_at','is',null).order('submitted_at',{ascending:false}).limit(5000);
       const departmentOnly=isDepartmentOnly(staff.roles);
-      if(departmentOnly){const department=normalizeDepartment(staff.profile.department);if(!department)throw new HttpError(403,'Your approver account is missing a department.');requestQuery=requestQuery.eq('normalized_department',department)}
+      if(departmentOnly){const departments=await getAssignedDepartments(db,staff.user.id);if(!departments.length)throw new HttpError(403,'Your approver account has no department assignment.');requestQuery=requestQuery.in('normalized_department',departments)}
       const [{data:metrics,error},{data:requests}]=await Promise.all([db.from('dashboard_metrics').select('*').single(),requestQuery]); if(error) throw error;
       const requestIds=(requests||[]).map((r)=>r.id);let logsQuery=db.from('approval_logs').select('*').order('occurred_at',{ascending:false}).limit(8);if(departmentOnly)logsQuery=requestIds.length?logsQuery.in('request_id',requestIds):logsQuery.eq('request_id','00000000-0000-0000-0000-000000000000');const{data:logs}=await logsQuery;
       return json(200,{ok:true,metrics,requests:requests||[],recentActivity:logs||[]});
@@ -116,24 +125,64 @@ export const handler: ApplicationHandler = async (event) => {
       const staff=await requireStaff(event,spec.roles);
       const page=Math.max(1,Number(event.queryStringParameters?.page)||1),pageSize=Math.min(200,Math.max(10,Number(event.queryStringParameters?.pageSize)||50));
       let query=db.from(spec.table).select('*',{count:'exact'}).order(spec.order,{ascending:false}).range((page-1)*pageSize,page*pageSize-1);
-      if(key==='requests'&&isDepartmentOnly(staff.roles)){const department=normalizeDepartment(staff.profile.department);if(!department)throw new HttpError(403,'Your approver account is missing a department.');query=query.eq('normalized_department',department)}
-      if(key==='logs'&&isDepartmentOnly(staff.roles)){const department=normalizeDepartment(staff.profile.department);if(!department)throw new HttpError(403,'Your approver account is missing a department.');const assigned=await db.from('rfp_requests').select('id').eq('normalized_department',department);const ids=(assigned.data||[]).map((r)=>r.id);query=ids.length?query.in('request_id',ids):query.eq('request_id','00000000-0000-0000-0000-000000000000')}
+      if(key==='requests'&&isDepartmentOnly(staff.roles)){const departments=await getAssignedDepartments(db,staff.user.id);if(!departments.length)throw new HttpError(403,'Your approver account has no department assignment.');query=query.in('normalized_department',departments)}
+      if(key==='logs'&&isDepartmentOnly(staff.roles)){const departments=await getAssignedDepartments(db,staff.user.id);if(!departments.length)throw new HttpError(403,'Your approver account has no department assignment.');const assigned=await db.from('rfp_requests').select('id').in('normalized_department',departments);const ids=(assigned.data||[]).map((r)=>r.id);query=ids.length?query.in('request_id',ids):query.eq('request_id','00000000-0000-0000-0000-000000000000')}
       const {data,error,count}=await query; if(error) throw error; return json(200,{ok:true,rows:data||[],count,page,pageSize});
+    }
+    if(route==='documents'){
+      ensureMethod(event,'GET');await requireStaff(event,[...administrativeRoles,'finance_reviewer']);
+      const attachments=await db.from('request_attachments').select('id,request_id,original_filename,mime_type,size_bytes,status,created_at').order('created_at',{ascending:false}).limit(2000);
+      if(attachments.error)throw attachments.error;
+      const requestIds=[...new Set((attachments.data||[]).map((attachment)=>attachment.request_id))];
+      const requests=requestIds.length
+        ?await db.from('rfp_requests').select('id,rfp_number,requestor_name,requestor_email,submitted_at').in('id',requestIds)
+        :{data:[],error:null};
+      if(requests.error)throw requests.error;
+      const requestMap=new Map((requests.data||[]).map((request)=>[request.id,request]));
+      const rows=(attachments.data||[]).map((attachment)=>{
+        const request=requestMap.get(attachment.request_id);
+        return{...attachment,rfp_number:request?.rfp_number||'Unknown RFP',requestor_name:request?.requestor_name||'Unknown requestor',requestor_email:request?.requestor_email||'',request_date:request?.submitted_at||attachment.created_at};
+      });
+      return json(200,{ok:true,rows});
     }
     if(route==='finance/action'){
       ensureMethod(event,'POST'); const staff=await requireStaff(event,[...administrativeRoles,'finance_reviewer']); const input=financeSchema.parse(readJson(event));
-      const {data,error}=await db.rpc('finance_workflow_action',{p_request_id:input.requestId,p_action:input.action,p_remarks:input.remarks,p_actor_email:staff.user.email,p_actor_user_id:staff.user.id,p_planned_check_date:input.plannedCheckDate||null,p_change_reason:input.changeReason||null}); if(error) throw new HttpError(409,error.message); return json(200,{ok:true,request:data});
+      const {data,error}=await db.rpc('finance_workflow_action',{p_request_id:input.requestId,p_action:input.action,p_remarks:input.remarks,p_actor_email:staff.user.email,p_actor_user_id:staff.user.id,p_planned_check_date:input.plannedCheckDate||null,p_change_reason:input.changeReason||null}); if(error) throw new HttpError(409,error.message);const delivery=await flushEmailQueueForRequest(input.requestId);return json(200,{ok:true,request:data,delivery});
     }
     if(route==='department/action'){
       ensureMethod(event,'POST');const staff=await requireStaff(event,[...administrativeRoles,'department_approver']);const input=departmentRereviewSchema.parse(readJson(event));
       const request=await db.from('rfp_requests').select('department,final_status').eq('id',input.requestId).single();if(request.error||!request.data)throw new HttpError(404,'Request not found.');
-      const isAdmin=staff.roles.some((role)=>administrativeRoles.includes(role));if(!isAdmin&&!canAccessDepartment(staff.profile.department,request.data.department))throw new HttpError(403,'This request belongs to a different department.');
-      const{data,error}=await db.rpc('department_rereview_action',{p_request_id:input.requestId,p_decision:input.decision,p_remarks:input.remarks,p_actor_email:staff.user.email,p_actor_user_id:staff.user.id});if(error)throw new HttpError(409,error.message);return json(200,{ok:true,request:data});
+      const isAdmin=staff.roles.some((role)=>administrativeRoles.includes(role));
+      if(!isAdmin){const assignment=await db.from('department_approving_heads').select('id').eq('normalized_department',normalizeDepartment(request.data.department)).eq('user_id',staff.user.id).maybeSingle();if(assignment.error||!assignment.data)throw new HttpError(403,'You are not assigned as an approving head for this department.');}
+      const rpc=request.data.final_status==='Pending Department Approval'?'decide_department_request':request.data.final_status==='Returned to Department Approver'?'department_rereview_action':null;if(!rpc)throw new HttpError(409,'This request is not awaiting a department decision.');
+      const{data,error}=await db.rpc(rpc,{p_request_id:input.requestId,p_decision:input.decision,p_remarks:input.remarks,p_actor_email:staff.user.email,p_actor_user_id:staff.user.id});if(error)throw new HttpError(409,error.message);await cancelPendingDepartmentReview(db,input.requestId);const delivery=await flushEmailQueueForRequest(input.requestId);return json(200,{ok:true,request:data,delivery});
+    }
+    if(route==='request-attachments'){
+      ensureMethod(event,'GET');const staff=await requireStaff(event);const requestId=z.uuid().parse(event.queryStringParameters?.requestId);
+      const request=await db.from('rfp_requests').select('normalized_department').eq('id',requestId).single();
+      if(request.error||!request.data)throw new HttpError(404,'Request not found.');
+      if(isDepartmentOnly(staff.roles)){
+        const departments=await getAssignedDepartments(db,staff.user.id);
+        if(!departments.includes(request.data.normalized_department))throw new HttpError(403,'This request belongs to a department you are not assigned to.');
+      }
+      const attachments=await db.from('request_attachments').select('id,original_filename,mime_type,storage_path').eq('request_id',requestId).eq('status','available').order('created_at');
+      if(attachments.error)throw attachments.error;
+      const previews=await Promise.all((attachments.data||[]).map(async(item)=>{
+        if(!item.storage_path)return{id:item.id,original_filename:item.original_filename,mime_type:item.mime_type,url:null,download_url:null};
+        const [preview,download]=await Promise.all([
+          db.storage.from('rfp-attachments').createSignedUrl(item.storage_path,900),
+          db.storage.from('rfp-attachments').createSignedUrl(item.storage_path,900,{download:item.original_filename}),
+        ]);
+        if(preview.error)throw preview.error;
+        if(download.error)throw download.error;
+        return{id:item.id,original_filename:item.original_filename,mime_type:item.mime_type,url:preview.data.signedUrl,download_url:download.data.signedUrl};
+      }));
+      return json(200,{ok:true,attachments:previews});
     }
     if(route==='attachments/url'){
       ensureMethod(event,'POST'); const staff=await requireStaff(event); const input=z.object({attachmentId:z.uuid()}).parse(readJson(event));
       const {data:item}=await db.from('request_attachments').select('storage_path,request_id').eq('id',input.attachmentId).eq('status','available').single(); if(!item?.storage_path) throw new HttpError(404,'Document not found.');
-      if(isDepartmentOnly(staff.roles)){const request=await db.from('rfp_requests').select('department').eq('id',item.request_id).single();if(request.error||!request.data||!canAccessDepartment(staff.profile.department,request.data.department))throw new HttpError(403,'This document belongs to a different department.')}
+      if(isDepartmentOnly(staff.roles)){const request=await db.from('rfp_requests').select('normalized_department').eq('id',item.request_id).single();const departments=await getAssignedDepartments(db,staff.user.id);if(request.error||!request.data||!departments.includes(request.data.normalized_department))throw new HttpError(403,'This document belongs to a department you are not assigned to.')}
       const signed=await db.storage.from('rfp-attachments').createSignedUrl(item.storage_path,300); if(signed.error) throw signed.error; return json(200,{ok:true,url:signed.data.signedUrl});
     }
     if(route==='approvers'){
@@ -142,12 +191,33 @@ export const handler: ApplicationHandler = async (event) => {
       if(event.httpMethod==='PATCH'){ const input=z.object({id:z.uuid(),department:z.string().min(1).max(100),approverName:z.string().min(2).max(160),approverEmail:z.email(),active:z.boolean()}).parse(readJson(event)); const {data,error}=await db.from('approvers').update({department:input.department,approver_name:input.approverName,approver_email:input.approverEmail,active:input.active}).eq('id',input.id).select().single(); if(error) throw new HttpError(409,error.message); return json(200,{ok:true,approver:data}); }
       throw new HttpError(405,'Method not allowed.');
     }
+    if(route==='approving-heads'){
+      if(event.httpMethod==='GET'){
+        await requireStaff(event,administrativeRoles);
+        return json(200,{ok:true,...await getApprovingHeadOverview(db)});
+      }
+      if(event.httpMethod==='POST'){
+        const staff=await requireStaff(event,['super_administrator']);
+        await saveApprovingHeadAssignments(db,staff.user.id,readJson(event));
+        return json(200,{ok:true});
+      }
+      throw new HttpError(405,'Method not allowed.');
+    }
+    if(route==='staff-users/reset-password'){
+      ensureMethod(event,'POST');await requireStaff(event,['super_administrator']);
+      const input=z.object({userId:z.uuid()}).parse(readJson(event));
+      const target=await db.auth.admin.getUserById(input.userId);
+      if(target.error||!target.data.user?.email)throw new HttpError(404,'Account not found.');
+      const reset=await db.auth.resetPasswordForEmail(target.data.user.email,{redirectTo:`${c.SITE_URL}/admin/reset-password`});
+      if(reset.error)throw new HttpError(409,reset.error.message);
+      return json(200,{ok:true});
+    }
     if(route==='staff-users'){
       const staff=await requireStaff(event,['super_administrator']);
       if(event.httpMethod==='GET'){
         const listed=await db.auth.admin.listUsers({page:1,perPage:1000}); if(listed.error) throw listed.error;
-        const [{data:roleRows,error:roleError},{data:profiles,error:profileError}]=await Promise.all([db.from('user_roles').select('user_id,role'),db.from('profiles').select('id,full_name,department,active')]);if(roleError)throw roleError;if(profileError)throw profileError;
-        const users=listed.data.users.map((user)=>{const roles=(roleRows||[]).filter((r)=>r.user_id===user.id).map((r)=>r.role);const profile=(profiles||[]).find((p)=>p.id===user.id);return{id:user.id,email:user.email,createdAt:user.created_at,lastSignInAt:user.last_sign_in_at,roles,fullName:profile?.full_name||null,department:profile?.department||null,active:profile?.active??true,accessLevel:roles.includes('department_approver')?'approver':roles.includes('finance_reviewer')?'staff':null,protected:protectedStaffEmails.has(user.email?.toLowerCase()||'')}});
+        const [{data:roleRows,error:roleError},{data:profiles,error:profileError},{data:headRows,error:headError}]=await Promise.all([db.from('user_roles').select('user_id,role'),db.from('profiles').select('id,full_name,department,active'),db.from('department_approving_heads').select('user_id,department').order('position')]);if(roleError)throw roleError;if(profileError)throw profileError;if(headError)throw headError;
+        const users=listed.data.users.map((user)=>{const roles=(roleRows||[]).filter((r)=>r.user_id===user.id).map((r)=>r.role);const profile=(profiles||[]).find((p)=>p.id===user.id);const assignedDepartments=[...new Set((headRows||[]).filter((row)=>row.user_id===user.id).map((row)=>row.department))];return{id:user.id,email:user.email,createdAt:user.created_at,lastSignInAt:user.last_sign_in_at,roles,fullName:profile?.full_name||null,department:profile?.department||null,assignedDepartments,active:profile?.active??true,accessLevel:roles.includes('department_approver')?'approver':roles.includes('finance_reviewer')?'staff':null,protected:protectedStaffEmails.has(user.email?.toLowerCase()||'')}});
         return json(200,{ok:true,users,canRemove:true});
       }
       if(event.httpMethod==='POST'){
@@ -161,6 +231,7 @@ export const handler: ApplicationHandler = async (event) => {
       if(event.httpMethod==='PATCH'){
         const input=z.object({userId:z.uuid(),fullName:z.string().min(2).max(160),accessLevel:z.enum(['staff','approver']),department:z.string().max(100).optional(),active:z.boolean()}).refine((value)=>value.accessLevel!=='approver'||Boolean(value.department?.trim()),{message:'Department is required for approvers.',path:['department']}).parse(readJson(event));
         const existing=await db.from('user_roles').select('role').eq('user_id',input.userId);if(existing.error)throw existing.error;if(existing.data?.some((row)=>row.role==='super_administrator'))throw new HttpError(403,'The Super Administrator role cannot be modified here.');
+        if(!input.active){const assigned=await db.from('department_approving_heads').select('id').eq('user_id',input.userId).limit(1);if(assigned.error)throw assigned.error;if(assigned.data?.length)throw new HttpError(409,'Replace this account in the approving-head roster before deactivating it.');}
         const {error:deleteError}=await db.from('user_roles').delete().eq('user_id',input.userId); if(deleteError) throw deleteError;
         const {error}=await db.from('user_roles').insert({user_id:input.userId,role:accessRole(input.accessLevel),granted_by:staff.user.id}); if(error) throw error;
         const profile=await db.from('profiles').update({full_name:input.fullName,department:input.accessLevel==='approver'?input.department:null,active:input.active}).eq('id',input.userId);if(profile.error)throw profile.error;
@@ -172,6 +243,7 @@ export const handler: ApplicationHandler = async (event) => {
         const target=await db.auth.admin.getUserById(input.userId);if(target.error||!target.data.user)throw new HttpError(404,'Account not found.');
         const targetEmail=target.data.user.email?.toLowerCase()||'';if(protectedStaffEmails.has(targetEmail))throw new HttpError(409,'This protected operational account cannot be removed.');
         const targetRoles=await db.from('user_roles').select('role').eq('user_id',input.userId);if(targetRoles.error)throw targetRoles.error;if(targetRoles.data?.some((row)=>row.role==='super_administrator'))throw new HttpError(409,'The Super Administrator account cannot be removed.');
+        const assigned=await db.from('department_approving_heads').select('id').eq('user_id',input.userId).limit(1);if(assigned.error)throw assigned.error;if(assigned.data?.length)throw new HttpError(409,'Replace this account in the approving-head roster before deleting it.');
         const removed=await db.auth.admin.deleteUser(input.userId);if(removed.error)throw removed.error;return json(200,{ok:true});
       }
       throw new HttpError(405,'Method not allowed.');
@@ -180,6 +252,12 @@ export const handler: ApplicationHandler = async (event) => {
       await requireStaff(event,administrativeRoles);
       if(event.httpMethod==='GET'){const{data,error}=await db.from('system_settings').select('*').order('key');if(error)throw error;return json(200,{ok:true,settings:data||[]});}
       if(event.httpMethod==='PATCH'){const input=z.object({key:z.enum(['workflow_targets','submission_options','upload_limits']),value:z.record(z.string(),z.unknown())}).parse(readJson(event));const{data,error}=await db.from('system_settings').update({value:input.value}).eq('key',input.key).select().single();if(error)throw error;return json(200,{ok:true,setting:data});}
+      throw new HttpError(405,'Method not allowed.');
+    }
+    if(route==='email-preview'){
+      const staff=await requireStaff(event,administrativeRoles);const templateSchema=z.enum(emailTemplateKeys);
+      if(event.httpMethod==='GET'){const template=templateSchema.parse(event.queryStringParameters?.template||'supervisor_review');const deliveryConfigured=Boolean(c.SMTP_HOST&&c.SMTP_USER&&c.SMTP_PASSWORD&&c.SMTP_FROM_EMAIL);return json(200,{ok:true,...renderEmailPreview(template,c.SITE_URL),recipientLabel:protectedAccountLabel(staff.user.email),deliveryConfigured});}
+      if(event.httpMethod==='POST'){const input=z.object({template:templateSchema}).parse(readJson(event));if(!staff.user.email)throw new HttpError(409,'Your staff account does not have an email address.');const messageId=await sendEmailPreview(input.template,staff.user.email);return json(200,{ok:true,recipientLabel:protectedAccountLabel(staff.user.email),messageId});}
       throw new HttpError(405,'Method not allowed.');
     }
     throw new HttpError(404,'API route not found.');

@@ -16,19 +16,23 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint .",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:e2e": "npm run build && playwright test",
     "db:setup": "tsx scripts/setup/setup-supabase.ts",
-    "db:test": "tsx scripts/verification/verify-database.ts",
+    "db:test": "node --env-file=.env --import tsx scripts/verification/verify-database.ts",
     "migrate:workbook": "tsx scripts/migration/import-workbook.ts",
     "migrate:attachments": "tsx scripts/migration/migrate-attachments.ts",
     "migrate:verify": "tsx scripts/verification/verify-migration.ts",
     "admin:bootstrap": "tsx scripts/setup/bootstrap-admin.ts",
     "mock:access": "node --env-file=.env --import tsx scripts/setup/create-mock-access.ts",
+    "mock:workflow": "node --env-file=.env --import tsx scripts/setup/create-temporary-workflow-test.ts",
+    "email:reconcile": "node --env-file=.env --experimental-strip-types scripts/setup/reconcile-email-queue.ts",
+    "admin:promote-protected": "node --env-file=.env --experimental-strip-types scripts/setup/promote-superadmin.ts",
+    "verify:workflow-test": "node --env-file=.env --import tsx scripts/verification/verify-temporary-workflow.ts",
     "test:email-delivery": "node --env-file=.env --import tsx scripts/verification/send-test-emails.ts",
     "test:mock-access": "node --env-file=.env --import tsx scripts/verification/verify-mock-access.ts",
-    "test:auth-email": "node --env-file=.env --import tsx scripts/verification/send-auth-recovery-tests.ts"
+    "test:auth-email": "node --env-file=.env --import tsx scripts/verification/send-auth-recovery-tests.ts",
+    "preview:capture": "node --env-file=.env --import tsx scripts/verification/capture-previews.ts",
+    "verify:live-admin": "node --experimental-strip-types scripts/verification/verify-live-admin.ts",
+    "verify:live-email-workflow": "node --env-file=.env --experimental-strip-types scripts/verification/run-live-email-workflow-test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
@@ -48,8 +52,6 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/vite": "^4.1.14",
-    "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/react": "^16.3.0",
     "@types/node": "^24.7.2",
     "@types/nodemailer": "^8.0.2",
     "@types/react": "^19.2.2",
@@ -58,12 +60,10 @@
     "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.0.0",
     "eslint-plugin-react-refresh": "^0.5.7",
-    "jsdom": "^30.1.2",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",
-    "vite": "^8.3.4",
-    "vitest": "^5.0.4"
+    "vite": "^8.3.4"
   }
 }
