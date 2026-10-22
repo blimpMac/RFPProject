@@ -152,7 +152,7 @@ export function ApprovingHeadsPanel() {
             <ShieldCheck size={20} className="text-[#315c93]" />
             <h2 className="font-semibold">Approval team</h2>
           </div>
-          <Button disabled={!data.departments.length} onClick={openEditor}>
+          <Button onClick={openEditor}>
             {configured ? 'Edit approval team' : 'Set up approval team'}
           </Button>
         </div>
