@@ -26,21 +26,9 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
       .eq('key', 'submission_options')
       .single();
     const approvers = await getPublicApprovers(db);
-    const activeDepartments = new Set(
-      approvers.map((approver) => normalizeDepartment(approver.department)),
-    );
-    const configuredOptions = (data?.value || {}) as {
-      departments?: string[];
-      requestTypes?: string[];
-    };
     return json(200, {
       ok: true,
-      options: {
-        ...configuredOptions,
-        departments: (configuredOptions.departments || []).filter((department) =>
-          activeDepartments.has(normalizeDepartment(department)),
-        ),
-      },
+      options: data?.value || {},
       approvers,
       limits: { maxFiles: config.MAX_UPLOAD_FILES, maxSizeMb: config.MAX_UPLOAD_SIZE_MB },
     });
