@@ -50,7 +50,7 @@ const navigationItems: NavigationItem[] = [
   },
   {
     to: '/admin/settings',
-    label: 'Account Manager',
+    label: 'Account Management',
     icon: Users,
     allowedRoles: ['super_administrator'],
   },
@@ -122,7 +122,7 @@ export function AdminLayout() {
             />
           </button>
         </div>
-        <nav className="flex-1 space-y-1 p-3" aria-label="Staff navigation">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Staff navigation">
           {navigationItems.map((item) => {
             if (!canViewNavigationItem(item, roles)) return null;
             const Icon = item.icon;
@@ -132,6 +132,8 @@ export function AdminLayout() {
                 to={item.to}
                 end={item.to === '/admin'}
                 onClick={() => setOpen(false)}
+                aria-label={collapsed ? item.label : undefined}
+                title={collapsed ? item.label : undefined}
                 className={({ isActive }) =>
                   `admin-sidebar-link ${isActive ? 'admin-sidebar-link-active' : ''}`
                 }

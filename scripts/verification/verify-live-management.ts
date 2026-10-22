@@ -168,8 +168,8 @@ try {
   await page.screenshot({ path: 'artifacts/approving-heads.png', fullPage: true });
   await page.getByRole('button', { name: 'Cancel' }).click();
 
-  await page.getByRole('link', { name: 'Account Manager' }).click();
-  await page.getByRole('heading', { name: 'Account Manager', exact: true }).waitFor();
+  await page.getByRole('link', { name: 'Account Management' }).click();
+  await page.getByRole('heading', { name: 'Account Management', exact: true }).waitFor();
   await page.getByLabel('Access', { exact: true }).waitFor();
   await page.getByLabel('Status', { exact: true }).waitFor();
   const managerRows = await page.locator('article').count();

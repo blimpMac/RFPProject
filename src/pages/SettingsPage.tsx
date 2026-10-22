@@ -90,7 +90,7 @@ export function SettingsPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Account Manager</h1>
+        <h1 className="text-2xl font-semibold">Account Management</h1>
         <Button onClick={() => setAccount('new')}>
           <UserPlus size={16} />
           Add account
