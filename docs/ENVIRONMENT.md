@@ -4,27 +4,27 @@ Store local values only in the ignored `.env` file. Deployment values belong in 
 
 ## Browser-safe values
 
-| Variable | Value |
-|---|---|
-| `VITE_SUPABASE_URL` | Supabase project URL |
+| Variable                        | Value                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | Supabase project URL                                                                        |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Current `sb_publishable_...` browser key; this is intentionally public and protected by RLS |
-| `VITE_SUPABASE_ANON_KEY` | Optional legacy fallback only |
-| `VITE_APP_NAME` | Display name |
-| `VITE_SITE_URL` | Exact site origin |
+| `VITE_SUPABASE_ANON_KEY`        | Optional legacy fallback only                                                               |
+| `VITE_APP_NAME`                 | Display name                                                                                |
+| `VITE_SITE_URL`                 | Exact site origin                                                                           |
 
 ## Server-only secrets
 
-| Variable | Value |
-|---|---|
-| `SUPABASE_URL` | Same project URL, used by Functions/scripts |
-| `SUPABASE_SECRET_KEY` | Current `sb_secret_...` server key; never expose with `VITE_` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Optional legacy fallback only |
-| `APPROVAL_TOKEN_ENCRYPTION_KEY` | 32+ random characters used to encrypt queued one-time review credentials |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` | SMTP connection (Gmail: `smtp.gmail.com`, `465`, `true`) |
-| `SMTP_USER`, `SMTP_PASSWORD` | Authorized SMTP account and app password |
-| `SMTP_FROM_EMAIL` | Branded sender, e.g. `RFP Desk <notifications@example.com>` |
-| `SITE_URL` | Exact deployed origin used in secure links |
-| `CRON_SECRET` | Random secret Vercel uses to authorize scheduled maintenance requests |
+| Variable                                | Value                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------ |
+| `SUPABASE_URL`                          | Same project URL, used by Functions/scripts                              |
+| `SUPABASE_SECRET_KEY`                   | Current `sb_secret_...` server key; never expose with `VITE_`            |
+| `SUPABASE_SERVICE_ROLE_KEY`             | Optional legacy fallback only                                            |
+| `APPROVAL_TOKEN_ENCRYPTION_KEY`         | 32+ random characters used to encrypt queued one-time review credentials |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` | SMTP connection (Gmail: `smtp.gmail.com`, `465`, `true`)                 |
+| `SMTP_USER`, `SMTP_PASSWORD`            | Authorized SMTP account and app password                                 |
+| `SMTP_FROM_EMAIL`                       | Branded sender, e.g. `RFP Desk <notifications@example.com>`              |
+| `SITE_URL`                              | Exact deployed origin used in secure links                               |
+| `CRON_SECRET`                           | Random secret Vercel uses to authorize scheduled maintenance requests    |
 
 Workflow notifications are written to the durable database queue first. When all
 four SMTP settings (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, and

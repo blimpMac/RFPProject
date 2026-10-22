@@ -5,7 +5,9 @@ import { GET as processEmailQueue } from './cron/process-email-queue.js';
 
 function requestHeaders(request: Request): Record<string, string> {
   const headers: Record<string, string> = {};
-  request.headers.forEach((value, key) => { headers[key.toLowerCase()] = value; });
+  request.headers.forEach((value, key) => {
+    headers[key.toLowerCase()] = value;
+  });
   return headers;
 }
 
@@ -38,7 +40,10 @@ async function dispatch(request: Request): Promise<Response> {
 
   const result = await applicationHandler(event);
   if (!result) {
-    return Response.json({ ok: false, error: 'The service returned no response.' }, { status: 500 });
+    return Response.json(
+      { ok: false, error: 'The service returned no response.' },
+      { status: 500 },
+    );
   }
 
   const response = result as ApplicationResponse;

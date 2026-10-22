@@ -9,7 +9,16 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     files: ['src/**/*.{ts,tsx}'],
-    languageOptions: { globals: { window: 'readonly', document: 'readonly', fetch: 'readonly', FormData: 'readonly', crypto: 'readonly', localStorage: 'readonly' } },
+    languageOptions: {
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        fetch: 'readonly',
+        FormData: 'readonly',
+        crypto: 'readonly',
+        localStorage: 'readonly',
+      },
+    },
     plugins: { 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -19,5 +28,20 @@ export default tseslint.config(
       'react-refresh/only-export-components': 'off',
     },
   },
-  { files: ['api/**/*.ts', 'server/**/*.ts', 'scripts/**/*.ts'], languageOptions: { globals: { process: 'readonly', Buffer: 'readonly', console: 'readonly', Request: 'readonly', Response: 'readonly', URL: 'readonly', URLSearchParams: 'readonly', Headers: 'readonly', fetch: 'readonly' } } },
+  {
+    files: ['api/**/*.ts', 'server/**/*.ts', 'scripts/**/*.ts'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        Buffer: 'readonly',
+        console: 'readonly',
+        Request: 'readonly',
+        Response: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        Headers: 'readonly',
+        fetch: 'readonly',
+      },
+    },
+  },
 );

@@ -30,10 +30,11 @@ const AuthContext = createContext<AuthValue>({
 function getIdentity(me: MeResponse, session: Session): StaffIdentity {
   const email = me.user.email || session.user.email || '';
   const metadataName = session.user.user_metadata.full_name || session.user.user_metadata.name;
-  const fullName = me.profile?.fullName?.trim()
-    || String(metadataName || '').trim()
-    || email.split('@')[0]
-    || 'Staff account';
+  const fullName =
+    me.profile?.fullName?.trim() ||
+    String(metadataName || '').trim() ||
+    email.split('@')[0] ||
+    'Staff account';
 
   return { fullName, email };
 }

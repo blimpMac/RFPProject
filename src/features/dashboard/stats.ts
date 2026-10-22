@@ -15,13 +15,19 @@ const returnedStatuses = new Set([
 ]);
 
 export function calculateDashboardStats(requests: TimedRequest[]) {
-  const approved = requests.filter((request) => completedStatuses.has(request.final_status.toLowerCase())).length;
-  const rejected = requests.filter((request) => returnedStatuses.has(request.final_status.toLowerCase())).length;
+  const approved = requests.filter((request) =>
+    completedStatuses.has(request.final_status.toLowerCase()),
+  ).length;
+  const rejected = requests.filter((request) =>
+    returnedStatuses.has(request.final_status.toLowerCase()),
+  ).length;
   const pending = requests.length - approved - rejected;
   const durations = requests
     .flatMap((request) => {
       const end = request.finance_review_at || request.department_approval_at;
-      return end ? [(new Date(end).getTime() - new Date(request.submitted_at).getTime()) / 36e5] : [];
+      return end
+        ? [(new Date(end).getTime() - new Date(request.submitted_at).getTime()) / 36e5]
+        : [];
     })
     .filter((hours) => hours >= 0);
 
@@ -30,6 +36,8 @@ export function calculateDashboardStats(requests: TimedRequest[]) {
     approved,
     rejected,
     pending,
-    avg: durations.length ? durations.reduce((total, hours) => total + hours, 0) / durations.length : 0,
+    avg: durations.length
+      ? durations.reduce((total, hours) => total + hours, 0) / durations.length
+      : 0,
   };
 }

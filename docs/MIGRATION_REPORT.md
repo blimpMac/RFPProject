@@ -6,13 +6,13 @@ Source workbook: `RFP Request Form (Responses)`
 Source ID: `1MS8PhbPQA_XbULWAefow4bMsP3s7z-KEp0K9YMJHvTE`  
 Inspection date: 2026-10-14 (Asia/Manila)
 
-| Worksheet | Populated source records | Imported rows | Status |
-|---|---:|---:|---|
-| Form Responses 1 | 5 | 5 | Complete; 4 deterministic matches and 1 unmatched response |
-| RFP Tracker | 4 | 4 | Complete |
-| Approver Master | 8 | 8 | Complete |
-| Approval Log | 7 | 7 | Complete |
-| Recommended Process Flow | 10 structured records (12 populated rows including 2 section headings) | 10 | Complete; 256 A1:P16 positional cells preserved |
+| Worksheet                |                                               Populated source records | Imported rows | Status                                                     |
+| ------------------------ | ---------------------------------------------------------------------: | ------------: | ---------------------------------------------------------- |
+| Form Responses 1         |                                                                      5 |             5 | Complete; 4 deterministic matches and 1 unmatched response |
+| RFP Tracker              |                                                                      4 |             4 | Complete                                                   |
+| Approver Master          |                                                                      8 |             8 | Complete                                                   |
+| Approval Log             |                                                                      7 |             7 | Complete                                                   |
+| Recommended Process Flow | 10 structured records (12 populated rows including 2 section headings) |            10 | Complete; 256 A1:P16 positional cells preserved            |
 
 ## Reconciliation baseline
 

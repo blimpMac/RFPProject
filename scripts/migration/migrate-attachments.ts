@@ -2,9 +2,112 @@ import process from 'node:process';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleAuth } from 'google-auth-library';
 
-const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY;if(!url||!key)throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY are required (legacy SUPABASE_SERVICE_ROLE_KEY is accepted).');
-const db=createClient(url,key,{auth:{persistSession:false}});
-async function accessToken(){if(process.env.GOOGLE_DRIVE_ACCESS_TOKEN)return process.env.GOOGLE_DRIVE_ACCESS_TOKEN;const auth=new GoogleAuth({scopes:['https://www.googleapis.com/auth/drive.readonly'],credentials:process.env.GOOGLE_SERVICE_ACCOUNT_JSON?JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON):undefined});const client=await auth.getClient();const token=await client.getAccessToken();if(!token.token)throw new Error('Google Drive authorization is unavailable.');return token.token}
-const token=await accessToken();const{data:items,error}=await db.from('request_attachments').select('*').in('status',['source_access_required','migration_pending']).not('source_file_id','is',null);if(error)throw error;const result={migrated:0,missing:0,failed:0};
-for(const item of items||[]){try{const metaResponse=await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(item.source_file_id)}?fields=id,name,mimeType,size,owners(displayName,emailAddress)`,{headers:{authorization:`Bearer ${token}`}});if(!metaResponse.ok){await db.from('request_attachments').update({status:'source_access_required',migration_error:`Drive metadata HTTP ${metaResponse.status}`}).eq('id',item.id);result.missing++;continue}const meta=await metaResponse.json() as {name:string;mimeType:string;size?:string;owners?:{displayName?:string;emailAddress?:string}[]};if(!['application/pdf','image/jpeg','image/png','image/webp','image/gif'].includes(meta.mimeType)){await db.from('request_attachments').update({status:'migration_pending',migration_error:`Unsupported MIME type: ${meta.mimeType}`}).eq('id',item.id);result.failed++;continue}const fileResponse=await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(item.source_file_id)}?alt=media`,{headers:{authorization:`Bearer ${token}`}});if(!fileResponse.ok)throw new Error(`Drive download HTTP ${fileResponse.status}`);const body=await fileResponse.arrayBuffer();const safe=meta.name.replace(/[^A-Za-z0-9._-]/g,'_');const storagePath=`${item.request_id}/historical-${item.id}-${safe}`;const uploaded=await db.storage.from('rfp-attachments').upload(storagePath,body,{contentType:meta.mimeType,upsert:false});if(uploaded.error)throw uploaded.error;const updated=await db.from('request_attachments').update({original_filename:meta.name,mime_type:meta.mimeType,size_bytes:Number(meta.size||body.byteLength),source_owner:meta.owners?.map((o)=>o.emailAddress||o.displayName).filter(Boolean).join(', ')||null,storage_path:storagePath,status:'available',uploaded_at:new Date().toISOString(),migration_error:null}).eq('id',item.id);if(updated.error)throw updated.error;result.migrated++}catch(error){await db.from('request_attachments').update({status:'migration_pending',migration_error:error instanceof Error?error.message:String(error)}).eq('id',item.id);result.failed++}}
-console.log(JSON.stringify({ok:result.failed===0,result},null,2));
+const url = process.env.SUPABASE_URL,
+  key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!url || !key)
+  throw new Error(
+    'SUPABASE_URL and SUPABASE_SECRET_KEY are required (legacy SUPABASE_SERVICE_ROLE_KEY is accepted).',
+  );
+const db = createClient(url, key, { auth: { persistSession: false } });
+async function accessToken() {
+  if (process.env.GOOGLE_DRIVE_ACCESS_TOKEN) return process.env.GOOGLE_DRIVE_ACCESS_TOKEN;
+  const auth = new GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+    credentials: process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+      ? JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON)
+      : undefined,
+  });
+  const client = await auth.getClient();
+  const token = await client.getAccessToken();
+  if (!token.token) throw new Error('Google Drive authorization is unavailable.');
+  return token.token;
+}
+const token = await accessToken();
+const { data: items, error } = await db
+  .from('request_attachments')
+  .select('*')
+  .in('status', ['source_access_required', 'migration_pending'])
+  .not('source_file_id', 'is', null);
+if (error) throw error;
+const result = { migrated: 0, missing: 0, failed: 0 };
+for (const item of items || []) {
+  try {
+    const metaResponse = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(item.source_file_id)}?fields=id,name,mimeType,size,owners(displayName,emailAddress)`,
+      { headers: { authorization: `Bearer ${token}` } },
+    );
+    if (!metaResponse.ok) {
+      await db
+        .from('request_attachments')
+        .update({
+          status: 'source_access_required',
+          migration_error: `Drive metadata HTTP ${metaResponse.status}`,
+        })
+        .eq('id', item.id);
+      result.missing++;
+      continue;
+    }
+    const meta = (await metaResponse.json()) as {
+      name: string;
+      mimeType: string;
+      size?: string;
+      owners?: { displayName?: string; emailAddress?: string }[];
+    };
+    if (
+      !['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(
+        meta.mimeType,
+      )
+    ) {
+      await db
+        .from('request_attachments')
+        .update({
+          status: 'migration_pending',
+          migration_error: `Unsupported MIME type: ${meta.mimeType}`,
+        })
+        .eq('id', item.id);
+      result.failed++;
+      continue;
+    }
+    const fileResponse = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(item.source_file_id)}?alt=media`,
+      { headers: { authorization: `Bearer ${token}` } },
+    );
+    if (!fileResponse.ok) throw new Error(`Drive download HTTP ${fileResponse.status}`);
+    const body = await fileResponse.arrayBuffer();
+    const safe = meta.name.replace(/[^A-Za-z0-9._-]/g, '_');
+    const storagePath = `${item.request_id}/historical-${item.id}-${safe}`;
+    const uploaded = await db.storage
+      .from('rfp-attachments')
+      .upload(storagePath, body, { contentType: meta.mimeType, upsert: false });
+    if (uploaded.error) throw uploaded.error;
+    const updated = await db
+      .from('request_attachments')
+      .update({
+        original_filename: meta.name,
+        mime_type: meta.mimeType,
+        size_bytes: Number(meta.size || body.byteLength),
+        source_owner:
+          meta.owners
+            ?.map((o) => o.emailAddress || o.displayName)
+            .filter(Boolean)
+            .join(', ') || null,
+        storage_path: storagePath,
+        status: 'available',
+        uploaded_at: new Date().toISOString(),
+        migration_error: null,
+      })
+      .eq('id', item.id);
+    if (updated.error) throw updated.error;
+    result.migrated++;
+  } catch (error) {
+    await db
+      .from('request_attachments')
+      .update({
+        status: 'migration_pending',
+        migration_error: error instanceof Error ? error.message : String(error),
+      })
+      .eq('id', item.id);
+    result.failed++;
+  }
+}
+console.log(JSON.stringify({ ok: result.failed === 0, result }, null, 2));

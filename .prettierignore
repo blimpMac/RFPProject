@@ -1,0 +1,10 @@
+node_modules
+dist
+artifacts
+test-assets
+.tooling
+.vercel
+.env
+.env.*
+coverage
+supabase/migrations

@@ -1,3 +1,47 @@
 import process from 'node:process';
 import { createClient } from '@supabase/supabase-js';
-const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY;if(!url||!key)throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY are required.');const db=createClient(url,key,{auth:{persistSession:false}});const tables=['rfp_requests','form_responses','approvers','department_approving_heads','approval_logs','request_attachments','process_flow_steps','process_flow_reference_data','profiles','user_roles','email_notifications','approval_tokens','migration_batches','migration_row_maps','system_settings','audit_logs'];const counts:Record<string,number>={};for(const table of tables){const{count,error}=await db.from(table).select('*',{head:true,count:'exact'});if(error)throw new Error(`${table}: ${error.message}`);counts[table]=count||0}const bucket=await db.storage.getBucket('rfp-attachments');if(bucket.error)throw bucket.error;if(bucket.data.public)throw new Error('rfp-attachments must be private');const{data:next,error}=await db.rpc('sync_rfp_number_sequence');if(error)throw error;console.log(JSON.stringify({ok:true,counts,storage:{name:bucket.data.name,public:bucket.data.public},nextRfpSequence:next},null,2));
+const url = process.env.SUPABASE_URL,
+  key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY are required.');
+const db = createClient(url, key, { auth: { persistSession: false } });
+const tables = [
+  'rfp_requests',
+  'form_responses',
+  'approvers',
+  'department_approving_heads',
+  'approval_logs',
+  'request_attachments',
+  'process_flow_steps',
+  'process_flow_reference_data',
+  'profiles',
+  'user_roles',
+  'email_notifications',
+  'approval_tokens',
+  'migration_batches',
+  'migration_row_maps',
+  'system_settings',
+  'audit_logs',
+];
+const counts: Record<string, number> = {};
+for (const table of tables) {
+  const { count, error } = await db.from(table).select('*', { head: true, count: 'exact' });
+  if (error) throw new Error(`${table}: ${error.message}`);
+  counts[table] = count || 0;
+}
+const bucket = await db.storage.getBucket('rfp-attachments');
+if (bucket.error) throw bucket.error;
+if (bucket.data.public) throw new Error('rfp-attachments must be private');
+const { data: next, error } = await db.rpc('sync_rfp_number_sequence');
+if (error) throw error;
+console.log(
+  JSON.stringify(
+    {
+      ok: true,
+      counts,
+      storage: { name: bucket.data.name, public: bucket.data.public },
+      nextRfpSequence: next,
+    },
+    null,
+    2,
+  ),
+);
