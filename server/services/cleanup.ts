@@ -2,12 +2,6 @@ import { adminClient } from '../lib/supabase.js';
 
 type DatabaseClient = ReturnType<typeof adminClient>;
 
-export async function cleanupExpiredTemporaryTests(db: DatabaseClient) {
-  const result = await db.rpc('purge_expired_temporary_tests');
-  if (result.error) throw result.error;
-  return Number(result.data || 0);
-}
-
 export async function cleanupAbandonedUploads(db: DatabaseClient, olderThanHours = 24) {
   const cutoff = new Date(Date.now() - olderThanHours * 60 * 60_000).toISOString();
   const requests = await db

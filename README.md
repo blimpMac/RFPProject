@@ -37,13 +37,14 @@ The Supabase secret key and SMTP credentials are used only by Vercel Functions a
 src/                    React application, pages, layout, tables, auth, UI
 api/                    Vercel API adapter and protected scheduled jobs
 server/                 API, config, validation, auth, email, and Supabase helpers
+shared/contracts/       Framework-neutral contracts shared by UI and server code
 supabase/migrations/    schema, RLS, Storage policies, atomic workflow functions
 supabase/tests/         pgTAP database contract tests
 scripts/migration/      complete workbook and historical attachment importers
 scripts/setup/          database and first-admin automation
 scripts/verification/   database and source/target reconciliation
 docs/                   environment, migration, and deployment runbooks
-tests/                  Vitest unit and contract tests
+server/**/*.test.ts     Node test-runner unit and domain-contract tests
 ```
 
 ## Local development
@@ -64,7 +65,7 @@ The public form is `/`; staff sign-in is `/admin/login`.
 2. Apply the database with `npm run db:setup`.
 3. Export the source Google workbook once as `.xlsx` and run the steps in [docs/MIGRATION.md](docs/MIGRATION.md).
 4. Bootstrap the first administrator.
-5. Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and `npm run db:test`.
+5. Run `npm run check` and `npm run db:test`.
 6. Follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 No individual SQL statements or tables need to be copied by hand. The migrations create the schema, database functions, RLS policies, private bucket, and defaults together.
@@ -88,7 +89,7 @@ No individual SQL statements or tables need to be copied by hand. The migrations
 | `npm run dev:vercel` | Local Vercel frontend/functions runtime |
 | `npm run build` | TypeScript check plus production Vite build |
 | `npm run lint` | ESLint |
-| `npm test` | Unit and static security-contract tests |
+| `npm test` | Unit and domain-contract tests using the Node test runner |
 | `npm run db:setup` | Link the configured Supabase project and push every migration |
 | `npm run admin:bootstrap` | Invite/grant the first administrator |
 | `npm run migrate:workbook -- source.xlsx` | Back up and import the complete five-tab workbook |

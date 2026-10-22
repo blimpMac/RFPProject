@@ -8,6 +8,7 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
     "types": ["node"],
     "composite": true,
     "noEmit": true
@@ -16,6 +17,7 @@
     "vite.config.ts",
     "playwright.config.ts",
     "api/**/*.ts",
+    "shared/**/*.ts",
     "server/**/*.ts",
     "scripts/**/*.ts"
   ]

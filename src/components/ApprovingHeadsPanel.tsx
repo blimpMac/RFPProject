@@ -1,18 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CircleAlert, Crown, ShieldCheck, Users } from 'lucide-react';
+import type {
+  ApprovalTeam,
+  ApprovingHeadCandidate,
+  ApprovingHeadOverview,
+} from '../../shared/contracts/approving-heads';
 import { get, post } from '../lib/api';
 import { Button, Modal, Spinner, StatusBadge } from './ui';
 
-type Candidate = {
-  id: string;
-  displayName: string;
-  department: string | null;
-  roles: string[];
-  protected: boolean;
-};
-type DepartmentRoster = { department: string; headUserIds: string[] };
-type RosterResponse = { candidates: Candidate[]; departments: DepartmentRoster[] };
-type ApprovalTeam = { headUserId: string; coApproverUserIds: string[] };
+type Candidate = ApprovingHeadCandidate;
+type RosterResponse = ApprovingHeadOverview;
 
 function normalized(value: string | null | undefined) {
   return (

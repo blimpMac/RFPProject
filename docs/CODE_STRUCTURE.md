@@ -7,18 +7,21 @@ This project separates browser UI, server orchestration, domain rules, external 
 | Directory              | Responsibility                                                           |
 | ---------------------- | ------------------------------------------------------------------------ |
 | `src/components`       | Reusable UI with no route ownership                                      |
+| `src/features`         | Feature-level hooks and components shared by related routes              |
 | `src/pages`            | Route-level screens and page-specific state                              |
 | `src/layouts`          | Shared page shells and navigation                                        |
 | `src/hooks`            | Reusable browser state and lifecycle behavior                            |
 | `src/lib`              | Browser API clients, formatting, validation, and infrastructure helpers  |
 | `server/domain`        | Shared business roles, constants, and pure domain rules                  |
 | `server/services`      | Reusable server operations that coordinate database or email work        |
+| `server/routes`        | Small route groups for public, staff, and administrative APIs            |
 | `server/email`         | Email delivery and templates                                             |
 | `server/lib`           | Authentication, configuration, HTTP, security, and server infrastructure |
 | `api`                  | Vercel entry points and scheduled jobs                                   |
 | `scripts/setup`        | Explicit administrative or environment setup commands                    |
 | `scripts/verification` | Read-only or clearly labelled workflow verification commands             |
 | `supabase/migrations`  | Ordered database schema and function changes                             |
+| `shared/contracts`     | Framework-neutral request and response types used across runtime layers  |
 
 ## Dependency direction
 
@@ -29,6 +32,9 @@ Use this direction when adding features:
 3. API routes authenticate and validate input, then delegate reusable work to `server/services`.
 4. Services use domain rules and server infrastructure.
 5. Database-specific behavior remains in migrations or narrowly scoped services.
+
+The main API entry point only selects a route group and translates errors. Route modules own HTTP
+concerns; reusable database and workflow operations belong in services.
 
 Avoid importing page modules into components, browser modules into server code, or Vercel handlers into domain and service modules.
 
@@ -42,6 +48,7 @@ npm run check
 ```
 
 `npm run format` applies the repository formatting rules. `npm run check` verifies formatting, TypeScript, ESLint, and the production build.
+It also runs deterministic domain tests located next to the code they verify as `*.test.ts`.
 
 Editors that support EditorConfig should automatically use UTF-8, LF line endings, two-space indentation, final newlines, and trimmed trailing whitespace.
 

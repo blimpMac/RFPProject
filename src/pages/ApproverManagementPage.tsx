@@ -1,75 +1,25 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import {
-  ChevronLeft,
-  ChevronRight,
-  KeyRound,
-  ShieldCheck,
-  Trash2,
-  UserCheck,
-  UserPlus,
-  Users,
-} from 'lucide-react';
-import { ApprovingHeadsPanel } from '../components/ApprovingHeadsPanel';
+import { KeyRound, ShieldCheck, Trash2, UserCheck, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '../components/AuthProvider';
 import { Button, Modal, Spinner, StatusBadge } from '../components/ui';
-import { del, get, patch, post } from '../lib/api';
+import { del, patch, post } from '../lib/api';
 import { manilaDate } from '../lib/format';
-
-type StaffUser = {
-  id: string;
-  email: string;
-  roles: string[];
-  createdAt: string;
-  lastSignInAt: string | null;
-  protected: boolean;
-  fullName: string | null;
-  department: string | null;
-  assignedDepartments: string[];
-  active: boolean;
-  accessLevel: 'staff' | 'approver' | null;
-};
-type Setting = { key: string; value: Record<string, unknown> };
+import type { StaffUser } from '../../shared/contracts/accounts';
+import { AccountPagination } from '../features/accounts/AccountPagination';
+import { useAccountDirectory } from '../features/accounts/useAccountDirectory';
 const PAGE_SIZE = 10;
 
 export function ApproverManagementPage() {
   const { roles } = useAuth();
-  const [users, setUsers] = useState<StaffUser[]>([]);
-  const [departments, setDepartments] = useState<string[]>([]);
+  const isSuper = roles.includes('super_administrator');
+  const { users, departments, loading, error, setError, load } = useAccountDirectory(isSuper);
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [page, setPage] = useState(1);
   const [adding, setAdding] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState('');
-  const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const isSuper = roles.includes('super_administrator');
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const [accounts, settings] = await Promise.all([
-        get<{ users: StaffUser[] }>('staff-users'),
-        get<{ settings: Setting[] }>('settings'),
-      ]);
-      setUsers(accounts.users);
-      const submission = settings.settings.find((setting) => setting.key === 'submission_options');
-      setDepartments(
-        Array.isArray(submission?.value.departments)
-          ? (submission.value.departments as string[])
-          : [],
-      );
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not load approver accounts.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-  useEffect(() => {
-    if (isSuper) void load();
-  }, [isSuper, load]);
 
   const approvers = useMemo(
     () =>
@@ -291,35 +241,15 @@ export function ApproverManagementPage() {
             </div>
           )}
         </div>
-        {visible.length > 0 && (
-          <div className="grid gap-3 border-t bg-slate-50 px-4 py-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-600">
-              Showing {firstVisible + 1}-{Math.min(firstVisible + PAGE_SIZE, visible.length)} of{' '}
-              {visible.length} · 10 accounts per page
-            </p>
-            <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex sm:w-auto">
-              <Button
-                variant="secondary"
-                disabled={currentPage === 1}
-                onClick={() => setPage((value) => Math.max(1, value - 1))}
-              >
-                <ChevronLeft size={16} />
-                <span className="hidden sm:inline">Previous</span>
-              </Button>
-              <span className="min-w-24 text-center text-sm font-medium">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="secondary"
-                disabled={currentPage === totalPages}
-                onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
-              >
-                <span className="hidden sm:inline">Next</span>
-                <ChevronRight size={16} />
-              </Button>
-            </div>
-          </div>
-        )}
+        <AccountPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          firstVisible={firstVisible}
+          itemCount={visible.length}
+          pageSize={PAGE_SIZE}
+          itemLabel="accounts"
+          onPageChange={setPage}
+        />
       </section>
       {adding && (
         <AddApproverModal
@@ -332,20 +262,6 @@ export function ApproverManagementPage() {
           }}
         />
       )}
-    </div>
-  );
-}
-
-export function ApprovingHeadsPage() {
-  const { roles } = useAuth();
-  if (!roles.includes('super_administrator')) return <Navigate to="/admin" replace />;
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-2">
-        <ShieldCheck className="text-[#315c93]" size={24} />
-        <h1 className="text-2xl font-semibold">Edit Approval Team</h1>
-      </div>
-      <ApprovingHeadsPanel />
     </div>
   );
 }

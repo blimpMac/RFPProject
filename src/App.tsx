@@ -36,7 +36,7 @@ const ApproverManagementPage = lazy(() =>
   import('./pages/ApproverManagementPage').then((m) => ({ default: m.ApproverManagementPage })),
 );
 const ApprovingHeadsPage = lazy(() =>
-  import('./pages/ApproverManagementPage').then((m) => ({ default: m.ApprovingHeadsPage })),
+  import('./pages/ApprovingHeadsPage').then((m) => ({ default: m.ApprovingHeadsPage })),
 );
 const SettingsPage = lazy(() =>
   import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),

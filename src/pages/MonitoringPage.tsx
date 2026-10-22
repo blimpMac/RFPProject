@@ -7,7 +7,6 @@ import { useAuth } from '../components/AuthProvider';
 const tabs = [
   ['requests', 'In Progress Requests'],
   ['forms', 'Form Responses'],
-  ['approvers', 'Approver Master'],
   ['logs', 'Approval Log'],
 ] as const;
 const defaults: Record<string, string[]> = {
@@ -33,7 +32,6 @@ const defaults: Record<string, string[]> = {
     'amount',
     'match_status',
   ],
-  approvers: ['department', 'approver_name', 'approver_email', 'active'],
   logs: [
     'occurred_at',
     'rfp_number',
@@ -49,8 +47,7 @@ export function MonitoringPage() {
   const { roles } = useAuth();
   const available = tabs.filter(
     ([key]) =>
-      roles.some((r) => ['super_administrator', 'administrator'].includes(r)) ||
-      !['forms', 'approvers'].includes(key),
+      roles.some((r) => ['super_administrator', 'administrator'].includes(r)) || key !== 'forms',
   );
   const [tab, setTab] = useState(available[0]?.[0] || 'requests');
   const [page, setPage] = useState(1);

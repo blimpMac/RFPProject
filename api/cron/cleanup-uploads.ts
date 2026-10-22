@@ -1,9 +1,5 @@
 import { adminClient } from '../../server/lib/supabase.js';
-import {
-  cleanupAbandonedUploads,
-  cleanupExpiredTemporaryTests,
-  cleanupRateLimits,
-} from '../../server/services/cleanup.js';
+import { cleanupAbandonedUploads, cleanupRateLimits } from '../../server/services/cleanup.js';
 
 function authorized(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -15,12 +11,9 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ ok: false, error: 'Unauthorized.' }, { status: 401 });
   try {
     const db = adminClient();
-    const [abandonedUploads, expiredTests] = await Promise.all([
-      cleanupAbandonedUploads(db),
-      cleanupExpiredTemporaryTests(db),
-    ]);
+    const abandonedUploads = await cleanupAbandonedUploads(db);
     await cleanupRateLimits(db);
-    return Response.json({ ok: true, removed: { abandonedUploads, expiredTests } });
+    return Response.json({ ok: true, removed: { abandonedUploads } });
   } catch (error) {
     console.error(error);
     return Response.json({ ok: false, error: 'Scheduled cleanup failed.' }, { status: 500 });

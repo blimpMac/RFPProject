@@ -1,67 +1,27 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, KeyRound, Search, Trash2, UserPlus } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { KeyRound, Search, Trash2, UserPlus } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
 import { Button, Modal, Spinner, StatusBadge } from '../components/ui';
-import { del, get, patch, post } from '../lib/api';
-
-type AccessLevel = 'staff' | 'approver';
-type StaffUser = {
-  id: string;
-  email: string;
-  roles: string[];
-  protected: boolean;
-  fullName: string | null;
-  department: string | null;
-  assignedDepartments: string[];
-  active: boolean;
-  accessLevel: AccessLevel | null;
-};
-type Setting = { key: string; value: Record<string, unknown> };
+import { del, patch, post } from '../lib/api';
+import type { AccessLevel, StaffUser } from '../../shared/contracts/accounts';
+import { AccountPagination } from '../features/accounts/AccountPagination';
+import { useAccountDirectory } from '../features/accounts/useAccountDirectory';
 type AccessFilter = 'all' | 'administrator' | 'approver' | 'staff';
 const PAGE_SIZE = 6;
 
 export function SettingsPage() {
   const { roles } = useAuth();
   const isSuper = roles.includes('super_administrator');
-  const [users, setUsers] = useState<StaffUser[]>([]);
-  const [departments, setDepartments] = useState<string[]>([]);
+  const { users, departments, loading, error, setError, load } = useAccountDirectory(isSuper);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [accessFilter, setAccessFilter] = useState<AccessFilter>('all');
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState('');
-  const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [account, setAccount] = useState<StaffUser | 'new'>();
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const [accountResult, settingsResult] = await Promise.all([
-        get<{ users: StaffUser[] }>('staff-users'),
-        get<{ settings: Setting[] }>('settings'),
-      ]);
-      setUsers(accountResult.users);
-      const submission = settingsResult.settings.find(
-        (setting) => setting.key === 'submission_options',
-      );
-      setDepartments(
-        Array.isArray(submission?.value.departments)
-          ? (submission.value.departments as string[])
-          : [],
-      );
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not load accounts.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-  useEffect(() => {
-    if (isSuper) void load();
-  }, [isSuper, load]);
   useEffect(() => setPage(1), [accessFilter, search, statusFilter]);
 
   const filteredUsers = useMemo(() => {
@@ -207,35 +167,15 @@ export function SettingsPage() {
             <p className="p-10 text-center text-sm text-slate-500">No matching accounts.</p>
           )}
         </div>
-        {filteredUsers.length > 0 && (
-          <div className="grid gap-3 border-t bg-slate-50 px-4 py-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-600">
-              {firstVisible + 1}–{Math.min(firstVisible + PAGE_SIZE, filteredUsers.length)} of{' '}
-              {filteredUsers.length} · 6 per page
-            </p>
-            <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex sm:w-auto">
-              <Button
-                variant="secondary"
-                disabled={currentPage === 1}
-                onClick={() => setPage((value) => Math.max(1, value - 1))}
-              >
-                <ChevronLeft size={16} />
-                <span className="hidden sm:inline">Previous</span>
-              </Button>
-              <span className="min-w-24 text-center text-sm font-medium">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="secondary"
-                disabled={currentPage === totalPages}
-                onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
-              >
-                <span className="hidden sm:inline">Next</span>
-                <ChevronRight size={16} />
-              </Button>
-            </div>
-          </div>
-        )}
+        <AccountPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          firstVisible={firstVisible}
+          itemCount={filteredUsers.length}
+          pageSize={PAGE_SIZE}
+          itemLabel="accounts"
+          onPageChange={setPage}
+        />
       </section>
       {account && (
         <AccountForm

@@ -1,24 +1,10 @@
-import { z } from 'zod';
-import { protectedStaffEmails } from '../domain/access.js';
+import { approvingHeadTeamSchema } from '../domain/approving-team.js';
+import { isLegacyProtectedStaffEmail } from '../domain/access.js';
 import { HttpError } from '../lib/http.js';
 import { normalizeDepartment } from '../lib/staff-access.js';
 import { adminClient } from '../lib/supabase.js';
 
 type DatabaseClient = ReturnType<typeof adminClient>;
-
-export const approvingHeadTeamSchema = z
-  .object({
-    headUserId: z.uuid(),
-    coApproverUserIds: z
-      .array(z.uuid())
-      .min(2)
-      .max(3)
-      .refine((items) => new Set(items).size === items.length, 'Co-Approvers must be unique.'),
-  })
-  .refine((value) => !value.coApproverUserIds.includes(value.headUserId), {
-    message: 'An account cannot be both Approver Head and Co-Approver.',
-    path: ['coApproverUserIds'],
-  });
 
 export async function getAssignedDepartments(db: DatabaseClient, userId: string) {
   const rows = await db
@@ -30,16 +16,10 @@ export async function getAssignedDepartments(db: DatabaseClient, userId: string)
 }
 
 export async function getPublicApprovers(db: DatabaseClient) {
-  const [{ data: legacyApprovers, error: legacyError }, { data: headRows, error: headError }] =
-    await Promise.all([
-      db
-        .from('approvers')
-        .select('department,approver_name')
-        .eq('active', true)
-        .order('department'),
-      db.from('department_approving_heads').select('department,user_id,position').order('position'),
-    ]);
-  if (legacyError) throw legacyError;
+  const { data: headRows, error: headError } = await db
+    .from('department_approving_heads')
+    .select('department,user_id,position')
+    .order('position');
   if (headError) throw headError;
 
   const headIds = [...new Set((headRows || []).map((row) => row.user_id))];
@@ -67,23 +47,16 @@ export async function getPublicApprovers(db: DatabaseClient) {
     rosters.set(key, roster);
   }
 
-  const assigned = [...rosters.values()]
+  return [...rosters.values()]
     .filter((roster) => roster.names.length >= 1 && roster.names.length <= 2)
     .map((roster) => ({ department: roster.department, approver_name: roster.names.join(', ') }));
-  const assignedKeys = new Set(assigned.map((row) => normalizeDepartment(row.department)));
-  return [
-    ...assigned,
-    ...(legacyApprovers || []).filter(
-      (row) => !assignedKeys.has(normalizeDepartment(row.department)),
-    ),
-  ];
 }
 
 export async function getApprovingHeadOverview(db: DatabaseClient) {
   const [profilesResult, rolesResult, headsResult, optionsResult] = await Promise.all([
     db
       .from('profiles')
-      .select('id,email,full_name,department,active')
+      .select('*')
       .eq('active', true)
       .order('full_name'),
     db.from('user_roles').select('user_id,role'),
@@ -108,7 +81,8 @@ export async function getApprovingHeadOverview(db: DatabaseClient) {
   const candidates = (profilesResult.data || [])
     .map((profile) => {
       const roles = rolesByUser.get(profile.id) || [];
-      const protectedAccount = protectedStaffEmails.has(profile.email.toLowerCase());
+      const protectedAccount =
+        profile.protected_account ?? isLegacyProtectedStaffEmail(profile.email);
       return {
         id: profile.id,
         displayName:
