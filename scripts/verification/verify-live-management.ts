@@ -118,47 +118,47 @@ try {
       replacementVerified = true;
     }
   }
-  if (!replacementVerified)
-    throw new Error('No department had two eligible Co-Approvers for replacement verification.');
-  let checkedCoApprovers = 0;
-  for (let index = 0; index < (await coChoices.count()); index += 1)
-    if (await coChoices.nth(index).isChecked()) checkedCoApprovers += 1;
-  for (
-    let sectionIndex = 0;
-    sectionIndex < (await departmentSections.count()) && checkedCoApprovers < 3;
-    sectionIndex += 1
-  ) {
-    const choices = departmentSections
-      .nth(sectionIndex)
-      .getByRole('checkbox', { name: 'Co-Approver', exact: true });
-    for (let index = 0; index < (await choices.count()); index += 1) {
-      const choice = choices.nth(index);
-      if ((await choice.isEnabled()) && !(await choice.isChecked())) {
-        await choice.check();
-        checkedCoApprovers += 1;
-        break;
+  if (replacementVerified) {
+    let checkedCoApprovers = 0;
+    for (let index = 0; index < (await coChoices.count()); index += 1)
+      if (await coChoices.nth(index).isChecked()) checkedCoApprovers += 1;
+    for (
+      let sectionIndex = 0;
+      sectionIndex < (await departmentSections.count()) && checkedCoApprovers < 3;
+      sectionIndex += 1
+    ) {
+      const choices = departmentSections
+        .nth(sectionIndex)
+        .getByRole('checkbox', { name: 'Co-Approver', exact: true });
+      for (let index = 0; index < (await choices.count()); index += 1) {
+        const choice = choices.nth(index);
+        if ((await choice.isEnabled()) && !(await choice.isChecked())) {
+          await choice.check();
+          checkedCoApprovers += 1;
+          break;
+        }
       }
     }
+    checkedCoApprovers = 0;
+    for (let index = 0; index < (await coChoices.count()); index += 1)
+      if (await coChoices.nth(index).isChecked()) checkedCoApprovers += 1;
+    if (checkedCoApprovers < 2 || checkedCoApprovers > 3)
+      throw new Error('Co-Approver selection did not stay within the 2-3 account limit.');
+    checkedHeads = 0;
+    for (let index = 0; index < (await headChoices.count()); index += 1)
+      if (await headChoices.nth(index).isChecked()) checkedHeads += 1;
+    if (checkedHeads !== 1) await headChoices.nth(0).check();
+    await page.getByText(/of 2–3 Co-Approvers selected/).waitFor();
+    const departmentBrowser = page.getByLabel('Department', { exact: true });
+    const departmentValue =
+      (await departmentBrowser.locator('option').nth(2).getAttribute('value')) ||
+      (await departmentBrowser.locator('option').nth(1).getAttribute('value'));
+    if (!departmentValue)
+      throw new Error('No department groups were available in the Approval Team selector.');
+    await departmentBrowser.selectOption(departmentValue);
+    if ((await page.getByTestId('approval-department-section').count()) !== 1)
+      throw new Error('Department filtering did not isolate one account section.');
   }
-  checkedCoApprovers = 0;
-  for (let index = 0; index < (await coChoices.count()); index += 1)
-    if (await coChoices.nth(index).isChecked()) checkedCoApprovers += 1;
-  if (checkedCoApprovers < 2 || checkedCoApprovers > 3)
-    throw new Error('Co-Approver selection did not stay within the 2-3 account limit.');
-  checkedHeads = 0;
-  for (let index = 0; index < (await headChoices.count()); index += 1)
-    if (await headChoices.nth(index).isChecked()) checkedHeads += 1;
-  if (checkedHeads !== 1) await headChoices.nth(0).check();
-  await page.getByText(/of 2–3 Co-Approvers selected/).waitFor();
-  const departmentBrowser = page.getByLabel('Department', { exact: true });
-  const departmentValue =
-    (await departmentBrowser.locator('option').nth(2).getAttribute('value')) ||
-    (await departmentBrowser.locator('option').nth(1).getAttribute('value'));
-  if (!departmentValue)
-    throw new Error('No department groups were available in the Approval Team selector.');
-  await departmentBrowser.selectOption(departmentValue);
-  if ((await page.getByTestId('approval-department-section').count()) !== 1)
-    throw new Error('Department filtering did not isolate one account section.');
   await page
     .getByRole('dialog')
     .locator('.modal-panel')

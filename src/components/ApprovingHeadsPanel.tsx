@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CircleAlert, Crown, ShieldCheck, Users } from 'lucide-react';
+import { Crown, ShieldCheck, Users } from 'lucide-react';
 import type {
   ApprovalTeam,
   ApprovingHeadCandidate,
@@ -143,11 +143,6 @@ export function ApprovingHeadsPanel() {
       </div>
     );
   const departmentKeys = new Set(data.departments.map((roster) => normalized(roster.department)));
-  const eligibleCoApprovers = data.candidates.filter(
-    (candidate) =>
-      candidate.roles.includes('department_approver') &&
-      departmentKeys.has(normalized(candidate.department)),
-  );
 
   return (
     <>
@@ -157,10 +152,7 @@ export function ApprovingHeadsPanel() {
             <ShieldCheck size={20} className="text-[#315c93]" />
             <h2 className="font-semibold">Approval team</h2>
           </div>
-          <Button
-            disabled={!data.departments.length || eligibleCoApprovers.length < 2}
-            onClick={openEditor}
-          >
+          <Button disabled={!data.departments.length} onClick={openEditor}>
             {configured ? 'Edit approval team' : 'Set up approval team'}
           </Button>
         </div>
@@ -172,13 +164,6 @@ export function ApprovingHeadsPanel() {
         {notice && (
           <p className="m-4 rounded bg-emerald-50 p-3 text-sm text-emerald-800" role="status">
             {notice}
-          </p>
-        )}
-        {eligibleCoApprovers.length < 2 && (
-          <p className="m-4 flex items-start gap-2 rounded bg-amber-50 p-3 text-sm text-amber-900">
-            <CircleAlert className="mt-0.5 shrink-0" size={17} />
-            Add or activate at least 2 Department Approver accounts with configured departments
-            before setting up the team.
           </p>
         )}
         <div className="flex flex-wrap items-center gap-3 border-b bg-slate-50 px-5 py-3 text-sm">
