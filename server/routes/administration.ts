@@ -104,8 +104,7 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
             : roles.includes('finance_reviewer')
               ? 'staff'
               : null,
-          protected:
-            profile?.protected_account ?? isLegacyProtectedStaffEmail(user.email),
+          protected: profile?.protected_account ?? isLegacyProtectedStaffEmail(user.email),
         };
       });
       return json(200, { ok: true, users, canRemove: true });
@@ -228,10 +227,7 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
       if (profile.error) throw profile.error;
       if (targetRoles.error) throw targetRoles.error;
       if (assignments.error) throw assignments.error;
-      if (
-        profile.data?.protected_account ??
-        isLegacyProtectedStaffEmail(target.data.user.email)
-      ) {
+      if (profile.data?.protected_account ?? isLegacyProtectedStaffEmail(target.data.user.email)) {
         throw new HttpError(409, 'This protected operational account cannot be removed.');
       }
       if (targetRoles.data?.some((row) => row.role === 'super_administrator')) {

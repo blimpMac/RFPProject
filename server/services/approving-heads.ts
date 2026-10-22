@@ -54,11 +54,7 @@ export async function getPublicApprovers(db: DatabaseClient) {
 
 export async function getApprovingHeadOverview(db: DatabaseClient) {
   const [profilesResult, rolesResult, headsResult, optionsResult] = await Promise.all([
-    db
-      .from('profiles')
-      .select('*')
-      .eq('active', true)
-      .order('full_name'),
+    db.from('profiles').select('*').eq('active', true).order('full_name'),
     db.from('user_roles').select('user_id,role'),
     db
       .from('department_approving_heads')

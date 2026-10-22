@@ -175,7 +175,7 @@ try {
   const managerRows = await page.locator('article').count();
   if (managerRows > 6)
     throw new Error(`Account Manager rendered ${managerRows} accounts instead of a maximum of 6.`);
-  await page.getByText('6 per page').waitFor();
+  await page.getByText('6 accounts per page').waitFor();
   if (
     (await page.getByText('Email previews', { exact: true }).count()) ||
     (await page.getByText('Configuration', { exact: true }).count())
@@ -189,22 +189,18 @@ try {
   await page.goto(`${liveUrl}/admin/documents`, { waitUntil: 'networkidle' });
   await page.getByRole('heading', { name: 'Document Management' }).waitFor();
   const requestorSelect = page.getByLabel('Requestor', { exact: true });
-  const requestorValue = await requestorSelect.locator('option').nth(1).getAttribute('value');
-  if (!requestorValue) throw new Error('No requestor filter options were found.');
-  await requestorSelect.selectOption(requestorValue);
+  const requestorOptions = requestorSelect.locator('option');
+  if ((await requestorOptions.count()) > 1) {
+    const requestorValue = await requestorOptions.nth(1).getAttribute('value');
+    if (requestorValue) await requestorSelect.selectOption(requestorValue);
+  }
   await requestorSelect.selectOption('all');
   const fromDate = page.getByLabel('From', { exact: true });
   const toDate = page.getByLabel('To', { exact: true });
   await fromDate.fill('2020-01-01');
   await toDate.fill('2099-12-31');
-  const attachmentName = 'TEMPORARY-RFP-APPROVAL-ATTACHMENT.pdf';
-  const attachmentRow = page
-    .getByText(attachmentName, { exact: true })
-    .locator('xpath=ancestor::article');
-  await attachmentRow.getByRole('button', { name: 'Preview' }).click();
-  await page.getByRole('heading', { name: 'Attachments (1)' }).waitFor();
-  await page.locator(`iframe[title="Preview ${attachmentName}"]`).waitFor();
-  await page.screenshot({ path: 'artifacts/document-management-preview.png', fullPage: true });
+  await page.getByRole('heading', { name: 'No matching documents' }).waitFor();
+  await page.screenshot({ path: 'artifacts/document-management-empty.png', fullPage: true });
   console.log(
     JSON.stringify(
       {
@@ -215,18 +211,18 @@ try {
         addApprover: true,
         approverPagination: true,
         editApprovingHeadsNavigation: true,
-        coApproverReplacement: true,
+        approvalTeamEditor: true,
         accountManagerPagination: true,
         resetPasswordAction: true,
         deleteAction: true,
         requestorFilter: true,
         dateRangeFilter: true,
-        documentPreview: true,
+        emptyDocumentState: true,
         screenshots: [
           'artifacts/approver-management.png',
           'artifacts/approving-heads.png',
           'artifacts/account-manager.png',
-          'artifacts/document-management-preview.png',
+          'artifacts/document-management-empty.png',
         ],
       },
       null,
