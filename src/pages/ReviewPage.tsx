@@ -14,6 +14,7 @@ type Review = {
     rfp_number: string;
     requestor_name: string;
     requestor_email: string;
+    company: string | null;
     department: string;
     project_class: string;
     rfp_type: string;
@@ -100,6 +101,7 @@ export function ReviewPage() {
         <dl className="grid gap-x-6 gap-y-4 p-6 sm:grid-cols-2">
           {[
             ['Requestor', `${r.requestor_name} (${r.requestor_email})`],
+            ['Company', r.company || 'Not recorded'],
             ['Department', r.department],
             ['Project / Class', r.project_class],
             ['Type', r.rfp_type],

@@ -72,6 +72,11 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
       p_attachments: input.attachments,
     });
     if (started.error) throw new HttpError(400, started.error.message);
+    const companyUpdate = await db
+      .from('rfp_requests')
+      .update({ company: input.request.company })
+      .eq('id', started.data.requestId);
+    if (companyUpdate.error) throw companyUpdate.error;
     const items = await db
       .from('request_attachments')
       .select('id,original_filename,storage_path')
@@ -183,7 +188,7 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     const request = await db
       .from('rfp_requests')
       .select(
-        'id,rfp_number,submitted_at,requestor_name,department,amount,required_payment_date,department_approval,finance_review,final_status,last_action,planned_check_date',
+        'id,rfp_number,submitted_at,requestor_name,company,department,amount,required_payment_date,department_approval,finance_review,final_status,last_action,planned_check_date',
       )
       .eq('public_tracking_hash', sha256(token))
       .single();
@@ -228,7 +233,7 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     const request = await db
       .from('rfp_requests')
       .select(
-        'id,rfp_number,requestor_name,requestor_email,department,project_class,rfp_type,supplier_payee,purpose_description,amount,required_payment_date,final_status',
+        'id,rfp_number,requestor_name,requestor_email,company,department,project_class,rfp_type,supplier_payee,purpose_description,amount,required_payment_date,final_status',
       )
       .eq('id', record.request_id)
       .single();

@@ -5,6 +5,7 @@ import {
   CheckSquare,
   ChevronLeft,
   FileStack,
+  History,
   LogOut,
   Menu,
   Table2,
@@ -30,6 +31,12 @@ const navigationItems: NavigationItem[] = [
   { to: '/admin', label: 'Dashboard', icon: BarChart3 },
   { to: '/admin/monitoring', label: 'Monitoring Sheets', icon: Table2 },
   { to: '/admin/approvals', label: 'Approvals', icon: CheckSquare },
+  {
+    to: '/admin/audit-trail',
+    label: 'Audit Trail',
+    icon: History,
+    allowedRoles: ['super_administrator', 'administrator', 'finance_reviewer'],
+  },
   {
     to: '/admin/documents',
     label: 'Document Management',

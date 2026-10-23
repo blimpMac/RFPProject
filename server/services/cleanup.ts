@@ -6,12 +6,15 @@ export async function cleanupAbandonedUploads(db: DatabaseClient, olderThanHours
   const cutoff = new Date(Date.now() - olderThanHours * 60 * 60_000).toISOString();
   const requests = await db
     .from('rfp_requests')
-    .select('id')
+    .select('id,source_worksheet')
     .eq('final_status', 'Draft Uploading')
     .lt('created_at', cutoff);
   if (requests.error) throw requests.error;
 
-  for (const request of requests.data || []) {
+  const abandoned = (requests.data || []).filter(
+    (request) => request.source_worksheet !== 'Demo Data',
+  );
+  for (const request of abandoned) {
     const listed = await db.storage.from('rfp-attachments').list(request.id, { limit: 100 });
     if (listed.error) throw listed.error;
     if (listed.data?.length) {
@@ -23,7 +26,7 @@ export async function cleanupAbandonedUploads(db: DatabaseClient, olderThanHours
     const deleted = await db.from('rfp_requests').delete().eq('id', request.id);
     if (deleted.error) throw deleted.error;
   }
-  return requests.data?.length || 0;
+  return abandoned.length;
 }
 
 export async function cleanupRateLimits(db: DatabaseClient, olderThanHours = 24) {

@@ -14,6 +14,7 @@ type DocumentRow = {
   rfp_number: string;
   requestor_name: string;
   requestor_email: string;
+  company: string | null;
   original_filename: string;
   mime_type: string;
   size_bytes: number;
@@ -36,6 +37,7 @@ export function DocumentsPage() {
   const [previewingId, setPreviewingId] = useState('');
   const [preview, setPreview] = useState<PreviewAttachment>();
   const [requestorFilter, setRequestorFilter] = useState('all');
+  const [companyFilter, setCompanyFilter] = useState('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [error, setError] = useState('');
@@ -59,6 +61,10 @@ export function DocumentsPage() {
     [rows],
   );
   const invalidDateRange = Boolean(fromDate && toDate && fromDate > toDate);
+  const companies = useMemo(
+    () => [...new Set(rows.flatMap((row) => (row.company ? [row.company] : [])))].sort(),
+    [rows],
+  );
   const filteredRows = useMemo(
     () =>
       invalidDateRange
@@ -68,11 +74,12 @@ export function DocumentsPage() {
             return (
               (requestorFilter === 'all' ||
                 row.requestor_email.toLowerCase() === requestorFilter) &&
+              (companyFilter === 'all' || row.company === companyFilter) &&
               (!fromDate || requestDate >= fromDate) &&
               (!toDate || requestDate <= toDate)
             );
           }),
-    [fromDate, invalidDateRange, requestorFilter, rows, toDate],
+    [companyFilter, fromDate, invalidDateRange, requestorFilter, rows, toDate],
   );
 
   const openPreview = async (document: DocumentRow) => {
@@ -127,6 +134,20 @@ export function DocumentsPage() {
               ))}
             </select>
           </div>
+          <div className="field min-w-64">
+            <label htmlFor="document-company-filter">Company</label>
+            <select
+              id="document-company-filter"
+              className="input"
+              value={companyFilter}
+              onChange={(event) => setCompanyFilter(event.target.value)}
+            >
+              <option value="all">All companies</option>
+              {companies.map((company) => (
+                <option key={company}>{company}</option>
+              ))}
+            </select>
+          </div>
           <div className="field min-w-44">
             <label htmlFor="document-date-from">From</label>
             <input
@@ -151,9 +172,10 @@ export function DocumentsPage() {
           </div>
           <Button
             variant="secondary"
-            disabled={requestorFilter === 'all' && !fromDate && !toDate}
+            disabled={requestorFilter === 'all' && companyFilter === 'all' && !fromDate && !toDate}
             onClick={() => {
               setRequestorFilter('all');
+              setCompanyFilter('all');
               setFromDate('');
               setToDate('');
             }}
@@ -182,8 +204,9 @@ export function DocumentsPage() {
                   <span className="text-xs font-bold text-[#315c93]">{document.rfp_number}</span>
                 </div>
                 <p className="mt-1 text-xs text-slate-500">
-                  {document.requestor_name} · {manilaDate(document.request_date, true)} ·{' '}
-                  {document.mime_type} · {(document.size_bytes / 1024 / 1024).toFixed(2)} MB
+                  {document.requestor_name} · {document.company || 'Company not recorded'} ·{' '}
+                  {manilaDate(document.request_date, true)} · {document.mime_type} ·{' '}
+                  {(document.size_bytes / 1024 / 1024).toFixed(2)} MB
                 </p>
               </div>
               <StatusBadge>{document.status}</StatusBadge>

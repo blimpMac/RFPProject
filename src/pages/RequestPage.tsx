@@ -6,10 +6,12 @@ import { Button, Spinner } from '../components/ui';
 import { get, post } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import type { PublicOptions } from '../types';
+import { companies } from '../../shared/constants/companies';
 
 type FormState = {
   requestorName: string;
   requestorEmail: string;
+  company: string;
   department: string;
   projectClass: string;
   rfpType: string;
@@ -22,6 +24,7 @@ type FormState = {
 const initial: FormState = {
   requestorName: '',
   requestorEmail: '',
+  company: '',
   department: '',
   projectClass: '',
   rfpType: '',
@@ -251,6 +254,12 @@ export function RequestPage() {
               type="email"
               value={form.requestorEmail}
               onChange={(v) => update('requestorEmail', v)}
+            />
+            <Select
+              label="Company"
+              value={form.company}
+              options={[...companies]}
+              onChange={(v) => update('company', v)}
             />
             <Select
               label="Department"

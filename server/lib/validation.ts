@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const companies = ['Greenlight Power Inc.', 'Greenmetal Electric Manufacturing Corp.'] as const;
+
 export const allowedMimes = [
   'application/pdf',
   'image/jpeg',
@@ -10,6 +12,7 @@ export const allowedMimes = [
 export const requestSchema = z.object({
   requestorName: z.string().trim().min(2).max(120),
   requestorEmail: z.string().trim().toLowerCase().email().max(160),
+  company: z.enum(companies),
   department: z.string().trim().min(1).max(100),
   projectClass: z.string().trim().min(1).max(160),
   rfpType: z.string().trim().min(1).max(100),

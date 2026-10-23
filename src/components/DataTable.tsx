@@ -36,6 +36,7 @@ type DataTableProps = {
   onPageSize: (pageSize: number) => void;
   defaultKeys?: string[];
   title: string;
+  loadExportRows?: () => Promise<Row[]>;
 };
 
 const statusKeys = new Set([
@@ -90,6 +91,12 @@ function display(key: string, value: unknown) {
   return String(value);
 }
 
+function exportValue(value: unknown) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
 export function DataTable({
   rows,
   total,
@@ -99,12 +106,15 @@ export function DataTable({
   onPageSize,
   defaultKeys,
   title,
+  loadExportRows,
 }: DataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState('');
   const [visibility, setVisibility] = useState<ColumnVisibilityState>({});
   const [selected, setSelected] = useState<Row>();
   const [columnsOpen, setColumnsOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
 
   const keys = useMemo(() => {
     const all = new Set<string>();
@@ -169,51 +179,73 @@ export function DataTable({
   });
   const hideableColumns = table.getAllLeafColumns().filter((column) => column.getCanHide());
 
-  const exportRows = table.getFilteredRowModel().rows.map((row) => row.original);
+  const displayedExportRows = table.getFilteredRowModel().rows.map((row) => row.original);
   const visibleColumns = () =>
     table
       .getVisibleLeafColumns()
       .map((column) => column.id)
       .filter((key) => !['select', 'actions'].includes(key));
-  const csv = () => {
-    const visible = visibleColumns();
-    const content = [
-      visible.map(columnLabel),
-      ...exportRows.map((row) => visible.map((key) => String(row[key] ?? ''))),
-    ]
-      .map((line) => line.map((value) => `"${value.replaceAll('"', '""')}"`).join(','))
-      .join('\n');
-    const anchor = document.createElement('a');
-    anchor.href = URL.createObjectURL(new Blob([content], { type: 'text/csv' }));
-    anchor.download = `${title.replaceAll(' ', '-').toLowerCase()}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(anchor.href);
+  const rowsForExport = async () => {
+    const source = loadExportRows ? await loadExportRows() : displayedExportRows;
+    if (!search) return source;
+    const needle = search.toLowerCase();
+    return source.filter((row) =>
+      visibleColumns().some((key) => exportValue(row[key]).toLowerCase().includes(needle)),
+    );
+  };
+  const csv = async () => {
+    setExporting(true);
+    setExportError('');
+    try {
+      const exportRows = await rowsForExport();
+      const visible = visibleColumns();
+      const content = [
+        visible.map(columnLabel),
+        ...exportRows.map((row) => visible.map((key) => exportValue(row[key]))),
+      ]
+        .map((line) => line.map((value) => `"${value.replaceAll('"', '""')}"`).join(','))
+        .join('\n');
+      const anchor = document.createElement('a');
+      anchor.href = URL.createObjectURL(new Blob([content], { type: 'text/csv' }));
+      anchor.download = `${title.replaceAll(' ', '-').toLowerCase()}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(anchor.href);
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : 'Could not export these records.');
+    } finally {
+      setExporting(false);
+    }
   };
   const xlsx = async () => {
-    const { Workbook } = await import('exceljs');
-    const workbook = new Workbook();
-    const sheet = workbook.addWorksheet(title.slice(0, 31));
-    const visible = visibleColumns();
-    sheet.addRow(visible.map(columnLabel));
-    exportRows.forEach((row) =>
-      sheet.addRow(
-        visible.map((key) => (row[key] === null || row[key] === undefined ? '' : String(row[key]))),
-      ),
-    );
-    sheet.getRow(1).font = { bold: true };
-    sheet.columns.forEach((column) => {
-      column.width = 18;
-    });
-    const buffer = await workbook.xlsx.writeBuffer();
-    const anchor = document.createElement('a');
-    anchor.href = URL.createObjectURL(
-      new Blob([buffer], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      }),
-    );
-    anchor.download = `${title.replaceAll(' ', '-').toLowerCase()}.xlsx`;
-    anchor.click();
-    URL.revokeObjectURL(anchor.href);
+    setExporting(true);
+    setExportError('');
+    try {
+      const exportRows = await rowsForExport();
+      const { Workbook } = await import('exceljs');
+      const workbook = new Workbook();
+      const sheet = workbook.addWorksheet(title.slice(0, 31));
+      const visible = visibleColumns();
+      sheet.addRow(visible.map(columnLabel));
+      exportRows.forEach((row) => sheet.addRow(visible.map((key) => exportValue(row[key]))));
+      sheet.getRow(1).font = { bold: true };
+      sheet.columns.forEach((column) => {
+        column.width = 18;
+      });
+      const buffer = await workbook.xlsx.writeBuffer();
+      const anchor = document.createElement('a');
+      anchor.href = URL.createObjectURL(
+        new Blob([buffer], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        }),
+      );
+      anchor.download = `${title.replaceAll(' ', '-').toLowerCase()}.xlsx`;
+      anchor.click();
+      URL.revokeObjectURL(anchor.href);
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : 'Could not export these records.');
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -254,14 +286,29 @@ export function DataTable({
             </div>
           )}
         </div>
-        <Button className="min-w-0" variant="secondary" onClick={csv}>
+        <Button
+          className="min-w-0"
+          variant="secondary"
+          disabled={exporting}
+          onClick={() => void csv()}
+        >
           <Download size={16} />
           CSV
         </Button>
-        <Button className="min-w-0" variant="secondary" onClick={xlsx}>
-          XLSX
+        <Button
+          className="min-w-0"
+          variant="secondary"
+          disabled={exporting}
+          onClick={() => void xlsx()}
+        >
+          {exporting ? 'Exporting…' : 'XLSX'}
         </Button>
       </div>
+      {exportError && (
+        <p className="border-b bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          {exportError}
+        </p>
+      )}
 
       <div className="max-h-[65vh] overflow-auto">
         <table className="min-w-full border-separate border-spacing-0 text-left text-sm">

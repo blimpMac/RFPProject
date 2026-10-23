@@ -6,6 +6,7 @@ export type RfpRequest = {
   submitted_at: string | null;
   requestor_email: string;
   requestor_name: string;
+  company: string | null;
   department: string;
   project_class: string;
   rfp_type: string;

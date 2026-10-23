@@ -7,6 +7,7 @@ import { isDepartmentOnly, normalizeDepartment } from '../lib/staff-access.js';
 import { departmentRereviewSchema, financeSchema } from '../lib/validation.js';
 import { getAssignedDepartments } from '../services/approving-heads.js';
 import { cancelPendingDepartmentReview } from '../services/workflow-notifications.js';
+import { auditTrailRow } from '../services/audit-trail.js';
 import type { RouteHandler } from './context.js';
 
 const tableMap: Record<string, { table: string; order: string; roles?: string[] }> = {
@@ -39,7 +40,7 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
     let requestQuery = db
       .from('rfp_requests')
       .select(
-        'id,rfp_number,submitted_at,department,amount,final_status,department_approval_at,finance_review_at',
+        'id,rfp_number,submitted_at,company,department,amount,final_status,department_approval_at,finance_review_at',
       )
       .not('submitted_at', 'is', null)
       .order('submitted_at', { ascending: false })
@@ -74,6 +75,46 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
       metrics: metrics.data,
       requests: requests.data || [],
       recentActivity: logs.data || [],
+    });
+  }
+
+  if (route === 'audit-trail') {
+    ensureMethod(event, 'GET');
+    await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    const input = z
+      .object({
+        page: z.coerce.number().int().min(1).default(1),
+        pageSize: z.coerce.number().int().min(25).max(200).default(50),
+        table: z.string().max(80).optional(),
+        operation: z.enum(['INSERT', 'UPDATE', 'DELETE']).optional(),
+        from: z.iso.date().optional(),
+        to: z.iso.date().optional(),
+        export: z.enum(['true', 'false']).default('false'),
+      })
+      .parse(event.queryStringParameters || {});
+    const exporting = input.export === 'true';
+    const pageSize = exporting ? 10_000 : input.pageSize;
+    const page = exporting ? 1 : input.page;
+    let query = db
+      .from('audit_logs')
+      .select(
+        'id,table_name,record_id,operation,actor_user_id,actor_email,old_values,new_values,occurred_at',
+        { count: 'exact' },
+      )
+      .order('occurred_at', { ascending: false });
+    if (input.table) query = query.eq('table_name', input.table);
+    if (input.operation) query = query.eq('operation', input.operation);
+    if (input.from) query = query.gte('occurred_at', `${input.from}T00:00:00+08:00`);
+    if (input.to) query = query.lte('occurred_at', `${input.to}T23:59:59.999+08:00`);
+    const result = await query.range((page - 1) * pageSize, page * pageSize - 1);
+    if (result.error) throw result.error;
+    return json(200, {
+      ok: true,
+      rows: ((result.data || []) as Record<string, unknown>[]).map(auditTrailRow),
+      count: result.count || 0,
+      page,
+      pageSize,
+      truncated: exporting && (result.count || 0) > pageSize,
     });
   }
 
@@ -140,7 +181,7 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
     const requests = requestIds.length
       ? await db
           .from('rfp_requests')
-          .select('id,rfp_number,requestor_name,requestor_email,submitted_at')
+          .select('id,rfp_number,requestor_name,requestor_email,company,submitted_at')
           .in('id', requestIds)
       : { data: [], error: null };
     if (requests.error) throw requests.error;
@@ -152,6 +193,7 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
         rfp_number: request?.rfp_number || 'Unknown RFP',
         requestor_name: request?.requestor_name || 'Unknown requestor',
         requestor_email: request?.requestor_email || '',
+        company: request?.company || '',
         request_date: request?.submitted_at || attachment.created_at,
       };
     });

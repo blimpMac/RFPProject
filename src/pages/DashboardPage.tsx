@@ -23,6 +23,7 @@ type RequestRow = {
   id: string;
   rfp_number: string;
   submitted_at: string;
+  company: string | null;
   department: string;
   amount: number;
   final_status: string;
@@ -38,6 +39,7 @@ export function DashboardPage() {
   const [data, setData] = useState<Dashboard>();
   const [error, setError] = useState('');
   const [department, setDepartment] = useState('');
+  const [company, setCompany] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [now] = useState(() => Date.now());
@@ -51,10 +53,11 @@ export function DashboardPage() {
       data?.requests.filter(
         (r) =>
           (!department || r.department === department) &&
+          (!company || r.company === company) &&
           (!from || r.submitted_at >= from) &&
           (!to || r.submitted_at < `${to}T23:59:59`),
       ) || [],
-    [data, department, from, to],
+    [company, data, department, from, to],
   );
   const stats = useMemo(() => calculateDashboardStats(requests), [requests]);
   const monthly = useMemo(() => {
@@ -99,6 +102,9 @@ export function DashboardPage() {
     { name: 'Pending', value: stats.pending, color: '#d69e2e' },
   ];
   const departments = [...new Set(data!.requests.map((r) => r.department))];
+  const companies = [
+    ...new Set(data!.requests.flatMap((request) => (request.company ? [request.company] : []))),
+  ];
   const overdue = requests.filter(
     (r) =>
       !/paid|released|rejected|returned/i.test(r.final_status) &&
@@ -114,6 +120,17 @@ export function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <select
+            className="input w-auto"
+            aria-label="Company"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+          >
+            <option value="">All companies</option>
+            {companies.map((item) => (
+              <option key={item}>{item}</option>
+            ))}
+          </select>
           <select
             className="input w-auto"
             value={department}
@@ -208,7 +225,8 @@ export function DashboardPage() {
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{r.rfp_number}</p>
                 <p className="truncate text-xs text-slate-500">
-                  {r.department} · {manilaDate(r.submitted_at, true)}
+                  {r.company || 'Company not recorded'} · {r.department} ·{' '}
+                  {manilaDate(r.submitted_at, true)}
                 </p>
               </div>
               <span className="text-sm">{php.format(r.amount)}</span>

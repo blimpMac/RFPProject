@@ -41,6 +41,9 @@ const ApprovingHeadsPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
+const AuditTrailPage = lazy(() =>
+  import('./pages/AuditTrailPage').then((m) => ({ default: m.AuditTrailPage })),
+);
 
 export default function App() {
   return (
@@ -67,6 +70,7 @@ export default function App() {
               <Route path="documents" element={<DocumentsPage />} />
               <Route path="approver-management" element={<ApproverManagementPage />} />
               <Route path="approving-heads" element={<ApprovingHeadsPage />} />
+              <Route path="audit-trail" element={<AuditTrailPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
             <Route

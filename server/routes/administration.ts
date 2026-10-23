@@ -248,7 +248,7 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
   }
 
   if (route === 'settings') {
-    await requireStaff(event, administrativeRoles);
+    const settingsStaff = await requireStaff(event, administrativeRoles);
     if (event.httpMethod === 'GET') {
       const settings = await db.from('system_settings').select('*').order('key');
       if (settings.error) throw settings.error;
@@ -263,7 +263,7 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
         .parse(readJson(event));
       const setting = await db
         .from('system_settings')
-        .update({ value: input.value })
+        .update({ value: input.value, updated_by: settingsStaff.user.id })
         .eq('key', input.key)
         .select()
         .single();

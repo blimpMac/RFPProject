@@ -43,6 +43,7 @@ export function ApprovalsPage() {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<'pending' | 'completed'>('pending');
+  const [company, setCompany] = useState('');
   const load = useCallback(
     () =>
       get<Result>('monitoring/requests?page=1&pageSize=200')
@@ -60,13 +61,18 @@ export function ApprovalsPage() {
   useAutoRefresh(load);
   const visibleRows = useMemo(
     () =>
-      rows.filter((request) =>
-        view === 'pending'
-          ? !/paid|returned to requestor/i.test(request.final_status)
-          : /paid|returned to requestor/i.test(request.final_status),
+      rows.filter(
+        (request) =>
+          (!company || request.company === company) &&
+          (view === 'pending'
+            ? !/paid|returned to requestor/i.test(request.final_status)
+            : /paid|returned to requestor/i.test(request.final_status)),
       ),
-    [rows, view],
+    [company, rows, view],
   );
+  const companyOptions = [
+    ...new Set(rows.flatMap((request) => (request.company ? [request.company] : []))),
+  ];
   const finance = roles.some((role) =>
     ['super_administrator', 'administrator', 'finance_reviewer'].includes(role),
   );
@@ -147,7 +153,7 @@ export function ApprovalsPage() {
         </div>
         <span className="live-refresh-indicator">Live · refreshes every 15 seconds</span>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           variant={view === 'pending' ? 'primary' : 'secondary'}
           onClick={() => setView('pending')}
@@ -160,6 +166,17 @@ export function ApprovalsPage() {
         >
           Completed / Requestor correction
         </Button>
+        <select
+          className="input ml-auto w-full sm:w-auto"
+          aria-label="Company"
+          value={company}
+          onChange={(event) => setCompany(event.target.value)}
+        >
+          <option value="">All companies</option>
+          {companyOptions.map((item) => (
+            <option key={item}>{item}</option>
+          ))}
+        </select>
       </div>
       {error && (
         <p className="rounded bg-red-50 p-3 text-sm text-red-700" role="alert">
@@ -179,7 +196,8 @@ export function ApprovalsPage() {
                   <StatusBadge>{request.final_status}</StatusBadge>
                 </div>
                 <p className="mt-1 text-sm text-slate-600">
-                  {request.requestor_name} · {request.department} · {request.supplier_payee}
+                  {request.requestor_name} · {request.company || 'Company not recorded'} ·{' '}
+                  {request.department} · {request.supplier_payee}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
                   Submitted {manilaDate(request.submitted_at, true)} · {php.format(request.amount)}
@@ -208,6 +226,7 @@ export function ApprovalsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             {[
               ['Requestor', selected.requestor_name],
+              ['Company', selected.company || 'Not recorded'],
               ['Department', selected.department],
               ['Supplier / Payee', selected.supplier_payee],
               ['Amount', php.format(selected.amount)],

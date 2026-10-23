@@ -46,6 +46,7 @@ try {
   await websitePage.goto('http://127.0.0.1:4173/');
   await websitePage.getByLabel('Requestor Name').fill('Juan Dela Cruz');
   await websitePage.getByLabel('Requestor Email').fill('juan@example.com');
+  await websitePage.getByLabel('Company').selectOption('Greenlight Power Inc.');
   await websitePage.getByLabel('Department').selectOption('Finance');
   await websitePage.getByLabel('Project / Class').fill('Plant Maintenance');
   await websitePage.getByLabel('Type').selectOption('Supplier Payment');
