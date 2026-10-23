@@ -181,7 +181,9 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
     const requests = requestIds.length
       ? await db
           .from('rfp_requests')
-          .select('id,rfp_number,requestor_name,requestor_email,company,submitted_at')
+          .select(
+            'id,rfp_number,requestor_name,requestor_email,company,department,supplier_payee,amount,required_payment_date,final_status,last_action,submitted_at',
+          )
           .in('id', requestIds)
       : { data: [], error: null };
     if (requests.error) throw requests.error;
@@ -194,6 +196,12 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
         requestor_name: request?.requestor_name || 'Unknown requestor',
         requestor_email: request?.requestor_email || '',
         company: request?.company || '',
+        department: request?.department || '',
+        supplier_payee: request?.supplier_payee || '',
+        amount: request?.amount || 0,
+        required_payment_date: request?.required_payment_date || null,
+        final_status: request?.final_status || 'Unknown',
+        last_action: request?.last_action || '',
         request_date: request?.submitted_at || attachment.created_at,
       };
     });

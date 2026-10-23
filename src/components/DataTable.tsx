@@ -51,6 +51,7 @@ const moneyKeys = new Set(['amount']);
 const dateKeys = new Set([
   'submitted_at',
   'source_timestamp',
+  'date_time',
   'occurred_at',
   'department_approval_at',
   'finance_review_at',
