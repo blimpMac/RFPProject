@@ -127,19 +127,14 @@ export function RequestAttachmentChecklist({
 
   return (
     <section className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/30">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex gap-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-[#315c93] shadow-sm dark:bg-slate-800">
-            <ClipboardCheck size={18} />
-          </span>
-          <div>
-            <h2 className="text-sm font-semibold">Documents to check before submitting</h2>
-            <p className="mt-1 text-xs text-slate-500">{rfpType}</p>
-          </div>
-        </div>
-        <span className="rounded-full border px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-wide text-slate-500">
-          Reference only
+      <div className="flex items-start gap-3">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-[#315c93] shadow-sm dark:bg-slate-800">
+          <ClipboardCheck size={18} />
         </span>
+        <div>
+          <h2 className="text-sm font-semibold">Documents to check before submitting</h2>
+          <p className="mt-1 text-xs text-slate-500">{rfpType}</p>
+        </div>
       </div>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
