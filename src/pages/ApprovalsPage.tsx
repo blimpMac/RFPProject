@@ -238,7 +238,7 @@ export function ApprovalsPage() {
   const finance = roles.some((role) =>
     ['super_administrator', 'administrator', 'finance_reviewer'].includes(role),
   );
-  const financeHead = roles.some((role) => ['super_administrator', 'administrator'].includes(role));
+  const financeHead = roles.includes('super_administrator');
   const department = roles.some((role) =>
     ['super_administrator', 'administrator', 'department_approver'].includes(role),
   );

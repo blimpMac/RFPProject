@@ -10,10 +10,13 @@ import { emailTemplateKeys, renderEmailPreview } from '../email/templates.js';
 import { requireStaff } from '../lib/auth.js';
 import { ensureMethod, HttpError, json, readJson } from '../lib/http.js';
 import { accessRole } from '../lib/staff-access.js';
+import { getApprovingHeadOverview } from '../services/approving-heads.js';
 import {
-  getApprovingHeadOverview,
-  saveApprovingHeadAssignments,
-} from '../services/approving-heads.js';
+  assignDepartmentHead,
+  clearDepartmentHeadAssignments,
+  FINANCE_DEPARTMENT,
+  resolveDepartmentHeadTarget,
+} from '../services/account-governance.js';
 import type { RouteHandler } from './context.js';
 
 const staffAccountSchema = z.discriminatedUnion('accessLevel', [
@@ -38,9 +41,11 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
       return json(200, { ok: true, ...(await getApprovingHeadOverview(db)) });
     }
     if (event.httpMethod === 'POST') {
-      const staff = await requireStaff(event, ['super_administrator']);
-      await saveApprovingHeadAssignments(db, staff.user.id, readJson(event));
-      return json(200, { ok: true });
+      await requireStaff(event, ['super_administrator']);
+      throw new HttpError(
+        409,
+        'Department Heads are managed from Account Management. Each department can have only one head.',
+      );
     }
     throw new HttpError(405, 'Method not allowed.');
   }
@@ -114,26 +119,21 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
       const input = staffAccountSchema.parse(readJson(event));
       const role = accessRole(input.accessLevel);
       const email = input.email.toLowerCase();
+      const department =
+        input.accessLevel === 'approver'
+          ? await resolveDepartmentHeadTarget(db, input.department)
+          : FINANCE_DEPARTMENT;
       const invited = await db.auth.admin.inviteUserByEmail(email, {
         redirectTo: `${config.SITE_URL}/admin/reset-password`,
-        data: {
-          full_name: input.fullName,
-          department: input.accessLevel === 'approver' ? input.department : null,
-          access_level: input.accessLevel,
-        },
+        data: { full_name: input.fullName, department, access_level: input.accessLevel },
       });
       if (invited.error) throw new HttpError(409, invited.error.message);
-      const department = input.accessLevel === 'approver' ? input.department : null;
-      const profile = await db.from('profiles').upsert(
-        {
-          id: invited.data.user.id,
-          email,
-          full_name: input.fullName,
-          department,
-          active: true,
-        },
-        { onConflict: 'id' },
-      );
+      const profile = await db
+        .from('profiles')
+        .upsert(
+          { id: invited.data.user.id, email, full_name: input.fullName, department, active: true },
+          { onConflict: 'id' },
+        );
       if (profile.error) {
         await db.auth.admin.deleteUser(invited.data.user.id);
         throw profile.error;
@@ -144,6 +144,21 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
       if (assigned.error) {
         await db.auth.admin.deleteUser(invited.data.user.id);
         throw assigned.error;
+      }
+      try {
+        if (input.accessLevel === 'approver') {
+          await assignDepartmentHead(
+            db,
+            staff.user.id,
+            invited.data.user.id,
+            input.fullName,
+            email,
+            department,
+          );
+        }
+      } catch (cause) {
+        await db.auth.admin.deleteUser(invited.data.user.id);
+        throw cause;
       }
       return json(201, {
         ok: true,
@@ -170,29 +185,28 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
           active: z.boolean(),
         })
         .refine((value) => value.accessLevel !== 'approver' || Boolean(value.department?.trim()), {
-          message: 'Department is required for approvers.',
+          message: 'Department is required for Department Heads.',
           path: ['department'],
         })
         .parse(readJson(event));
-      const existing = await db.from('user_roles').select('role').eq('user_id', input.userId);
+      const [existing, target] = await Promise.all([
+        db.from('user_roles').select('role').eq('user_id', input.userId),
+        db.auth.admin.getUserById(input.userId),
+      ]);
       if (existing.error) throw existing.error;
-      if (existing.data?.some((row) => row.role === 'super_administrator')) {
-        throw new HttpError(403, 'The Super Administrator role cannot be modified here.');
+      if (target.error || !target.data.user?.email) throw new HttpError(404, 'Account not found.');
+      if (
+        existing.data?.some((row) => ['super_administrator', 'administrator'].includes(row.role))
+      ) {
+        throw new HttpError(
+          403,
+          'Administrative accounts cannot be converted or transferred here.',
+        );
       }
-      if (!input.active) {
-        const assigned = await db
-          .from('department_approving_heads')
-          .select('id')
-          .eq('user_id', input.userId)
-          .limit(1);
-        if (assigned.error) throw assigned.error;
-        if (assigned.data?.length) {
-          throw new HttpError(
-            409,
-            'Replace this account in the approving-head roster before deactivating it.',
-          );
-        }
-      }
+      const department =
+        input.accessLevel === 'approver'
+          ? await resolveDepartmentHeadTarget(db, input.department || '', input.userId)
+          : FINANCE_DEPARTMENT;
       const removedRoles = await db.from('user_roles').delete().eq('user_id', input.userId);
       if (removedRoles.error) throw removedRoles.error;
       const assignedRole = await db.from('user_roles').insert({
@@ -203,13 +217,21 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
       if (assignedRole.error) throw assignedRole.error;
       const profile = await db
         .from('profiles')
-        .update({
-          full_name: input.fullName,
-          department: input.accessLevel === 'approver' ? input.department : null,
-          active: input.active,
-        })
+        .update({ full_name: input.fullName, department, active: input.active })
         .eq('id', input.userId);
       if (profile.error) throw profile.error;
+      if (input.accessLevel === 'approver' && input.active) {
+        await assignDepartmentHead(
+          db,
+          staff.user.id,
+          input.userId,
+          input.fullName,
+          target.data.user.email,
+          department,
+        );
+      } else {
+        await clearDepartmentHeadAssignments(db, input.userId);
+      }
       return json(200, { ok: true });
     }
 
@@ -217,28 +239,23 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
       const input = z.object({ userId: z.uuid() }).parse(readJson(event));
       if (input.userId === staff.user.id)
         throw new HttpError(409, 'You cannot remove your own account.');
-      const [target, profile, targetRoles, assignments] = await Promise.all([
+      const [target, profile, targetRoles] = await Promise.all([
         db.auth.admin.getUserById(input.userId),
         db.from('profiles').select('*').eq('id', input.userId).maybeSingle(),
         db.from('user_roles').select('role').eq('user_id', input.userId),
-        db.from('department_approving_heads').select('id').eq('user_id', input.userId).limit(1),
       ]);
       if (target.error || !target.data.user) throw new HttpError(404, 'Account not found.');
       if (profile.error) throw profile.error;
       if (targetRoles.error) throw targetRoles.error;
-      if (assignments.error) throw assignments.error;
       if (profile.data?.protected_account ?? isLegacyProtectedStaffEmail(target.data.user.email)) {
         throw new HttpError(409, 'This protected operational account cannot be removed.');
       }
-      if (targetRoles.data?.some((row) => row.role === 'super_administrator')) {
-        throw new HttpError(409, 'The Super Administrator account cannot be removed.');
+      if (
+        targetRoles.data?.some((row) => ['super_administrator', 'administrator'].includes(row.role))
+      ) {
+        throw new HttpError(409, 'Administrative accounts cannot be removed here.');
       }
-      if (assignments.data?.length) {
-        throw new HttpError(
-          409,
-          'Replace this account in the approving-head roster before deleting it.',
-        );
-      }
+      await clearDepartmentHeadAssignments(db, input.userId);
       const removed = await db.auth.admin.deleteUser(input.userId);
       if (removed.error) throw removed.error;
       return json(200, { ok: true });

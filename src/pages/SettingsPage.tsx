@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { KeyRound, Search, Trash2, UserPlus } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
+import type { AccessLevel, StaffUser } from '../../shared/contracts/accounts';
 import { useAuth } from '../components/AuthProvider';
 import { Button, Modal, Spinner, StatusBadge } from '../components/ui';
-import { del, patch, post } from '../lib/api';
-import type { AccessLevel, StaffUser } from '../../shared/contracts/accounts';
 import { AccountPagination } from '../features/accounts/AccountPagination';
 import { useAccountDirectory } from '../features/accounts/useAccountDirectory';
+import { del, patch, post } from '../lib/api';
+
 type AccessFilter = 'all' | 'administrator' | 'approver' | 'staff';
 const PAGE_SIZE = 6;
+const normalizeDepartment = (value: string | null | undefined) =>
+  (value || '')
+    .replace(/^[-–—\s]+/, '')
+    .trim()
+    .toLowerCase();
+const isFinance = (value: string | null | undefined) => normalizeDepartment(value) === 'finance';
 
 export function SettingsPage() {
   const { roles } = useAuth();
@@ -76,7 +83,7 @@ export function SettingsPage() {
     setNotice('');
     try {
       await del('staff-users', { userId: user.id });
-      setNotice('Account deleted.');
+      setNotice('Account deleted. Its department is now available for another Department Head.');
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not delete the account.');
@@ -89,8 +96,15 @@ export function SettingsPage() {
   if (loading) return <Spinner label="Loading accounts" />;
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Account Management</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Account Management</h1>
+          <p className="mt-1 max-w-3xl text-sm text-slate-500">
+            The single Super Administrator is automatically the Finance Head. Create Finance Members
+            for Finance, or one Department Head for each non-Finance department. Edit a Department
+            Head to transfer that account to another available department.
+          </p>
+        </div>
         <Button onClick={() => setAccount('new')}>
           <UserPlus size={16} />
           Add account
@@ -134,8 +148,8 @@ export function SettingsPage() {
             >
               <option value="all">All access</option>
               <option value="administrator">Administrators</option>
-              <option value="approver">Approvers</option>
-              <option value="staff">Staff</option>
+              <option value="approver">Department Heads</option>
+              <option value="staff">Finance Members</option>
             </select>
           </div>
           <div className="field">
@@ -180,6 +194,7 @@ export function SettingsPage() {
       {account && (
         <AccountForm
           value={account}
+          users={users}
           departments={departments}
           onClose={() => setAccount(undefined)}
           onSaved={async () => {
@@ -211,12 +226,12 @@ function AccountRow({
     ['super_administrator', 'administrator'].includes(role),
   );
   const accessLabel = user.roles.includes('super_administrator')
-    ? 'Super Administrator'
+    ? 'Super Administrator · Finance Head'
     : user.roles.includes('administrator')
       ? 'Administrator'
       : user.accessLevel === 'approver'
-        ? 'Department Approver'
-        : 'Staff';
+        ? 'Department Head'
+        : 'Finance Member';
   return (
     <article className="flex flex-col gap-3 p-4 xl:flex-row xl:items-center">
       <div className="min-w-0 flex-1">
@@ -228,7 +243,11 @@ function AccountRow({
         </div>
         <p className="mt-1 truncate text-xs text-slate-500">
           {user.protected ? 'Email hidden' : user.email}
-          {user.department ? ` · ${user.department}` : ''}
+          {user.roles.includes('super_administrator')
+            ? ' · Finance'
+            : user.department
+              ? ` · ${user.department}`
+              : ''}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -238,10 +257,10 @@ function AccountRow({
         </Button>
         {!isAdministrator && !user.protected && user.accessLevel && (
           <Button variant="secondary" disabled={busy} onClick={onEdit}>
-            Edit
+            {user.accessLevel === 'approver' ? 'Edit / Transfer' : 'Edit'}
           </Button>
         )}
-        {!user.protected && !user.roles.includes('super_administrator') && (
+        {!user.protected && !isAdministrator && (
           <Button variant="danger" disabled={busy} onClick={onRemove}>
             <Trash2 size={16} />
             Delete
@@ -254,16 +273,19 @@ function AccountRow({
 
 function AccountForm({
   value,
+  users,
   departments,
   onClose,
   onSaved,
 }: {
   value: StaffUser | 'new';
+  users: StaffUser[];
   departments: string[];
   onClose: () => void;
   onSaved: () => void;
 }) {
   const editing = value !== 'new';
+  const editingId = editing ? value.id : '';
   const [email, setEmail] = useState(editing ? value.email : '');
   const [fullName, setFullName] = useState(editing ? value.fullName || '' : '');
   const [accessLevel, setAccessLevel] = useState<AccessLevel>(
@@ -273,6 +295,18 @@ function AccountForm({
   const [active, setActive] = useState(editing ? value.active : true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const occupiedDepartments = new Set(
+    users
+      .filter(
+        (user) =>
+          user.id !== editingId &&
+          user.accessLevel === 'approver' &&
+          user.active &&
+          user.department,
+      )
+      .map((user) => normalizeDepartment(user.department)),
+  );
+  const headDepartments = departments.filter((item) => !isFinance(item));
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setBusy(true);
@@ -304,18 +338,28 @@ function AccountForm({
           disabled={editing}
         />
         <div className="field">
-          <label htmlFor="account-access-level">Access</label>
+          <label htmlFor="account-access-level">Account type</label>
           <select
             id="account-access-level"
             className="input"
             value={accessLevel}
-            onChange={(event) => setAccessLevel(event.target.value as AccessLevel)}
+            onChange={(event) => {
+              const next = event.target.value as AccessLevel;
+              setAccessLevel(next);
+              if (next === 'staff') setDepartment('Finance');
+              else if (isFinance(department)) setDepartment('');
+            }}
           >
-            <option value="staff">Staff</option>
-            <option value="approver">Department Approver</option>
+            <option value="staff">Finance Member</option>
+            <option value="approver">Department Head</option>
           </select>
         </div>
-        {accessLevel === 'approver' && (
+        {accessLevel === 'staff' ? (
+          <div className="rounded border bg-slate-50 p-3 text-sm text-slate-700">
+            Department: <strong>Finance</strong>. Finance Head approval belongs only to the Super
+            Administrator.
+          </div>
+        ) : (
           <div className="field">
             <label htmlFor="account-department">Department</label>
             <select
@@ -326,10 +370,20 @@ function AccountForm({
               onChange={(event) => setDepartment(event.target.value)}
             >
               <option value="">Select department</option>
-              {departments.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
+              {headDepartments.map((item) => {
+                const occupied = occupiedDepartments.has(normalizeDepartment(item));
+                return (
+                  <option key={item} value={item} disabled={occupied}>
+                    {item}
+                    {occupied ? ' — Department Head already assigned' : ''}
+                  </option>
+                );
+              })}
             </select>
+            <p className="mt-1 text-xs text-slate-500">
+              Only one Department Head can be assigned to each department. Changing this selection
+              transfers the account and releases its previous department.
+            </p>
           </div>
         )}
         {editing && (
@@ -350,7 +404,7 @@ function AccountForm({
           <Button
             disabled={busy || !fullName || !email || (accessLevel === 'approver' && !department)}
           >
-            {busy ? <Spinner /> : editing ? 'Save' : 'Send invite'}
+            {busy ? <Spinner /> : editing ? 'Save changes' : 'Send invite'}
           </Button>
         </div>
       </form>

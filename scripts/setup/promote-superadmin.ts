@@ -61,8 +61,8 @@ if (roles.error) throw roles.error;
 const demoted = await db
   .from('user_roles')
   .delete()
-  .eq('user_id', administrator.id)
-  .eq('role', 'super_administrator');
+  .eq('role', 'super_administrator')
+  .neq('user_id', superadmin.id);
 if (demoted.error) throw demoted.error;
 
 const verified = await db

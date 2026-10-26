@@ -1,4 +1,3 @@
-import { administrativeRoles } from '../domain/access.js';
 import { HttpError } from '../lib/http.js';
 import { adminClient } from '../lib/supabase.js';
 
@@ -42,7 +41,7 @@ export function isFinanceStageAction(action: string) {
 }
 
 function isFinanceHead(roles: string[]) {
-  return roles.some((role) => administrativeRoles.includes(role));
+  return roles.includes('super_administrator');
 }
 
 async function emailsForRoles(db: DatabaseClient, roles: string[]) {
@@ -190,7 +189,10 @@ export async function performFinanceStageAction(
 
     case 'head_approve':
       if (!isFinanceHead(actor.roles))
-        throw new HttpError(403, 'Only a Finance Head / Administrator can approve this stage.');
+        throw new HttpError(
+          403,
+          'Only the Super Administrator, acting as Finance Head, can approve this stage.',
+        );
       requireStatus(currentStatus, ['Pending Finance Head Review'], 'Finance Head approval');
       nextStatus = 'Awaiting Hard Copy Verification';
       actionLabel = 'Finance Head Approved';
@@ -204,7 +206,10 @@ export async function performFinanceStageAction(
 
     case 'head_reject':
       if (!isFinanceHead(actor.roles))
-        throw new HttpError(403, 'Only a Finance Head / Administrator can decline this stage.');
+        throw new HttpError(
+          403,
+          'Only the Super Administrator, acting as Finance Head, can decline this stage.',
+        );
       requireStatus(currentStatus, ['Pending Finance Head Review'], 'Finance Head decline');
       requireRemarks(input.remarks, 'Finance Head decline');
       nextStatus = 'Returned to Requestor';
@@ -282,7 +287,7 @@ export async function performFinanceStageAction(
 
   const rfpNumber = asText(request.rfp_number);
   if (input.action === 'member_approve') {
-    const heads = await emailsForRoles(db, administrativeRoles);
+    const heads = await emailsForRoles(db, ['super_administrator']);
     await queueNotifications(
       db,
       request,

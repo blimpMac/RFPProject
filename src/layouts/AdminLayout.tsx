@@ -10,9 +10,7 @@ import {
   Menu,
   Search,
   Table2,
-  UserCog,
   Users,
-  UsersRound,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -70,22 +68,6 @@ const navigationItems: NavigationItem[] = [
     allowedRoles: ['super_administrator', 'administrator', 'finance_reviewer'],
   },
   {
-    to: '/admin/approver-management',
-    label: 'Approver access',
-    description: 'Manage approver accounts',
-    group: 'Administration',
-    icon: UserCog,
-    allowedRoles: ['super_administrator'],
-  },
-  {
-    to: '/admin/approving-heads',
-    label: 'Approval team',
-    description: 'Departments and signatories',
-    group: 'Administration',
-    icon: UsersRound,
-    allowedRoles: ['super_administrator'],
-  },
-  {
     to: '/admin/settings',
     label: 'Accounts',
     description: 'Roles and user access',
@@ -96,10 +78,10 @@ const navigationItems: NavigationItem[] = [
 ];
 
 const roleLabels: Record<Role, string> = {
-  super_administrator: 'Super administrator',
+  super_administrator: 'Super administrator · Finance Head',
   administrator: 'Administrator',
-  department_approver: 'Department approver',
-  finance_reviewer: 'Finance reviewer',
+  department_approver: 'Department Head',
+  finance_reviewer: 'Finance Member',
 };
 
 function canViewNavigationItem(item: NavigationItem, roles: Role[]) {
