@@ -1,5 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, FileQuestion } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  AlertTriangle,
+  CalendarClock,
+  Check,
+  FileQuestion,
+  Search,
+  ShieldCheck,
+  WalletCards,
+  X,
+} from 'lucide-react';
 import { Button, EmptyState, Modal, Spinner, StatusBadge } from '../components/ui';
 import { useAuth } from '../components/AuthProvider';
 import { get, post } from '../lib/api';
@@ -10,6 +19,82 @@ import { AttachmentPreviewSection } from '../components/AttachmentPreviewSection
 
 type Result = { rows: RfpRequest[] };
 type Action = { value: string; label: string };
+type QueueFocus = 'all' | 'review' | 'sla' | 'signatory' | 'release';
+type SlaInfo = { label: string; detail: string; tone: 'neutral' | 'good' | 'warning' | 'danger' };
+
+const manilaDay = (value: string | number | Date) =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(value));
+
+const dayNumber = (day: string) => Date.parse(`${day}T00:00:00Z`) / 864e5;
+
+function elapsedDays(value: string | null, now: number) {
+  if (!value) return 0;
+  return Math.max(0, dayNumber(manilaDay(now)) - dayNumber(manilaDay(value)));
+}
+
+function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
+  const status = request.final_status;
+  if (status === 'Pending Department Approval') {
+    const days = elapsedDays(request.submitted_at, now);
+    return {
+      label: `Department review · Day ${days + 1}`,
+      detail: days > 1 ? `${days} days since submission` : 'Within department review window',
+      tone: days > 1 ? 'warning' : 'neutral',
+    };
+  }
+  if (['Pending Finance Review', 'Documentation Required'].includes(status)) {
+    const days = elapsedDays(request.department_approval_at || request.submitted_at, now);
+    return {
+      label: `${status === 'Documentation Required' ? 'Documents' : 'Finance review'} · Day ${days + 1}`,
+      detail:
+        days > 0
+          ? `${days} day${days === 1 ? '' : 's'} since finance handoff`
+          : 'Received by Finance today',
+      tone: days > 1 ? 'danger' : days > 0 ? 'warning' : 'neutral',
+    };
+  }
+  if (/returned/i.test(status)) {
+    return {
+      label: 'Returned for action',
+      detail: 'Waiting for correction or re-review',
+      tone: 'warning',
+    };
+  }
+  if (/paid/i.test(status)) {
+    return { label: 'Completed', detail: 'Payment workflow completed', tone: 'good' };
+  }
+  if (request.planned_check_date) {
+    const today = manilaDay(now);
+    const difference = dayNumber(request.planned_check_date) - dayNumber(today);
+    if (difference < 0)
+      return {
+        label: `${Math.abs(difference)} day${Math.abs(difference) === 1 ? '' : 's'} overdue`,
+        detail: `Target was ${manilaDate(request.planned_check_date)}`,
+        tone: 'danger',
+      };
+    if (difference === 0)
+      return {
+        label: 'Release due today',
+        detail: 'Planned release date is today',
+        tone: 'warning',
+      };
+    return {
+      label: `${difference} day${difference === 1 ? '' : 's'} to target`,
+      detail: `Planned for ${manilaDate(request.planned_check_date)}`,
+      tone: 'good',
+    };
+  }
+  return {
+    label: 'No target date',
+    detail: 'Set a release target when processing begins',
+    tone: /processing|check/i.test(status) ? 'warning' : 'neutral',
+  };
+}
 
 const financeActionOptions = (status: string): Action[] => {
   if (['Pending Finance Review', 'Documentation Required'].includes(status))
@@ -44,11 +129,16 @@ export function ApprovalsPage() {
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<'pending' | 'completed'>('pending');
   const [company, setCompany] = useState('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [queueFocus, setQueueFocus] = useState<QueueFocus>('all');
+  const [now, setNow] = useState(() => Date.now());
   const load = useCallback(
     () =>
       get<Result>('monitoring/requests?page=1&pageSize=200')
         .then((result) => {
           setRows(result.rows);
+          setNow(Date.now());
           setError('');
         })
         .catch((cause) => setError(cause.message))
@@ -59,26 +149,88 @@ export function ApprovalsPage() {
     void load();
   }, [load]);
   useAutoRefresh(load);
-  const visibleRows = useMemo(
-    () =>
-      rows.filter(
-        (request) =>
-          (!company || request.company === company) &&
-          (view === 'pending'
-            ? !/paid|returned to requestor/i.test(request.final_status)
-            : /paid|returned to requestor/i.test(request.final_status)),
-      ),
-    [company, rows, view],
-  );
-  const companyOptions = [
-    ...new Set(rows.flatMap((request) => (request.company ? [request.company] : []))),
-  ];
   const finance = roles.some((role) =>
     ['super_administrator', 'administrator', 'finance_reviewer'].includes(role),
   );
   const department = roles.some((role) =>
     ['super_administrator', 'administrator', 'department_approver'].includes(role),
   );
+  const matchesQueueFocus = useCallback(
+    (request: RfpRequest) => {
+      if (queueFocus === 'all') return true;
+      if (queueFocus === 'review')
+        return ['Pending Finance Review', 'Documentation Required'].includes(request.final_status);
+      if (queueFocus === 'sla')
+        return ['warning', 'danger'].includes(getSlaInfo(request, now).tone);
+      if (queueFocus === 'signatory')
+        return ['Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
+          request.final_status,
+        );
+      return ['Check Released', 'Payment Released'].includes(request.final_status);
+    },
+    [now, queueFocus],
+  );
+  const visibleRows = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return rows.filter(
+      (request) =>
+        (!company || request.company === company) &&
+        (!statusFilter || request.final_status === statusFilter) &&
+        (!query ||
+          [
+            request.rfp_number,
+            request.requestor_name,
+            request.requestor_email,
+            request.department,
+            request.supplier_payee,
+            request.project_class,
+            request.purpose_description,
+          ]
+            .join(' ')
+            .toLowerCase()
+            .includes(query)) &&
+        matchesQueueFocus(request) &&
+        (view === 'pending'
+          ? !/paid|returned to requestor/i.test(request.final_status)
+          : /paid|returned to requestor/i.test(request.final_status)),
+    );
+  }, [company, matchesQueueFocus, rows, search, statusFilter, view]);
+  const companyOptions = [
+    ...new Set(rows.flatMap((request) => (request.company ? [request.company] : []))),
+  ];
+  const statusOptions = [...new Set(rows.map((request) => request.final_status))].sort();
+  const queueCounts = useMemo(() => {
+    const activeRows = rows.filter(
+      (request) => !/paid|returned to requestor/i.test(request.final_status),
+    );
+    return {
+      review: activeRows.filter((request) =>
+        ['Pending Finance Review', 'Documentation Required'].includes(request.final_status),
+      ).length,
+      sla: activeRows.filter((request) =>
+        ['warning', 'danger'].includes(getSlaInfo(request, now).tone),
+      ).length,
+      signatory: activeRows.filter((request) =>
+        ['Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
+          request.final_status,
+        ),
+      ).length,
+      release: activeRows.filter((request) =>
+        ['Check Released', 'Payment Released'].includes(request.final_status),
+      ).length,
+    };
+  }, [now, rows]);
+  const hasFilters = Boolean(company || search || statusFilter || queueFocus !== 'all');
+  const applyQueueFocus = (focus: QueueFocus) => {
+    setQueueFocus((current) => (current === focus ? 'all' : focus));
+    setView('pending');
+  };
+  const clearFilters = () => {
+    setCompany('');
+    setSearch('');
+    setStatusFilter('');
+    setQueueFocus('all');
+  };
   const departmentReturn = selected?.final_status === 'Returned to Department Approver';
   const departmentPending = selected?.final_status === 'Pending Department Approval';
   const departmentStage = departmentPending || departmentReturn;
@@ -142,32 +294,101 @@ export function ApprovalsPage() {
 
   if (loading) return <Spinner />;
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Approvals</h1>
-          <p className="text-sm text-slate-500">
-            Department approval, finance review, processing, check approval, release, and payment
-            completion.
+          <p className="eyebrow">Workflow control</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Approval queue</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+            Review requests, monitor finance SLA stages, and move payments through release.
           </p>
         </div>
         <span className="live-refresh-indicator">Live · refreshes every 15 seconds</span>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={view === 'pending' ? 'primary' : 'secondary'}
-          onClick={() => setView('pending')}
-        >
-          Pending
-        </Button>
-        <Button
-          variant={view === 'completed' ? 'primary' : 'secondary'}
-          onClick={() => setView('completed')}
-        >
-          Completed / Requestor correction
-        </Button>
+      {finance && (
+        <section className="queue-health-grid" aria-label="Finance queue health">
+          <QueueHealthCard
+            active={queueFocus === 'review'}
+            count={queueCounts.review}
+            icon={<WalletCards size={18} />}
+            label="Needs finance review"
+            detail="Decision or documents required"
+            onClick={() => applyQueueFocus('review')}
+          />
+          <QueueHealthCard
+            active={queueFocus === 'sla'}
+            count={queueCounts.sla}
+            icon={<AlertTriangle size={18} />}
+            label="SLA attention"
+            detail="Aging or target-date risk"
+            tone="warning"
+            onClick={() => applyQueueFocus('sla')}
+          />
+          <QueueHealthCard
+            active={queueFocus === 'signatory'}
+            count={queueCounts.signatory}
+            icon={<ShieldCheck size={18} />}
+            label="Signatory stage"
+            detail="Check preparation and approval"
+            tone="violet"
+            onClick={() => applyQueueFocus('signatory')}
+          />
+          <QueueHealthCard
+            active={queueFocus === 'release'}
+            count={queueCounts.release}
+            icon={<CalendarClock size={18} />}
+            label="Ready to complete"
+            detail="Released checks awaiting closure"
+            tone="green"
+            onClick={() => applyQueueFocus('release')}
+          />
+        </section>
+      )}
+
+      <section className="approval-filter-panel" aria-label="Approval queue filters">
+        <div className="approval-view-toggle" role="group" aria-label="Request view">
+          <button
+            className={view === 'pending' ? 'active' : ''}
+            onClick={() => setView('pending')}
+            aria-pressed={view === 'pending'}
+          >
+            Active
+          </button>
+          <button
+            className={view === 'completed' ? 'active' : ''}
+            onClick={() => setView('completed')}
+            aria-pressed={view === 'completed'}
+          >
+            Completed / returned
+          </button>
+        </div>
+        <label className="approval-search">
+          <Search size={16} aria-hidden="true" />
+          <span className="sr-only">Search approval queue</span>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search RFP, payee, or requestor"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} aria-label="Clear approval search">
+              <X size={15} />
+            </button>
+          )}
+        </label>
         <select
-          className="input ml-auto w-full sm:w-auto"
+          className="input"
+          aria-label="Status"
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value)}
+        >
+          <option value="">All statuses</option>
+          {statusOptions.map((item) => (
+            <option key={item}>{item}</option>
+          ))}
+        </select>
+        <select
+          className="input"
           aria-label="Company"
           value={company}
           onChange={(event) => setCompany(event.target.value)}
@@ -177,7 +398,12 @@ export function ApprovalsPage() {
             <option key={item}>{item}</option>
           ))}
         </select>
-      </div>
+        {hasFilters && (
+          <button className="approval-clear" onClick={clearFilters}>
+            Clear filters
+          </button>
+        )}
+      </section>
       {error && (
         <p className="rounded bg-red-50 p-3 text-sm text-red-700" role="alert">
           {error}
@@ -187,21 +413,26 @@ export function ApprovalsPage() {
         <div className="divide-y">
           {visibleRows.map((request) => (
             <div
-              className="grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center"
+              className="approval-request-row grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center"
               key={request.id}
             >
-              <div>
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-semibold">{request.rfp_number}</p>
                   <StatusBadge>{request.final_status}</StatusBadge>
+                  <RequestSla request={request} now={now} />
                 </div>
                 <p className="mt-1 text-sm text-slate-600">
                   {request.requestor_name} · {request.company || 'Company not recorded'} ·{' '}
                   {request.department} · {request.supplier_payee}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Submitted {manilaDate(request.submitted_at, true)} · {php.format(request.amount)}
-                </p>
+                <div className="approval-request-meta">
+                  <span>Submitted {manilaDate(request.submitted_at, true)}</span>
+                  <span>{php.format(request.amount)}</span>
+                  {request.planned_check_date && (
+                    <span>Target {manilaDate(request.planned_check_date)}</span>
+                  )}
+                </div>
               </div>
               <Button
                 variant="secondary"
@@ -231,6 +462,8 @@ export function ApprovalsPage() {
               ['Supplier / Payee', selected.supplier_payee],
               ['Amount', php.format(selected.amount)],
               ['Required date', manilaDate(selected.required_payment_date)],
+              ['Target release', manilaDate(selected.planned_check_date)],
+              ['SLA position', getSlaInfo(selected, now).label],
               ['Current stage', selected.final_status],
               ['Approving heads', selected.approving_head],
               ['Department approval', selected.department_approval],
@@ -322,5 +555,49 @@ export function ApprovalsPage() {
         </Modal>
       )}
     </div>
+  );
+}
+
+function QueueHealthCard({
+  active,
+  count,
+  detail,
+  icon,
+  label,
+  onClick,
+  tone = 'blue',
+}: {
+  active: boolean;
+  count: number;
+  detail: string;
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+  tone?: 'blue' | 'warning' | 'violet' | 'green';
+}) {
+  return (
+    <button
+      className={`queue-health-card ${active ? 'queue-health-card-active' : ''}`}
+      data-tone={tone}
+      onClick={onClick}
+      aria-pressed={active}
+    >
+      <span className="queue-health-icon">{icon}</span>
+      <span className="min-w-0 flex-1 text-left">
+        <strong>{label}</strong>
+        <small>{detail}</small>
+      </span>
+      <span className="queue-health-count">{count}</span>
+    </button>
+  );
+}
+
+function RequestSla({ request, now }: { request: RfpRequest; now: number }) {
+  const sla = getSlaInfo(request, now);
+  return (
+    <span className="sla-badge" data-tone={sla.tone} title={sla.detail}>
+      <CalendarClock size={13} />
+      {sla.label}
+    </span>
   );
 }
