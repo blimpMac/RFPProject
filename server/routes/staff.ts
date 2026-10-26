@@ -40,7 +40,7 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
     let requestQuery = db
       .from('rfp_requests')
       .select(
-        'id,rfp_number,submitted_at,company,department,amount,final_status,department_approval_at,finance_review_at',
+        'id,rfp_number,submitted_at,company,department,amount,final_status,department_approval_at,finance_review_at,required_payment_date,planned_check_date,updated_at',
       )
       .not('submitted_at', 'is', null)
       .order('submitted_at', { ascending: false })
@@ -58,7 +58,32 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
       requestQuery,
     ]);
     if (metrics.error) throw metrics.error;
+    if (requests.error) throw requests.error;
     const requestIds = (requests.data || []).map((request) => request.id);
+    const requestIdSet = new Set(requestIds);
+    const completionLogs = await db
+      .from('approval_logs')
+      .select('request_id,occurred_at')
+      .eq('action', 'Payment Completed')
+      .order('occurred_at', { ascending: false })
+      .limit(5000);
+    if (completionLogs.error) throw completionLogs.error;
+    const completedAtByRequest = new Map<string, string>();
+    for (const log of completionLogs.data || []) {
+      if (
+        log.request_id &&
+        requestIdSet.has(log.request_id) &&
+        !completedAtByRequest.has(log.request_id)
+      ) {
+        completedAtByRequest.set(log.request_id, log.occurred_at);
+      }
+    }
+    const dashboardRequests = (requests.data || []).map((request) => ({
+      ...request,
+      completed_at:
+        completedAtByRequest.get(request.id) ||
+        (/paid/i.test(request.final_status) ? request.updated_at : null),
+    }));
     let logsQuery = db
       .from('approval_logs')
       .select('*')
@@ -73,7 +98,7 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
     return json(200, {
       ok: true,
       metrics: metrics.data,
-      requests: requests.data || [],
+      requests: dashboardRequests,
       recentActivity: logs.data || [],
     });
   }
