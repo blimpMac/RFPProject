@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
-  AlertTriangle,
   CalendarClock,
   Check,
   ChevronLeft,
   ChevronRight,
+  FileCheck2,
   FileQuestion,
+  RefreshCw,
   Search,
   ShieldCheck,
   WalletCards,
@@ -21,8 +22,9 @@ import { AttachmentPreviewSection } from '../components/AttachmentPreviewSection
 
 type Result = { rows: RfpRequest[] };
 type Action = { value: string; label: string };
-type QueueFocus = 'all' | 'review' | 'sla' | 'signatory' | 'release';
+type QueueFocus = 'all' | 'originals' | 'due' | 'review' | 'signatory' | 'release';
 type SlaInfo = { label: string; detail: string; tone: 'neutral' | 'good' | 'warning' | 'danger' };
+type FinanceOperations = NonNullable<NonNullable<RfpRequest['raw_record']>['finance_operations']>;
 
 const manilaDay = (value: string | number | Date) =>
   new Intl.DateTimeFormat('en-CA', {
@@ -33,6 +35,17 @@ const manilaDay = (value: string | number | Date) =>
   }).format(new Date(value));
 
 const dayNumber = (day: string) => Date.parse(`${day}T00:00:00Z`) / 864e5;
+
+const financeOperations = (request: RfpRequest): FinanceOperations =>
+  request.raw_record?.finance_operations || {};
+
+const requiresOriginals = (request: RfpRequest) => !/cash advance/i.test(request.rfp_type);
+
+const awaitingOriginals = (request: RfpRequest) =>
+  requiresOriginals(request) &&
+  request.department_approval === 'Approved' &&
+  !financeOperations(request).originals_received_date &&
+  !/paid|rejected|returned to requestor/i.test(request.final_status);
 
 function elapsedDays(value: string | null, now: number) {
   if (!value) return 0;
@@ -135,14 +148,25 @@ export function ApprovalsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [queueFocus, setQueueFocus] = useState<QueueFocus>('all');
   const [now, setNow] = useState(() => Date.now());
+  const [lastRefresh, setLastRefresh] = useState(() => Date.now());
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [originalsDate, setOriginalsDate] = useState('');
+  const [documentVerification, setDocumentVerification] = useState('');
+  const [verificationRemarks, setVerificationRemarks] = useState('');
+  const [financeNotes, setFinanceNotes] = useState('');
+  const [updateBusy, setUpdateBusy] = useState(false);
+  const [notice, setNotice] = useState('');
   const load = useCallback(
     () =>
       get<Result>('monitoring/requests?page=1&pageSize=200')
         .then((result) => {
           setRows(result.rows);
           setNow(Date.now());
+          setLastRefresh(Date.now());
+          setSelected((current) =>
+            current ? result.rows.find((request) => request.id === current.id) || current : current,
+          );
           setError('');
         })
         .catch((cause) => setError(cause.message))
@@ -162,10 +186,14 @@ export function ApprovalsPage() {
   const matchesQueueFocus = useCallback(
     (request: RfpRequest) => {
       if (queueFocus === 'all') return true;
+      if (queueFocus === 'originals') return awaitingOriginals(request);
+      if (queueFocus === 'due')
+        return (
+          request.final_status === 'Pending Finance Review' &&
+          elapsedDays(request.department_approval_at || request.submitted_at, now) === 0
+        );
       if (queueFocus === 'review')
         return ['Pending Finance Review', 'Documentation Required'].includes(request.final_status);
-      if (queueFocus === 'sla')
-        return ['warning', 'danger'].includes(getSlaInfo(request, now).tone);
       if (queueFocus === 'signatory')
         return ['Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
           request.final_status,
@@ -219,11 +247,14 @@ export function ApprovalsPage() {
       (request) => !/paid|returned to requestor/i.test(request.final_status),
     );
     return {
+      originals: activeRows.filter(awaitingOriginals).length,
+      due: activeRows.filter(
+        (request) =>
+          request.final_status === 'Pending Finance Review' &&
+          elapsedDays(request.department_approval_at || request.submitted_at, now) === 0,
+      ).length,
       review: activeRows.filter((request) =>
         ['Pending Finance Review', 'Documentation Required'].includes(request.final_status),
-      ).length,
-      sla: activeRows.filter((request) =>
-        ['warning', 'danger'].includes(getSlaInfo(request, now).tone),
       ).length,
       signatory: activeRows.filter((request) =>
         ['Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
@@ -245,6 +276,20 @@ export function ApprovalsPage() {
     setSearch('');
     setStatusFilter('');
     setQueueFocus('all');
+  };
+  const openRequest = (request: RfpRequest) => {
+    const operations = financeOperations(request);
+    setSelected(request);
+    setAction('');
+    setRemarks('');
+    setCheckDate(request.planned_check_date || '');
+    setReason('');
+    setOriginalsDate(operations.originals_received_date || '');
+    setDocumentVerification(operations.document_verification || '');
+    setVerificationRemarks(operations.verification_remarks || '');
+    setFinanceNotes(request.finance_remarks || '');
+    setNotice('');
+    setError('');
   };
   const departmentReturn = selected?.final_status === 'Returned to Department Approver';
   const departmentPending = selected?.final_status === 'Pending Department Approval';
@@ -277,6 +322,24 @@ export function ApprovalsPage() {
       setError('Remarks are required when returning a request to the Requestor.');
       return;
     }
+    if (
+      action === 'approve' &&
+      requiresOriginals(selected) &&
+      (financeOperations(selected).document_verification !== 'Complete' ||
+        !financeOperations(selected).originals_received_date)
+    ) {
+      setError('Save a complete original-document verification before Finance approval.');
+      return;
+    }
+    if (
+      !departmentAction &&
+      selected.planned_check_date &&
+      checkDate !== selected.planned_check_date &&
+      !reason.trim()
+    ) {
+      setError('Add a reason for changing the planned release date.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
@@ -307,44 +370,114 @@ export function ApprovalsPage() {
     }
   };
 
+  const saveFinanceUpdates = async () => {
+    if (!selected || !finance) return;
+    if (requiresOriginals(selected) && documentVerification === 'Complete' && !originalsDate) {
+      setError('Record the original documents received date before marking them complete.');
+      return;
+    }
+    if (
+      requiresOriginals(selected) &&
+      documentVerification === 'Incomplete' &&
+      !verificationRemarks.trim()
+    ) {
+      setError('Describe the missing or incomplete documents.');
+      return;
+    }
+    if (
+      selected.planned_check_date &&
+      checkDate !== selected.planned_check_date &&
+      !reason.trim()
+    ) {
+      setError('Add a reason for changing the planned release date.');
+      return;
+    }
+    setUpdateBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const result = await post<{ request: RfpRequest }>('finance/update', {
+        requestId: selected.id,
+        originalsReceivedDate: originalsDate || null,
+        documentVerification: documentVerification || null,
+        verificationRemarks: verificationRemarks || null,
+        financeRemarks: financeNotes || null,
+        plannedCheckDate: checkDate || null,
+        changeReason: reason || null,
+      });
+      setRows((current) =>
+        current.map((request) => (request.id === result.request.id ? result.request : request)),
+      );
+      openRequest(result.request);
+      setNotice('Finance records saved and added to the approval log.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Finance updates could not be saved.');
+    } finally {
+      setUpdateBusy(false);
+    }
+  };
+
   if (loading) return <Spinner />;
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="eyebrow">Workflow control</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Approval queue</h1>
+          <p className="eyebrow">Finance / Workspace</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+            {finance ? 'Finance Dashboard' : 'Approval Queue'}
+          </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-            Review requests, monitor finance SLA stages, and move payments through release.
+            Monitor requests, manage Finance actions, and follow up on every SLA stage.
           </p>
         </div>
-        <span className="live-refresh-indicator">Live · refreshes every 15 seconds</span>
+        <div className="finance-refresh-group">
+          <span className="live-refresh-indicator">
+            Updated{' '}
+            {new Intl.DateTimeFormat('en-PH', {
+              hour: '2-digit',
+              minute: '2-digit',
+            }).format(lastRefresh)}
+          </span>
+          <Button variant="secondary" onClick={() => void load()}>
+            <RefreshCw size={16} />
+            Refresh data
+          </Button>
+        </div>
       </div>
       {finance && (
         <section className="queue-health-grid" aria-label="Finance queue health">
           <QueueHealthCard
+            active={queueFocus === 'originals'}
+            count={queueCounts.originals}
+            icon={<FileCheck2 size={18} />}
+            label="Awaiting originals"
+            detail="Regular RFPs only"
+            tone="warning"
+            onClick={() => applyQueueFocus('originals')}
+          />
+          <QueueHealthCard
+            active={queueFocus === 'due'}
+            count={queueCounts.due}
+            icon={<CalendarClock size={18} />}
+            label="Due for Finance today"
+            detail="SLA day 1 handoff"
+            tone="amber"
+            onClick={() => applyQueueFocus('due')}
+          />
+          <QueueHealthCard
             active={queueFocus === 'review'}
             count={queueCounts.review}
             icon={<WalletCards size={18} />}
-            label="Needs finance review"
-            detail="Decision or documents required"
+            label="Pending Finance review"
+            detail="Requires Finance decision"
             onClick={() => applyQueueFocus('review')}
-          />
-          <QueueHealthCard
-            active={queueFocus === 'sla'}
-            count={queueCounts.sla}
-            icon={<AlertTriangle size={18} />}
-            label="SLA attention"
-            detail="Aging or target-date risk"
-            tone="warning"
-            onClick={() => applyQueueFocus('sla')}
           />
           <QueueHealthCard
             active={queueFocus === 'signatory'}
             count={queueCounts.signatory}
             icon={<ShieldCheck size={18} />}
-            label="Signatory stage"
-            detail="Check preparation and approval"
+            label="Day 3 · Signatory"
+            detail="Check preparation / sign-off"
             tone="violet"
             onClick={() => applyQueueFocus('signatory')}
           />
@@ -352,8 +485,8 @@ export function ApprovalsPage() {
             active={queueFocus === 'release'}
             count={queueCounts.release}
             icon={<CalendarClock size={18} />}
-            label="Ready to complete"
-            detail="Released checks awaiting closure"
+            label="Day 4 · Depositing"
+            detail="Payment release stage"
             tone="green"
             onClick={() => applyQueueFocus('release')}
           />
@@ -419,49 +552,69 @@ export function ApprovalsPage() {
           </button>
         )}
       </section>
-      {error && (
+      {error && !selected && (
         <p className="rounded bg-red-50 p-3 text-sm text-red-700" role="alert">
           {error}
         </p>
       )}
+      {notice && !selected && (
+        <p className="rounded bg-emerald-50 p-3 text-sm text-emerald-800" role="status">
+          {notice}
+        </p>
+      )}
       <div className="card overflow-hidden">
-        <div className="divide-y">
-          {paginatedRows.map((request) => (
-            <div
-              className="approval-request-row grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center"
-              key={request.id}
-            >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-semibold">{request.rfp_number}</p>
-                  <StatusBadge>{request.final_status}</StatusBadge>
-                  <RequestSla request={request} now={now} />
-                </div>
-                <p className="mt-1 text-sm text-slate-600">
-                  {request.requestor_name} · {request.company || 'Company not recorded'} ·{' '}
-                  {request.department} · {request.supplier_payee}
-                </p>
-                <div className="approval-request-meta">
-                  <span>Submitted {manilaDate(request.submitted_at, true)}</span>
-                  <span>{php.format(request.amount)}</span>
-                  {request.planned_check_date && (
-                    <span>Target {manilaDate(request.planned_check_date)}</span>
-                  )}
-                </div>
-              </div>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setSelected(request);
-                  setAction('');
-                  setCheckDate(request.planned_check_date || '');
-                  setError('');
-                }}
-              >
-                Open request
-              </Button>
-            </div>
-          ))}
+        <div className="finance-table-heading">
+          <div>
+            <h2>RFP Requests</h2>
+            <p>Choose a request to review details and manage its Finance status.</p>
+          </div>
+          <span>{visibleRows.length} matching requests</span>
+        </div>
+        <div className="finance-table-wrap">
+          <table className="finance-request-table">
+            <thead>
+              <tr>
+                <th>RFP No.</th>
+                <th>Requestor / Department</th>
+                <th>Supplier / Payee</th>
+                <th>Amount</th>
+                <th>Current Status</th>
+                <th>SLA Stage</th>
+                <th>Planned Check</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedRows.map((request) => (
+                <tr key={request.id} onClick={() => openRequest(request)}>
+                  <td>
+                    <button
+                      className="finance-rfp-link"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openRequest(request);
+                      }}
+                    >
+                      {request.rfp_number}
+                    </button>
+                    <small>{request.company || 'Company not recorded'}</small>
+                  </td>
+                  <td>
+                    <strong>{request.requestor_name}</strong>
+                    <small>{request.department}</small>
+                  </td>
+                  <td>{request.supplier_payee}</td>
+                  <td className="finance-amount">{php.format(request.amount)}</td>
+                  <td>
+                    <StatusBadge>{request.final_status}</StatusBadge>
+                  </td>
+                  <td>
+                    <RequestSla request={request} now={now} />
+                  </td>
+                  <td>{manilaDate(request.planned_check_date)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         {!visibleRows.length && (
           <EmptyState title="No requests" body={`There are no ${view} approvals in this view.`} />
@@ -509,33 +662,153 @@ export function ApprovalsPage() {
         )}
       </div>
       {selected && (
-        <Modal title={selected.rfp_number} onClose={() => setSelected(undefined)}>
-          <div className="grid gap-4 sm:grid-cols-2">
+        <Modal title={selected.rfp_number} size="wide" onClose={() => setSelected(undefined)}>
+          <div className="finance-modal-summary">
+            <div>
+              <StatusBadge>{selected.final_status}</StatusBadge>
+              <RequestSla request={selected} now={now} />
+            </div>
+            <p>
+              {selected.company || 'Company not recorded'} · Submitted{' '}
+              {manilaDate(selected.submitted_at, true)}
+            </p>
+          </div>
+          {error && (
+            <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-700" role="alert">
+              {error}
+            </p>
+          )}
+          {notice && (
+            <p className="mt-4 rounded bg-emerald-50 p-3 text-sm text-emerald-800" role="status">
+              {notice}
+            </p>
+          )}
+          <h3 className="finance-section-title">Request details</h3>
+          <div className="finance-detail-grid">
             {[
               ['Requestor', selected.requestor_name],
-              ['Company', selected.company || 'Not recorded'],
               ['Department', selected.department],
+              ['Requestor email', selected.requestor_email],
+              ['RFP type', selected.rfp_type],
               ['Supplier / Payee', selected.supplier_payee],
               ['Amount', php.format(selected.amount)],
+              ['Project / Class', selected.project_class],
               ['Required date', manilaDate(selected.required_payment_date)],
+              ['Submitted date', manilaDate(selected.submitted_at, true)],
               ['Target release', manilaDate(selected.planned_check_date)],
               ['SLA position', getSlaInfo(selected, now).label],
               ['Current stage', selected.final_status],
               ['Approving heads', selected.approving_head],
               ['Department approval', selected.department_approval],
+              ['Department remarks', selected.department_approval_remarks || '—'],
               ['Finance review', selected.finance_review],
+              ['Finance remarks', selected.finance_remarks || '—'],
               ['Purpose', selected.purpose_description],
             ].map(([key, value]) => (
               <div
                 key={key}
-                className={key === 'Purpose' || key === 'Approving heads' ? 'sm:col-span-2' : ''}
+                className={
+                  ['Purpose', 'Approving heads', 'Department remarks', 'Finance remarks'].includes(
+                    key,
+                  )
+                    ? 'finance-detail-wide'
+                    : ''
+                }
               >
-                <p className="text-xs font-semibold uppercase text-slate-500">{key}</p>
-                <p className="mt-1 text-sm">{value}</p>
+                <p>{key}</p>
+                <strong>{value}</strong>
               </div>
             ))}
           </div>
           <AttachmentPreviewSection requestId={selected.id} />
+          {finance && (
+            <section className="finance-update-section">
+              <h3 className="finance-section-title">Finance updates</h3>
+              <div className="finance-update-grid">
+                <div className="field">
+                  <label htmlFor="originals-date">Original documents received date</label>
+                  <input
+                    id="originals-date"
+                    className="input"
+                    type="date"
+                    disabled={!requiresOriginals(selected)}
+                    value={originalsDate}
+                    onChange={(event) => setOriginalsDate(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="document-verification">Original documents verification</label>
+                  <select
+                    id="document-verification"
+                    className="input"
+                    disabled={!requiresOriginals(selected)}
+                    value={documentVerification}
+                    onChange={(event) => setDocumentVerification(event.target.value)}
+                  >
+                    <option value="">Select status</option>
+                    <option value="Complete">Complete</option>
+                    <option value="Incomplete">Incomplete</option>
+                  </select>
+                </div>
+                <div className="field finance-update-wide">
+                  <label htmlFor="verification-remarks">
+                    Verification remarks / missing documents
+                  </label>
+                  <textarea
+                    id="verification-remarks"
+                    className="input min-h-24"
+                    disabled={!requiresOriginals(selected)}
+                    placeholder={
+                      requiresOriginals(selected)
+                        ? 'Required when documents are incomplete'
+                        : 'Hard-copy verification is not required for Cash Advances.'
+                    }
+                    value={verificationRemarks}
+                    onChange={(event) => setVerificationRemarks(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="target-date">Planned check / release date</label>
+                  <input
+                    id="target-date"
+                    className="input"
+                    type="date"
+                    value={checkDate}
+                    onChange={(event) => setCheckDate(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="target-date-reason">Reason for changing target date</label>
+                  <input
+                    id="target-date-reason"
+                    className="input"
+                    placeholder="Required when changing an existing date"
+                    value={reason}
+                    onChange={(event) => setReason(event.target.value)}
+                  />
+                </div>
+                <div className="field finance-update-wide">
+                  <label htmlFor="finance-notes">Finance remarks / internal notes</label>
+                  <textarea
+                    id="finance-notes"
+                    className="input min-h-24"
+                    placeholder="Add a note for the Finance team"
+                    value={financeNotes}
+                    onChange={(event) => setFinanceNotes(event.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="finance-update-footer">
+                <p>
+                  Regular RFPs require received originals and a complete verification before Finance
+                  approval. Cash Advances do not require hard copies.
+                </p>
+                <Button onClick={() => void saveFinanceUpdates()} disabled={updateBusy}>
+                  {updateBusy ? <Spinner label="Saving" /> : 'Save Finance updates'}
+                </Button>
+              </div>
+            </section>
+          )}
           {choices.length > 0 && (
             <div className="mt-6 border-t pt-5">
               <h3 className="font-semibold">Next workflow action</h3>
@@ -552,28 +825,6 @@ export function ApprovalsPage() {
                     </option>
                   ))}
                 </select>
-                {!departmentStage && (
-                  <>
-                    <div className="field sm:col-span-2">
-                      <label htmlFor="target-date">
-                        Target release date{needsTarget ? ' *' : ''}
-                      </label>
-                      <input
-                        id="target-date"
-                        className="input"
-                        type="date"
-                        value={checkDate}
-                        onChange={(event) => setCheckDate(event.target.value)}
-                      />
-                    </div>
-                    <input
-                      className="input sm:col-span-2"
-                      placeholder="Reason for changing target date"
-                      value={reason}
-                      onChange={(event) => setReason(event.target.value)}
-                    />
-                  </>
-                )}
                 <textarea
                   className="input min-h-24 sm:col-span-2"
                   placeholder={
@@ -629,7 +880,7 @@ function QueueHealthCard({
   icon: ReactNode;
   label: string;
   onClick: () => void;
-  tone?: 'blue' | 'warning' | 'violet' | 'green';
+  tone?: 'blue' | 'warning' | 'amber' | 'violet' | 'green';
 }) {
   return (
     <button

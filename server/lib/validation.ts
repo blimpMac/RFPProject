@@ -59,6 +59,15 @@ export const financeSchema = z.object({
   plannedCheckDate: z.iso.date().nullable().optional(),
   changeReason: z.string().trim().max(1000).nullable().optional(),
 });
+export const financeUpdateSchema = z.object({
+  requestId: z.uuid(),
+  originalsReceivedDate: z.iso.date().nullable().optional(),
+  documentVerification: z.enum(['Complete', 'Incomplete']).nullable().optional(),
+  verificationRemarks: z.string().trim().max(1500).nullable().optional(),
+  financeRemarks: z.string().trim().max(1500).nullable().optional(),
+  plannedCheckDate: z.iso.date().nullable().optional(),
+  changeReason: z.string().trim().max(1000).nullable().optional(),
+});
 export const resubmitSchema = z.object({
   requestId: z.uuid(),
   trackingToken: z.string().min(20),

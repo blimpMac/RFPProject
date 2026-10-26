@@ -28,5 +28,15 @@ export type RfpRequest = {
   check_date_last_updated: string | null;
   check_date_change_reason: string | null;
   finance_email_thread_id: string | null;
+  raw_record?: {
+    finance_operations?: {
+      originals_received_date?: string | null;
+      document_verification?: 'Complete' | 'Incomplete' | null;
+      verification_remarks?: string | null;
+      updated_at?: string | null;
+      updated_by?: string | null;
+    };
+    [key: string]: unknown;
+  } | null;
 };
 export type PublicOptions = { departments: string[]; requestTypes: string[] };

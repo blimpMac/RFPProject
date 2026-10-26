@@ -4,7 +4,7 @@ import { flushEmailQueueForRequest } from '../email/service.js';
 import { requireStaff } from '../lib/auth.js';
 import { ensureMethod, HttpError, json, readJson } from '../lib/http.js';
 import { isDepartmentOnly, normalizeDepartment } from '../lib/staff-access.js';
-import { departmentRereviewSchema, financeSchema } from '../lib/validation.js';
+import { departmentRereviewSchema, financeSchema, financeUpdateSchema } from '../lib/validation.js';
 import { getAssignedDepartments } from '../services/approving-heads.js';
 import { cancelPendingDepartmentReview } from '../services/workflow-notifications.js';
 import { auditTrailRow } from '../services/audit-trail.js';
@@ -212,6 +212,27 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
     ensureMethod(event, 'POST');
     const staff = await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
     const input = financeSchema.parse(readJson(event));
+    if (input.action === 'approve') {
+      const request = await db
+        .from('rfp_requests')
+        .select('rfp_type,raw_record')
+        .eq('id', input.requestId)
+        .single();
+      if (request.error || !request.data) throw new HttpError(404, 'Request not found.');
+      if (!/cash advance/i.test(request.data.rfp_type || '')) {
+        const raw = request.data.raw_record as Record<string, unknown> | null;
+        const operations = raw?.finance_operations as Record<string, unknown> | undefined;
+        if (
+          operations?.document_verification !== 'Complete' ||
+          !operations.originals_received_date
+        ) {
+          throw new HttpError(
+            409,
+            'Complete the original-document verification before Finance approval.',
+          );
+        }
+      }
+    }
     const result = await db.rpc('finance_workflow_action', {
       p_request_id: input.requestId,
       p_action: input.action,
@@ -224,6 +245,95 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
     if (result.error) throw new HttpError(409, result.error.message);
     const delivery = await flushEmailQueueForRequest(input.requestId);
     return json(200, { ok: true, request: result.data, delivery });
+  }
+
+  if (route === 'finance/update') {
+    ensureMethod(event, 'POST');
+    const staff = await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    const input = financeUpdateSchema.parse(readJson(event));
+    const current = await db.from('rfp_requests').select('*').eq('id', input.requestId).single();
+    if (current.error || !current.data) throw new HttpError(404, 'Request not found.');
+
+    const request = current.data as Record<string, unknown>;
+    const existingRaw =
+      request.raw_record &&
+      typeof request.raw_record === 'object' &&
+      !Array.isArray(request.raw_record)
+        ? (request.raw_record as Record<string, unknown>)
+        : {};
+    const existingOperations =
+      existingRaw.finance_operations &&
+      typeof existingRaw.finance_operations === 'object' &&
+      !Array.isArray(existingRaw.finance_operations)
+        ? (existingRaw.finance_operations as Record<string, unknown>)
+        : {};
+    const isCashAdvance = /cash advance/i.test(String(request.rfp_type || ''));
+    const operations = {
+      ...existingOperations,
+      originals_received_date: isCashAdvance ? null : input.originalsReceivedDate || null,
+      document_verification: isCashAdvance ? null : input.documentVerification || null,
+      verification_remarks: isCashAdvance ? null : input.verificationRemarks || null,
+      updated_at: new Date().toISOString(),
+      updated_by: staff.user.email,
+    };
+    if (
+      !isCashAdvance &&
+      operations.document_verification === 'Complete' &&
+      !operations.originals_received_date
+    ) {
+      throw new HttpError(
+        400,
+        'Record the original documents received date before marking them complete.',
+      );
+    }
+    if (
+      !isCashAdvance &&
+      operations.document_verification === 'Incomplete' &&
+      !String(operations.verification_remarks || '').trim()
+    ) {
+      throw new HttpError(400, 'Describe the missing or incomplete documents.');
+    }
+    const previousDate = request.planned_check_date ? String(request.planned_check_date) : null;
+    const nextDate = input.plannedCheckDate || null;
+    if (previousDate && nextDate !== previousDate && !input.changeReason) {
+      throw new HttpError(400, 'Add a reason for changing the planned release date.');
+    }
+
+    const version = Number(request.version || 1);
+    const updated = await db
+      .from('rfp_requests')
+      .update({
+        raw_record: { ...existingRaw, finance_operations: operations },
+        finance_remarks: input.financeRemarks || null,
+        planned_check_date: nextDate,
+        check_date_last_updated:
+          nextDate !== previousDate ? new Date().toISOString() : request.check_date_last_updated,
+        check_date_change_reason:
+          nextDate !== previousDate ? input.changeReason || null : request.check_date_change_reason,
+        version: version + 1,
+      })
+      .eq('id', input.requestId)
+      .eq('version', version)
+      .select('*')
+      .single();
+    if (updated.error || !updated.data) {
+      throw new HttpError(
+        409,
+        updated.error?.message || 'This request changed. Refresh and try again.',
+      );
+    }
+    const log = await db.from('approval_logs').insert({
+      request_id: input.requestId,
+      rfp_number: String(request.rfp_number),
+      action: 'Finance Records Updated',
+      actor_email: staff.user.email,
+      actor_user_id: staff.user.id,
+      remarks: input.financeRemarks || input.verificationRemarks || input.changeReason || null,
+      previous_status: String(request.final_status),
+      new_status: String(request.final_status),
+    });
+    if (log.error) throw log.error;
+    return json(200, { ok: true, request: updated.data });
   }
 
   if (route === 'department/action') {

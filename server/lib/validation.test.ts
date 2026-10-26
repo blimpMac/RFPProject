@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { requestSchema } from './validation.ts';
+import { financeUpdateSchema, requestSchema } from './validation.ts';
 
 const validRequest = {
   requestorName: 'Demo Requestor',
@@ -30,6 +30,29 @@ test('accepts each configured company', () => {
 test('rejects companies outside the configured list', () => {
   assert.equal(
     requestSchema.safeParse({ ...validRequest, company: 'Unknown Company' }).success,
+    false,
+  );
+});
+
+test('accepts Finance operations record updates', () => {
+  const result = financeUpdateSchema.parse({
+    requestId: 'fe835b06-227f-4e9e-b4db-101833657814',
+    originalsReceivedDate: '2026-10-26',
+    documentVerification: 'Complete',
+    verificationRemarks: '',
+    financeRemarks: 'Documents checked by Finance.',
+    plannedCheckDate: '2026-10-30',
+    changeReason: null,
+  });
+  assert.equal(result.documentVerification, 'Complete');
+});
+
+test('rejects unsupported document verification states', () => {
+  assert.equal(
+    financeUpdateSchema.safeParse({
+      requestId: 'fe835b06-227f-4e9e-b4db-101833657814',
+      documentVerification: 'Pending',
+    }).success,
     false,
   );
 });

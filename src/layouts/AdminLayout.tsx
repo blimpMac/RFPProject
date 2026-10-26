@@ -41,15 +41,15 @@ const navigationItems: NavigationItem[] = [
   },
   {
     to: '/admin/monitoring',
-    label: 'RFP Monitor',
-    description: 'Live request records',
+    label: 'RFP requests',
+    description: 'Search and inspect live records',
     group: 'Workspace',
     icon: Table2,
   },
   {
     to: '/admin/approvals',
-    label: 'Approvals',
-    description: 'Review and process requests',
+    label: 'Approval queue',
+    description: 'Finance actions and SLA stages',
     group: 'Workspace',
     icon: CheckSquare,
   },
@@ -166,7 +166,7 @@ export function AdminLayout() {
     );
 
   return (
-    <div className="admin-shell min-h-screen">
+    <div className={`admin-shell min-h-screen ${collapsed ? 'admin-shell-collapsed' : ''}`}>
       <button
         className="admin-mobile-menu fixed left-3 top-3 z-40 p-2 lg:hidden"
         onClick={() => setOpen(!open)}
@@ -301,7 +301,7 @@ export function AdminLayout() {
         </div>
       </aside>
 
-      <div className={`admin-content transition-all ${collapsed ? 'lg:ml-20' : 'lg:ml-72'}`}>
+      <div className="admin-content transition-all">
         <header className="admin-topbar flex min-h-[5.25rem] items-center gap-4 px-4 pl-16 lg:px-8">
           <div className="min-w-0">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-slate-400">

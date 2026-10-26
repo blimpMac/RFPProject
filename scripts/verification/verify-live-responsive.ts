@@ -25,7 +25,7 @@ const publicRoutes = [
 const staffRoutes = [
   { path: '/admin', heading: 'Dashboard', name: 'dashboard' },
   { path: '/admin/monitoring', heading: 'Monitoring Sheets', name: 'monitoring' },
-  { path: '/admin/approvals', heading: 'Approvals', name: 'approvals' },
+  { path: '/admin/approvals', heading: 'Finance Dashboard', name: 'approvals' },
   { path: '/admin/documents', heading: 'Document Management', name: 'documents' },
   {
     path: '/admin/approver-management',
