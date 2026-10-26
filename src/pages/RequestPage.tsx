@@ -246,8 +246,7 @@ export function RequestPage() {
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">New RFP request</h1>
           <p className="mt-2 max-w-2xl text-base text-slate-600">
-            Complete the request details. Supporting files are strongly recommended, but uploads
-            remain optional at submission.
+            Complete the request details and review the document checklist for the selected type.
           </p>
         </div>
         <form onSubmit={submit} className="card p-5 shadow-sm sm:p-7">
@@ -332,12 +331,6 @@ export function RequestPage() {
               onChange={setAttachmentChecklist}
             />
             <div className="md:col-span-2">
-              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                <strong>Attachment reminder:</strong> Upload supporting documents when available.
-                Files are not mandatory to submit because the system cannot reliably determine each
-                document type, but missing support may cause the request to be returned during
-                approval.
-              </div>
               <FileDropzone
                 files={files}
                 onChange={setFiles}

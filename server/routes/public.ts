@@ -11,6 +11,7 @@ import {
 } from '../lib/validation.js';
 import { enforceSubmissionLimit } from '../lib/rate-limit.js';
 import { getPublicApprovers } from '../services/approving-heads.js';
+import { rfpRequestTypes } from '../../shared/constants/request-types.js';
 import {
   cancelPendingDepartmentReview,
   queueSubmissionReceipt,
@@ -26,9 +27,10 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
       .eq('key', 'submission_options')
       .single();
     const approvers = await getPublicApprovers(db);
+    const configuredOptions = (data?.value || {}) as { departments?: string[] };
     return json(200, {
       ok: true,
-      options: data?.value || {},
+      options: { ...configuredOptions, requestTypes: [...rfpRequestTypes] },
       approvers,
       limits: { maxFiles: config.MAX_UPLOAD_FILES, maxSizeMb: config.MAX_UPLOAD_SIZE_MB },
     });
@@ -51,12 +53,12 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
       .eq('key', 'submission_options')
       .single();
     if (optionRow.error) throw optionRow.error;
-    const options = optionRow.data.value as { departments?: string[]; requestTypes?: string[] };
+    const options = optionRow.data.value as { departments?: string[] };
     const departmentAllowed = options.departments?.some(
       (department) =>
         normalizeDepartment(department) === normalizeDepartment(input.request.department),
     );
-    const requestTypeAllowed = options.requestTypes?.some(
+    const requestTypeAllowed = rfpRequestTypes.some(
       (requestType) =>
         normalizeDepartment(requestType) === normalizeDepartment(input.request.rfpType),
     );
