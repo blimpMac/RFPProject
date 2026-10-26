@@ -92,6 +92,7 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
         company: input.request.company,
         raw_record: {
           ...existingRaw,
+          request_type: input.request.requestType,
           submission_checklist: input.request.attachmentChecklist || [],
         },
       })
@@ -247,7 +248,11 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     ]);
     return json(200, {
       ok: true,
-      request: { ...request.data, raw_record: undefined },
+      request: {
+        ...request.data,
+        request_type: typeof rawRecord.request_type === 'string' ? rawRecord.request_type : null,
+        raw_record: undefined,
+      },
       workflow,
       financeOperations,
       submissionChecklist,
@@ -277,11 +282,17 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     const request = await db
       .from('rfp_requests')
       .select(
-        'id,rfp_number,requestor_name,requestor_email,company,department,project_class,rfp_type,supplier_payee,purpose_description,amount,required_payment_date,final_status',
+        'id,rfp_number,requestor_name,requestor_email,company,department,project_class,rfp_type,supplier_payee,purpose_description,amount,required_payment_date,final_status,raw_record',
       )
       .eq('id', record.request_id)
       .single();
     if (request.error) throw request.error;
+    const reviewRaw =
+      request.data.raw_record &&
+      typeof request.data.raw_record === 'object' &&
+      !Array.isArray(request.data.raw_record)
+        ? (request.data.raw_record as Record<string, unknown>)
+        : {};
     const attachments = await db
       .from('request_attachments')
       .select('id,original_filename,mime_type,storage_path')
@@ -316,7 +327,15 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
         };
       }),
     );
-    return json(200, { ok: true, request: request.data, attachments: previews });
+    return json(200, {
+      ok: true,
+      request: {
+        ...request.data,
+        request_type: typeof reviewRaw.request_type === 'string' ? reviewRaw.request_type : null,
+        raw_record: undefined,
+      },
+      attachments: previews,
+    });
   }
 
   if (event.httpMethod === 'POST') {

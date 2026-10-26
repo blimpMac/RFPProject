@@ -16,6 +16,7 @@ type FormState = {
   department: string;
   projectClass: string;
   rfpType: string;
+  requestType: string;
   supplierPayee: string;
   purposeDescription: string;
   amount: string;
@@ -29,6 +30,7 @@ const initial: FormState = {
   department: '',
   projectClass: '',
   rfpType: '',
+  requestType: '',
   supplierPayee: '',
   purposeDescription: '',
   amount: '',
@@ -287,6 +289,12 @@ export function RequestPage() {
                 update('rfpType', v);
                 setAttachmentChecklist([]);
               }}
+            />
+            <Select
+              label="Type of Request"
+              value={form.requestType}
+              options={['Regular', 'Emergency']}
+              onChange={(v) => update('requestType', v)}
             />
             <Field
               label="Supplier / Payee"

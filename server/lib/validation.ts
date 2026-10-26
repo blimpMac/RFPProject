@@ -16,6 +16,7 @@ export const requestSchema = z.object({
   department: z.string().trim().min(1).max(100),
   projectClass: z.string().trim().min(1).max(160),
   rfpType: z.string().trim().min(1).max(100),
+  requestType: z.enum(['Regular', 'Emergency']),
   supplierPayee: z.string().trim().min(1).max(180),
   purposeDescription: z.string().trim().min(5).max(3000),
   amount: z.coerce.number().positive().max(999999999999.99),

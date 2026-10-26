@@ -10,6 +10,7 @@ export type RfpRequest = {
   department: string;
   project_class: string;
   rfp_type: string;
+  request_type?: string | null;
   supplier_payee: string;
   purpose_description: string;
   amount: number;
@@ -29,6 +30,7 @@ export type RfpRequest = {
   check_date_change_reason: string | null;
   finance_email_thread_id: string | null;
   raw_record?: {
+    request_type?: 'Regular' | 'Emergency';
     submission_checklist?: string[];
     finance_workflow?: {
       member_status?: string | null;

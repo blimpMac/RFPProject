@@ -18,6 +18,7 @@ type Review = {
     department: string;
     project_class: string;
     rfp_type: string;
+    request_type?: string | null;
     supplier_payee: string;
     purpose_description: string;
     amount: number;
@@ -105,6 +106,7 @@ export function ReviewPage() {
             ['Department', r.department],
             ['Project / Class', r.project_class],
             ['Type', r.rfp_type],
+            ['Type of Request', r.request_type || 'Not recorded'],
             ['Supplier / Payee', r.supplier_payee],
             ['Amount', php.format(r.amount)],
             ['Required Payment Date', manilaDate(r.required_payment_date)],

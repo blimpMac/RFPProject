@@ -30,6 +30,8 @@ export type DigitalRfpRequest = {
   department: string;
   project_class: string;
   rfp_type: string;
+  request_type?: string | null;
+  raw_record?: { request_type?: string | null } | null;
   supplier_payee: string;
   purpose_description: string;
   amount: number;
@@ -78,6 +80,7 @@ export function DigitalRfpReceipt({
   );
   const processStatus = processingOverdue ? 'Overdue' : request.final_status;
   const availableAttachments = attachments.filter((attachment) => attachment.status !== 'deleted');
+  const typeOfRequest = request.request_type || request.raw_record?.request_type || 'Not recorded';
 
   return (
     <article className="digital-rfp-sheet" aria-label={`Digital RFP ${request.rfp_number}`}>
@@ -102,7 +105,8 @@ export function DigitalRfpReceipt({
           <Detail label="Requesting Department" value={request.department} />
           <Detail label="Date Filed" value={manilaDate(request.submitted_at, true)} />
           <Detail label="Requestor" value={request.requestor_name} />
-          <Detail label="Payment Type" value={request.rfp_type} />
+          <Detail label="Type" value={request.rfp_type} />
+          <Detail label="Type of Request" value={typeOfRequest} />
           <Detail label="Payee / Supplier" value={request.supplier_payee} />
           <Detail label="Amount" value={php.format(request.amount)} strong />
           <Detail label="Purpose" value={request.purpose_description} />

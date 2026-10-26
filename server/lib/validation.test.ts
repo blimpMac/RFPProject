@@ -9,6 +9,7 @@ const validRequest = {
   department: 'Finance',
   projectClass: 'Demo Project',
   rfpType: 'Supplier Payment',
+  requestType: 'Regular',
   supplierPayee: 'Demo Supplier',
   purposeDescription: 'Validation test request.',
   amount: 1000,

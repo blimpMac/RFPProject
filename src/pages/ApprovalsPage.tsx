@@ -761,6 +761,7 @@ export function ApprovalsPage() {
               ['Department', selected.department],
               ['Requestor email', selected.requestor_email],
               ['RFP type', selected.rfp_type],
+              ['Type of request', String(selected.raw_record?.request_type || 'Not recorded')],
               ['Supplier / Payee', selected.supplier_payee],
               ['Amount', php.format(selected.amount)],
               ['Project / Class', selected.project_class],

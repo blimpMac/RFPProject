@@ -16,6 +16,7 @@ type Tracking = {
     department: string;
     project_class: string;
     rfp_type: string;
+    request_type?: string | null;
     supplier_payee: string;
     purpose_description: string;
     approving_head: string;
@@ -129,6 +130,7 @@ export function TrackPage() {
             ['Last action', r.last_action],
             ['Company', r.company || 'Not recorded'],
             ['Department', r.department],
+            ['Type of request', r.request_type || 'Not recorded'],
             ['Amount', php.format(r.amount)],
             ['Submitted', manilaDate(r.submitted_at, true)],
             ['Required date', manilaDate(r.required_payment_date)],
