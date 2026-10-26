@@ -42,11 +42,11 @@ type LayoutMetrics = {
 };
 
 async function assertResponsiveLayout(page: Page, label: string) {
-  const metrics = await page.evaluate<LayoutMetrics>(() => ({
+  const metrics = await page.evaluate<LayoutMetrics>(`(() => ({
     viewportWidth: window.innerWidth,
     documentWidth: document.documentElement.scrollWidth,
-    bodyWidth: document.body.scrollWidth,
-  }));
+    bodyWidth: document.body.scrollWidth
+  }))()`);
   const overflow = Math.max(metrics.documentWidth, metrics.bodyWidth) - metrics.viewportWidth;
   if (overflow > 1) {
     throw new Error(`${label} has ${overflow}px of document-level horizontal overflow.`);
@@ -62,12 +62,15 @@ async function openAndCheck(page: Page, route: RouteCheck, staff = false) {
 
 async function setThemeAndCheck(page: Page, theme: 'light' | 'dark', label: string) {
   await page.evaluate(
-    ({ key, value }) => localStorage.setItem(key, value),
-    { key: themeStorageKey, value: theme },
+    `localStorage.setItem(${JSON.stringify(themeStorageKey)}, ${JSON.stringify(theme)})`,
   );
   await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForFunction((expected) => document.documentElement.dataset.theme === expected, theme);
-  const classState = await page.evaluate(() => document.documentElement.classList.contains('dark'));
+  await page.waitForFunction(
+    `document.documentElement.dataset.theme === ${JSON.stringify(theme)}`,
+  );
+  const classState = await page.evaluate<boolean>(
+    `document.documentElement.classList.contains('dark')`,
+  );
   if (classState !== (theme === 'dark')) {
     throw new Error(`${label} did not apply ${theme} mode consistently.`);
   }
