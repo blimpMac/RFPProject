@@ -117,8 +117,6 @@ const checklistByType: Record<string, ChecklistGroup[]> = {
 
 export function RequestAttachmentChecklist({
   rfpType,
-  selected,
-  onChange,
 }: {
   rfpType: string;
   selected: string[];
@@ -126,10 +124,6 @@ export function RequestAttachmentChecklist({
 }) {
   const groups = checklistByType[rfpType];
   if (!groups) return null;
-  const toggle = (item: string) =>
-    onChange(
-      selected.includes(item) ? selected.filter((value) => value !== item) : [...selected, item],
-    );
 
   return (
     <section className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/30">
@@ -139,39 +133,42 @@ export function RequestAttachmentChecklist({
             <ClipboardCheck size={18} />
           </span>
           <div>
-            <h2 className="text-sm font-semibold">Document checklist</h2>
+            <h2 className="text-sm font-semibold">Documents to check before submitting</h2>
             <p className="mt-1 text-xs text-slate-500">{rfpType}</p>
           </div>
         </div>
         <span className="rounded-full border px-2.5 py-1 text-[0.68rem] font-bold uppercase tracking-wide text-slate-500">
-          Optional
+          Reference only
         </span>
       </div>
+
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         {groups.map((group) => (
-          <div key={group.label}>
+          <div
+            key={group.label}
+            className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+          >
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
               {group.label}
             </p>
-            <div className="mt-2 space-y-2">
+            <ul className="mt-2 space-y-2 text-sm">
               {group.items.map((item) => (
-                <label
-                  key={item}
-                  className="flex cursor-pointer items-start gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
-                >
-                  <input
-                    className="mt-0.5"
-                    type="checkbox"
-                    checked={selected.includes(item)}
-                    onChange={() => toggle(item)}
+                <li key={item} className="flex items-start gap-2">
+                  <span
+                    className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400"
+                    aria-hidden="true"
                   />
                   <span>{item}</span>
-                </label>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         ))}
       </div>
+
+      <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+        Remember to check and prepare the documents listed above before submitting your request.
+      </p>
     </section>
   );
 }
