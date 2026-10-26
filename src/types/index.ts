@@ -1,5 +1,9 @@
 export type Role =
-  'super_administrator' | 'administrator' | 'department_approver' | 'finance_reviewer';
+  | 'super_administrator'
+  | 'administrator'
+  | 'finance_head'
+  | 'department_approver'
+  | 'finance_reviewer';
 export type RfpRequest = {
   id: string;
   rfp_number: string;

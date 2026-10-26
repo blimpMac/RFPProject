@@ -7,7 +7,7 @@ import { del, patch, post } from '../lib/api';
 import type { AccessLevel, StaffUser } from '../../shared/contracts/accounts';
 import { AccountPagination } from '../features/accounts/AccountPagination';
 import { useAccountDirectory } from '../features/accounts/useAccountDirectory';
-type AccessFilter = 'all' | 'administrator' | 'approver' | 'staff';
+type AccessFilter = 'all' | 'administrator' | 'finance_head' | 'approver' | 'staff';
 const PAGE_SIZE = 6;
 
 export function SettingsPage() {
@@ -34,6 +34,7 @@ export function SettingsPage() {
           accessFilter === 'all' ||
           (accessFilter === 'administrator' &&
             user.roles.some((role) => ['super_administrator', 'administrator'].includes(role))) ||
+          (accessFilter === 'finance_head' && user.accessLevel === 'finance_head') ||
           (accessFilter === 'approver' && user.accessLevel === 'approver') ||
           (accessFilter === 'staff' && user.accessLevel === 'staff');
         const searchMatches =
@@ -134,6 +135,7 @@ export function SettingsPage() {
             >
               <option value="all">All access</option>
               <option value="administrator">Administrators</option>
+              <option value="finance_head">Finance Heads</option>
               <option value="approver">Approvers</option>
               <option value="staff">Staff</option>
             </select>
@@ -214,9 +216,11 @@ function AccountRow({
     ? 'Super Administrator'
     : user.roles.includes('administrator')
       ? 'Administrator'
-      : user.accessLevel === 'approver'
-        ? 'Department Approver'
-        : 'Staff';
+      : user.accessLevel === 'finance_head'
+        ? 'Finance Head'
+        : user.accessLevel === 'approver'
+          ? 'Department Approver'
+          : 'Staff';
   return (
     <article className="flex flex-col gap-3 p-4 xl:flex-row xl:items-center">
       <div className="min-w-0 flex-1">
@@ -311,7 +315,8 @@ function AccountForm({
             value={accessLevel}
             onChange={(event) => setAccessLevel(event.target.value as AccessLevel)}
           >
-            <option value="staff">Staff</option>
+            <option value="staff">Finance Member</option>
+            <option value="finance_head">Finance Head</option>
             <option value="approver">Department Approver</option>
           </select>
         </div>

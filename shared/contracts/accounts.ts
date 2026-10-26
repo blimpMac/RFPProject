@@ -1,4 +1,4 @@
-export type AccessLevel = 'staff' | 'approver';
+export type AccessLevel = 'staff' | 'finance_head' | 'approver';
 
 export type StaffUser = {
   id: string;

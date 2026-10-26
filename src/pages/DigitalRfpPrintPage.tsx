@@ -23,7 +23,7 @@ export function DigitalRfpPrintPage() {
   const [data, setData] = useState<PrintData>();
   const [error, setError] = useState('');
   const finance = roles.some((role) =>
-    ['super_administrator', 'administrator', 'finance_reviewer'].includes(role),
+    ['super_administrator', 'administrator', 'finance_head', 'finance_reviewer'].includes(role),
   );
 
   useEffect(() => {

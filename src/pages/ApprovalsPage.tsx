@@ -236,9 +236,11 @@ export function ApprovalsPage() {
   }, [load]);
   useAutoRefresh(load);
   const finance = roles.some((role) =>
-    ['super_administrator', 'administrator', 'finance_reviewer'].includes(role),
+    ['super_administrator', 'administrator', 'finance_head', 'finance_reviewer'].includes(role),
   );
-  const financeHead = roles.some((role) => ['super_administrator', 'administrator'].includes(role));
+  const financeHead = roles.some((role) =>
+    ['super_administrator', 'administrator', 'finance_head'].includes(role),
+  );
   const department = roles.some((role) =>
     ['super_administrator', 'administrator', 'department_approver'].includes(role),
   );

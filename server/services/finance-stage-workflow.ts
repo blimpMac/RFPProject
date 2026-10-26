@@ -42,7 +42,7 @@ export function isFinanceStageAction(action: string) {
 }
 
 function isFinanceHead(roles: string[]) {
-  return roles.some((role) => administrativeRoles.includes(role));
+  return roles.includes('finance_head') || roles.some((role) => administrativeRoles.includes(role));
 }
 
 async function emailsForRoles(db: DatabaseClient, roles: string[]) {
@@ -282,7 +282,7 @@ export async function performFinanceStageAction(
 
   const rfpNumber = asText(request.rfp_number);
   if (input.action === 'member_approve') {
-    const heads = await emailsForRoles(db, administrativeRoles);
+    const heads = await emailsForRoles(db, ['finance_head', ...administrativeRoles]);
     await queueNotifications(
       db,
       request,

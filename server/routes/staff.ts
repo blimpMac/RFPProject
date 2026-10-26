@@ -22,7 +22,7 @@ const tableMap: Record<string, { table: string; order: string; roles?: string[] 
   documents: {
     table: 'request_attachments',
     order: 'created_at',
-    roles: [...administrativeRoles, 'finance_reviewer'],
+    roles: [...administrativeRoles, 'finance_head', 'finance_reviewer'],
   },
 };
 
@@ -109,7 +109,7 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
 
   if (route.startsWith('digital-rfp/')) {
     ensureMethod(event, 'GET');
-    await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    await requireStaff(event, [...administrativeRoles, 'finance_head', 'finance_reviewer']);
     const requestId = z.uuid().parse(route.slice('digital-rfp/'.length));
     const [request, attachments] = await Promise.all([
       db.from('rfp_requests').select('*').eq('id', requestId).single(),
@@ -127,7 +127,7 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
 
   if (route === 'audit-trail') {
     ensureMethod(event, 'GET');
-    await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    await requireStaff(event, [...administrativeRoles, 'finance_head', 'finance_reviewer']);
     const input = z
       .object({
         page: z.coerce.number().int().min(1).default(1),
@@ -215,7 +215,7 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
 
   if (route === 'documents') {
     ensureMethod(event, 'GET');
-    await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    await requireStaff(event, [...administrativeRoles, 'finance_head', 'finance_reviewer']);
     const attachments = await db
       .from('request_attachments')
       .select('id,request_id,original_filename,mime_type,size_bytes,status,created_at')
@@ -257,7 +257,11 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
 
   if (route === 'finance/action') {
     ensureMethod(event, 'POST');
-    const staff = await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    const staff = await requireStaff(event, [
+      ...administrativeRoles,
+      'finance_head',
+      'finance_reviewer',
+    ]);
     const input = financeSchema.parse(readJson(event));
     const normalizedAction =
       input.action === 'approve'
@@ -300,7 +304,11 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
 
   if (route === 'finance/update') {
     ensureMethod(event, 'POST');
-    const staff = await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    const staff = await requireStaff(event, [
+      ...administrativeRoles,
+      'finance_head',
+      'finance_reviewer',
+    ]);
     const input = financeUpdateSchema.parse(readJson(event));
     const current = await db.from('rfp_requests').select('*').eq('id', input.requestId).single();
     if (current.error || !current.data) throw new HttpError(404, 'Request not found.');
