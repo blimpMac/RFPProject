@@ -1,0 +1,28 @@
+name: UI UX Pro Max audit once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/uiux-audit-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate design-system recommendation
+        run: |
+          python3 .agents/skills/ui-ux-pro-max/scripts/search.py "internal finance operations request for payment approval dashboard" --design-system
+      - name: Audit accessibility and dense admin UX
+        run: |
+          python3 .agents/skills/ui-ux-pro-max/scripts/search.py "dense admin tables forms filters accessibility operational workflow" --domain ux
+      - name: Audit React implementation patterns
+        run: |
+          python3 .agents/skills/ui-ux-pro-max/scripts/search.py "React Tailwind finance dashboard data table filters responsive" --stack react
+      - name: Audit printable business document UX
+        run: |
+          python3 .agents/skills/ui-ux-pro-max/scripts/search.py "A4 printable finance receipt business document approval status" --domain ux
