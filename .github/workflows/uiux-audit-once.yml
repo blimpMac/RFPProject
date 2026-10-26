@@ -26,3 +26,5 @@ jobs:
       - name: Audit printable business document UX
         run: |
           python3 .agents/skills/ui-ux-pro-max/scripts/search.py "A4 printable finance receipt business document approval status" --domain ux
+
+# Triggered after the workflow was present on main so GitHub can execute it.
