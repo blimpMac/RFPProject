@@ -303,12 +303,16 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 7mm;
+    margin: 8mm;
   }
   html,
   body,
   #root {
     background: #fff !important;
+  }
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
   body * {
     visibility: hidden;
@@ -329,20 +333,84 @@
   }
   .digital-rfp-sheet {
     width: 100%;
+    min-height: 145mm;
     max-width: none;
     margin: 0;
+    border: 0.35mm solid #9facb8;
     border-radius: 0;
     box-shadow: none;
-    font-size: 7.2pt;
-  }
-  .digital-rfp-section {
-    margin: 4mm 3mm;
-    break-inside: avoid-page;
+    font-size: 8.5pt;
+    line-height: 1.35;
   }
   .digital-rfp-header {
-    padding: 3mm;
+    gap: 4mm;
+    padding: 5mm 4.5mm;
+  }
+  .digital-rfp-brand img {
+    max-height: 14mm;
+  }
+  .digital-rfp-brand span {
+    margin-top: 1.5mm;
+    font-size: 7pt;
+  }
+  .digital-rfp-title h1 {
+    font-size: 15pt;
+  }
+  .digital-rfp-title p {
+    margin-top: 1mm;
+    font-size: 8pt;
+  }
+  .digital-rfp-number {
+    padding: 3mm 3.5mm;
+  }
+  .digital-rfp-number span,
+  .digital-rfp-number small {
+    font-size: 7pt;
+  }
+  .digital-rfp-number strong {
+    margin-top: 0.8mm;
+    font-size: 10pt;
+  }
+  .digital-rfp-section {
+    margin: 4.5mm 4mm;
+    break-inside: avoid-page;
+  }
+  .digital-rfp-section h2 {
+    padding: 2mm 3mm;
+    font-size: 8pt;
+  }
+  .digital-rfp-detail {
+    min-height: 9mm;
+  }
+  .digital-rfp-detail span,
+  .digital-rfp-detail p,
+  .digital-rfp-detail strong {
+    padding: 1.6mm 2mm;
+  }
+  .digital-rfp-document-group h3 {
+    padding: 1.8mm 2.5mm;
+    font-size: 7.8pt;
+  }
+  .digital-rfp-document-group ul {
+    padding: 2mm 2.5mm;
+  }
+  .digital-rfp-document-group li {
+    gap: 1.5mm;
+    margin: 1.2mm 0;
+  }
+  .digital-rfp-document-group li small {
+    font-size: 7pt;
+  }
+  .digital-rfp-document-status {
+    gap: 2.5mm;
+    padding: 2.5mm 3mm;
+  }
+  .digital-rfp-approval-row > * {
+    padding: 2mm 2.5mm;
   }
   .digital-rfp-footer {
-    margin-top: 3mm;
+    margin-top: 3.5mm;
+    padding: 2.5mm 4mm;
+    font-size: 7pt;
   }
 }
