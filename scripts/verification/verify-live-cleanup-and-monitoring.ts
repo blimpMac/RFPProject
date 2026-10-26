@@ -19,7 +19,9 @@ if (users.error) throw users.error;
 if (users.data.users.length !== 2)
   throw new Error(`Expected 2 retained accounts, found ${users.data.users.length}.`);
 const superadmin = users.data.users.find(
-  (user) => user.email?.toLowerCase() === 'dricianfranciscordon@gmail.com',
+  (user) =>
+    user.email?.toLowerCase() ===
+    (process.env.SUPERADMIN_EMAIL || 'gpigemcorqbbackup@gmail.com').toLowerCase(),
 );
 if (!superadmin?.email) throw new Error('The retained Super Administrator account was not found.');
 const requests = await db.from('rfp_requests').select('id', { count: 'exact', head: true });

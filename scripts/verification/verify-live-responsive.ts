@@ -66,7 +66,9 @@ const db = createClient(supabaseUrl, serviceKey, {
 const users = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
 if (users.error) throw users.error;
 const superadmin = users.data.users.find(
-  (user) => user.email?.toLowerCase() === 'dricianfranciscordon@gmail.com',
+  (user) =>
+    user.email?.toLowerCase() ===
+    (process.env.SUPERADMIN_EMAIL || 'gpigemcorqbbackup@gmail.com').toLowerCase(),
 );
 if (!superadmin?.email) throw new Error('The retained Super Administrator account was not found.');
 const login = await db.auth.admin.generateLink({

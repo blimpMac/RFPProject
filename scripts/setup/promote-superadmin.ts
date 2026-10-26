@@ -7,8 +7,12 @@ if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY are requ
 const db = createClient(url, key, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 });
-const superadminEmail = 'dricianfranciscordon@gmail.com';
-const administratorEmail = 'gpigemcorqbbackup@gmail.com';
+const superadminEmail = (
+  process.env.SUPERADMIN_EMAIL || 'gpigemcorqbbackup@gmail.com'
+).toLowerCase();
+const administratorEmail = (
+  process.env.ADMINISTRATOR_EMAIL || 'dricianfranciscordon@gmail.com'
+).toLowerCase();
 
 const listed = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
 if (listed.error) throw listed.error;
@@ -34,13 +38,13 @@ const profiles = await db.from('profiles').upsert(
     {
       id: superadmin.id,
       email: superadminEmail,
-      full_name: profileNames.get(superadmin.id) || 'Drician Francisco Cordon',
+      full_name: profileNames.get(superadmin.id) || 'Finance Head',
       active: true,
     },
     {
       id: administrator.id,
       email: administratorEmail,
-      full_name: profileNames.get(administrator.id) || 'Backup Administrator',
+      full_name: profileNames.get(administrator.id) || 'Administrator',
       active: true,
     },
   ],
@@ -70,10 +74,23 @@ const verified = await db
   .select('user_id,role')
   .in('user_id', [superadmin.id, administrator.id]);
 if (verified.error) throw verified.error;
+const currentSuperadmins = await db
+  .from('user_roles')
+  .select('user_id')
+  .eq('role', 'super_administrator');
+if (currentSuperadmins.error) throw currentSuperadmins.error;
+if (
+  currentSuperadmins.data?.length !== 1 ||
+  currentSuperadmins.data[0]?.user_id !== superadmin.id
+) {
+  throw new Error('The requested account is not the sole Super Administrator.');
+}
 console.log(
   JSON.stringify(
     {
       ok: true,
+      superadminEmail,
+      soleSuperadmin: true,
       accounts: {
         superadmin: (verified.data || [])
           .filter((row) => row.user_id === superadmin.id)
