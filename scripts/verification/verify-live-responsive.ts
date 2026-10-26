@@ -65,9 +65,7 @@ async function setThemeAndCheck(page: Page, theme: 'light' | 'dark', label: stri
     `localStorage.setItem(${JSON.stringify(themeStorageKey)}, ${JSON.stringify(theme)})`,
   );
   await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForFunction(
-    `document.documentElement.dataset.theme === ${JSON.stringify(theme)}`,
-  );
+  await page.waitForFunction(`document.documentElement.dataset.theme === ${JSON.stringify(theme)}`);
   const classState = await page.evaluate<boolean>(
     `document.documentElement.classList.contains('dark')`,
   );
