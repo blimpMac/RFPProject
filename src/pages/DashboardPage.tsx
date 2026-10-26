@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Banknote,
+  CalendarClock,
   CheckCircle2,
   Clock3,
   FileText,
@@ -40,12 +41,38 @@ type RequestRow = {
   final_status: string;
   department_approval_at: string | null;
   finance_review_at: string | null;
+  required_payment_date: string;
+  planned_check_date: string | null;
+  completed_at: string | null;
 };
 type Dashboard = {
   metrics: Record<string, number>;
   requests: RequestRow[];
   recentActivity: Record<string, unknown>[];
 };
+type SlaStatus = 'pending' | 'dueToday' | 'overdue' | 'completedWithin' | 'completedLate';
+
+const manilaDay = (value: string | number | Date) =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(value));
+
+const requestDeadline = (request: RequestRow) =>
+  request.planned_check_date || request.required_payment_date;
+
+function requestSlaStatus(request: RequestRow, today: string): SlaStatus {
+  const deadline = requestDeadline(request);
+  if (/paid/i.test(request.final_status)) {
+    const completedDay = request.completed_at ? manilaDay(request.completed_at) : today;
+    return completedDay <= deadline ? 'completedWithin' : 'completedLate';
+  }
+  if (deadline < today) return 'overdue';
+  if (deadline === today) return 'dueToday';
+  return 'pending';
+}
 
 export function DashboardPage() {
   const [data, setData] = useState<Dashboard>();
@@ -89,6 +116,29 @@ export function DashboardPage() {
     [company, data, department, from, to],
   );
   const stats = useMemo(() => calculateDashboardStats(requests), [requests]);
+  const sla = useMemo(() => {
+    const today = manilaDay(now);
+    const counts: Record<SlaStatus, number> = {
+      pending: 0,
+      dueToday: 0,
+      overdue: 0,
+      completedWithin: 0,
+      completedLate: 0,
+    };
+    const overdueRequests: RequestRow[] = [];
+    requests.forEach((request) => {
+      const status = requestSlaStatus(request, today);
+      counts[status] += 1;
+      if (status === 'overdue') overdueRequests.push(request);
+    });
+    const completed = counts.completedWithin + counts.completedLate;
+    return {
+      ...counts,
+      overdueRequests,
+      complianceRate: completed ? Math.round((counts.completedWithin / completed) * 100) : 0,
+      completed,
+    };
+  }, [now, requests]);
   const monthly = useMemo(() => {
     const map = new Map<string, number>();
     requests.forEach((request) => {
@@ -129,11 +179,7 @@ export function DashboardPage() {
   const pendingValue = requests
     .filter((request) => !/paid|released|rejected|returned/i.test(request.final_status))
     .reduce((total, request) => total + Number(request.amount || 0), 0);
-  const overdue = requests.filter(
-    (request) =>
-      !/paid|released|rejected|returned/i.test(request.final_status) &&
-      now - new Date(request.submitted_at).getTime() > 4 * 864e5,
-  );
+  const overdue = sla.overdueRequests;
   const cards = [
     {
       label: 'Requests in view',
@@ -173,6 +219,47 @@ export function DashboardPage() {
       tone: 'amber',
     },
   ] as const;
+  const slaCards = [
+    {
+      label: 'Pending',
+      count: sla.pending,
+      detail: 'Action is required, but the deadline has not passed.',
+      icon: Clock3,
+      className: 'bg-slate-50 text-slate-700 dark:bg-slate-900/30 dark:text-slate-200',
+    },
+    {
+      label: 'Due Today',
+      count: sla.dueToday,
+      detail: 'The assigned person must act before the applicable deadline.',
+      icon: CalendarClock,
+      className: 'bg-amber-50 text-amber-800 dark:bg-amber-950/25 dark:text-amber-200',
+    },
+    {
+      label: 'Overdue',
+      count: sla.overdue,
+      detail: 'The applicable approval or processing deadline has passed.',
+      icon: AlertTriangle,
+      className: 'bg-red-50 text-red-800 dark:bg-red-950/25 dark:text-red-200',
+    },
+    {
+      label: 'Completed Within SLA',
+      count: sla.completedWithin,
+      detail: 'Request was completed on or before its required deadline.',
+      icon: CheckCircle2,
+      className: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/25 dark:text-emerald-200',
+    },
+    {
+      label: 'Completed Late',
+      count: sla.completedLate,
+      detail: 'Request was completed after its required deadline.',
+      icon: XCircle,
+      className: 'bg-orange-50 text-orange-800 dark:bg-orange-950/25 dark:text-orange-200',
+    },
+  ] as const;
+  const compliancePie = [
+    { name: 'Within SLA', value: sla.completedWithin, color: '#0f9f6e' },
+    { name: 'Completed late', value: sla.completedLate, color: '#e45d59' },
+  ];
   const pie = [
     { name: 'Completed', value: stats.approved, color: '#0f9f6e' },
     { name: 'Returned', value: stats.rejected, color: '#e45d59' },
@@ -296,6 +383,70 @@ export function DashboardPage() {
         ))}
       </section>
 
+      <div className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
+        <section className="card p-5 sm:p-6" aria-label="SLA status">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h2 className="font-semibold">Dashboard · SLA Status</h2>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Planned release date is used when assigned; otherwise the required payment date is the deadline.
+              </p>
+            </div>
+            <span className="rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold text-slate-500">
+              {requests.length} requests in view
+            </span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {slaCards.map(({ label, count, detail, icon: Icon, className }) => (
+              <article className={`rounded-xl border border-slate-200 p-4 ${className}`} key={label}>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/70 dark:bg-white/10">
+                    <Icon size={18} />
+                  </span>
+                  <strong className="text-2xl font-semibold tabular-nums">{count}</strong>
+                </div>
+                <p className="mt-3 text-sm font-bold">{label}</p>
+                <p className="mt-1 text-xs leading-5 opacity-75">{detail}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <ChartCard title="Compliance rate" subtitle="Completed Within SLA vs Completed Late">
+          <div className="relative">
+            <ResponsiveContainer width="100%" height={245}>
+              <PieChart>
+                <Pie
+                  data={compliancePie}
+                  dataKey="value"
+                  innerRadius={67}
+                  outerRadius={92}
+                  paddingAngle={sla.completed ? 3 : 0}
+                >
+                  {compliancePie.map((item) => (
+                    <Cell key={item.name} fill={item.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="chart-center-label" aria-hidden="true">
+              <strong>{sla.completed ? `${sla.complianceRate}%` : '—'}</strong>
+              <span>Compliant</span>
+            </div>
+          </div>
+          <div className="chart-legend">
+            {compliancePie.map((item) => (
+              <span key={item.name}>
+                <i style={{ background: item.color }} />
+                {item.name}
+                <strong>{item.value}</strong>
+              </span>
+            ))}
+          </div>
+        </ChartCard>
+      </div>
+
       <div className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
         <ChartCard title="Request mix" subtitle="Current status distribution">
           <div className="relative">
@@ -365,7 +516,7 @@ export function DashboardPage() {
           <div className="section-heading">
             <div>
               <h2>Attention required</h2>
-              <p>Open requests older than four days</p>
+              <p>Open requests past their applicable deadline</p>
             </div>
             <span className="attention-count">
               <AlertTriangle size={14} />
@@ -378,8 +529,7 @@ export function DashboardPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{request.rfp_number}</p>
                   <p className="mt-0.5 truncate text-xs text-slate-500">
-                    {request.department} · Pending{' '}
-                    {Math.floor((now - new Date(request.submitted_at).getTime()) / 864e5)} days
+                    {request.department} · Deadline {manilaDate(requestDeadline(request))}
                   </p>
                 </div>
                 <StatusBadge>{request.final_status}</StatusBadge>
