@@ -93,7 +93,45 @@
 }
 
 .finance-detail-grid > div {
+  min-height: 4.35rem;
   background: #fff;
+}
+
+/*
+ * Keep the approval portion of the request popup visually balanced:
+ * Approving heads and Purpose span the row, while the approval/review
+ * status and remarks form two clean side-by-side rows.
+ */
+@media (min-width: 481px) {
+  .finance-detail-grid > :nth-child(13) {
+    grid-column: 1 / -1;
+    grid-row: 7;
+  }
+
+  .finance-detail-grid > :nth-child(14) {
+    grid-column: 1;
+    grid-row: 8;
+  }
+
+  .finance-detail-grid > :nth-child(16) {
+    grid-column: 2;
+    grid-row: 8;
+  }
+
+  .finance-detail-grid > :nth-child(15) {
+    grid-column: 1;
+    grid-row: 9;
+  }
+
+  .finance-detail-grid > :nth-child(17) {
+    grid-column: 2;
+    grid-row: 9;
+  }
+
+  .finance-detail-grid > :nth-child(18) {
+    grid-column: 1 / -1;
+    grid-row: 10;
+  }
 }
 
 .dark .live-refresh-indicator {
@@ -163,6 +201,10 @@
   .approval-view-toggle,
   .approval-search {
     grid-column: auto;
+  }
+
+  .finance-detail-grid > div {
+    min-height: 0;
   }
 
   .finance-request-table {
