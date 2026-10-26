@@ -36,3 +36,5 @@ jobs:
           git add src/components/ui.tsx src/components/DataTable.tsx src/layouts/AdminLayout.tsx src/pages/RequestPage.tsx src/main.tsx src/styles/ux-refinement.css
           git commit -m "Refine website UX with UI UX Pro Max"
           git push origin main
+
+# Retry after correcting the guarded patch script.
