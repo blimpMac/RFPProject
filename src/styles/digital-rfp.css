@@ -12,6 +12,7 @@
 }
 .digital-rfp-sheet {
   width: min(100%, 66rem);
+  min-width: 0;
   margin: 0 auto;
   overflow: hidden;
   border: 1px solid #bdc9d4;
@@ -29,9 +30,19 @@
   border-bottom: 3px solid #163f60;
   padding: 1rem 1.15rem;
 }
+.digital-rfp-brand,
+.digital-rfp-title,
+.digital-rfp-number,
+.digital-rfp-section,
+.digital-rfp-detail,
+.digital-rfp-document-group,
+.digital-rfp-approval-row > * {
+  min-width: 0;
+}
 .digital-rfp-brand img {
   display: block;
-  max-width: 12rem;
+  width: auto;
+  max-width: min(100%, 12rem);
   max-height: 3.8rem;
   object-fit: contain;
   object-position: left center;
@@ -41,6 +52,7 @@
   margin-top: 0.35rem;
   color: #647487;
   font-size: 0.62rem;
+  overflow-wrap: anywhere;
 }
 .digital-rfp-title {
   text-align: center;
@@ -50,6 +62,7 @@
   color: #153b59;
   font-size: 1.3rem;
   font-weight: 850;
+  overflow-wrap: anywhere;
 }
 .digital-rfp-title p {
   margin: 0.24rem 0 0;
@@ -67,6 +80,7 @@
 .digital-rfp-number strong,
 .digital-rfp-number small {
   display: block;
+  overflow-wrap: anywhere;
 }
 .digital-rfp-number span {
   color: #6a7989;
@@ -186,6 +200,7 @@
 .digital-rfp-document-status p {
   margin: 0;
   color: #657585;
+  overflow-wrap: anywhere;
 }
 .digital-rfp-approval-table {
   display: grid;
@@ -229,6 +244,7 @@
   }
   .digital-rfp-number {
     justify-self: stretch;
+    min-width: 0;
   }
   .digital-rfp-detail-wide {
     grid-column: auto;
@@ -247,6 +263,41 @@
   .digital-rfp-approval-row > * {
     border-right: 0;
     border-bottom: 1px solid #e2e7ec;
+  }
+}
+@media (max-width: 640px) {
+  .digital-rfp-print-page {
+    padding: 0.75rem 0.5rem;
+  }
+  .print-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .print-actions .btn {
+    width: 100%;
+  }
+  .digital-rfp-header {
+    gap: 0.75rem;
+    padding: 0.8rem;
+  }
+  .digital-rfp-section {
+    margin: 0.55rem;
+  }
+}
+@media (max-width: 480px) {
+  .digital-rfp-sheet {
+    border-radius: 0.3rem;
+    font-size: 0.72rem;
+  }
+  .digital-rfp-detail {
+    grid-template-columns: 1fr;
+    border-right: 0;
+  }
+  .digital-rfp-detail span {
+    border-bottom: 1px solid #d5dde4;
+  }
+  .digital-rfp-title h1 {
+    font-size: 1.08rem;
   }
 }
 @media print {
