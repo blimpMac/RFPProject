@@ -1,0 +1,35 @@
+name: Apply Type of Request update
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  update-type-of-request:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Apply Type of Request field
+        run: python scripts/setup/add-type-of-request.py
+      - run: npm ci
+      - name: Format modified code
+        run: npm run format
+      - name: Validate full application
+        run: npm run check
+      - name: Commit validated update
+        run: |
+          rm scripts/setup/add-type-of-request.py
+          rm .github/workflows/apply-type-of-request.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add Type of Request field"
+          git push
