@@ -1,0 +1,171 @@
+/* Finance dashboard refinement: keep the queue scannable and move secondary detail into the request modal. */
+
+.queue-health-card {
+  min-height: 6rem;
+  align-items: center;
+}
+
+.queue-health-card strong {
+  line-height: 1.35;
+}
+
+.queue-health-count {
+  margin-left: auto;
+  align-self: flex-start;
+}
+
+.approval-filter-panel > .input,
+.approval-search,
+.approval-view-toggle,
+.approval-clear {
+  height: 2.8rem;
+  min-height: 2.8rem;
+}
+
+.approval-view-toggle {
+  width: 100%;
+}
+
+.approval-view-toggle button {
+  height: 100%;
+  min-height: 0;
+}
+
+.approval-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  padding: 0 0.75rem;
+}
+
+.finance-refresh-group .btn,
+.live-refresh-indicator {
+  min-height: 2.8rem;
+}
+
+.live-refresh-indicator {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d6e4e3;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0 0.75rem;
+  color: #687d87;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.finance-request-table {
+  min-width: 48rem;
+}
+
+/* Requestor, SLA, and planned release remain available in the request popup. */
+.finance-request-table th:nth-child(2),
+.finance-request-table td:nth-child(2),
+.finance-request-table th:nth-child(6),
+.finance-request-table td:nth-child(6),
+.finance-request-table th:nth-child(7),
+.finance-request-table td:nth-child(7) {
+  display: none;
+}
+
+.finance-request-table td:first-child small {
+  display: none;
+}
+
+.finance-request-table th,
+.finance-request-table td {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.finance-request-table th:nth-child(4),
+.finance-request-table td:nth-child(4) {
+  text-align: right;
+}
+
+.finance-request-table th:nth-child(5),
+.finance-request-table td:nth-child(5) {
+  width: 15rem;
+}
+
+.finance-detail-grid > div {
+  background: #fff;
+}
+
+.dark .live-refresh-indicator {
+  border-color: #2a414e;
+  background: #0f2532;
+  color: #afc1c8;
+}
+
+@media (max-width: 1279px) and (min-width: 768px) {
+  .queue-health-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .queue-health-card {
+    grid-column: span 2;
+  }
+
+  .queue-health-card:nth-child(4),
+  .queue-health-card:nth-child(5) {
+    grid-column: span 3;
+  }
+}
+
+@media (max-width: 767px) {
+  .queue-health-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .queue-health-card:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .approval-filter-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .approval-filter-panel > .input,
+  .approval-clear {
+    width: 100%;
+  }
+
+  .finance-refresh-group {
+    width: 100%;
+  }
+
+  .finance-refresh-group .btn,
+  .live-refresh-indicator {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .finance-request-table {
+    min-width: 40rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .queue-health-grid,
+  .approval-filter-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .queue-health-card:last-child {
+    grid-column: auto;
+  }
+
+  .approval-view-toggle,
+  .approval-search {
+    grid-column: auto;
+  }
+
+  .finance-request-table {
+    min-width: 36rem;
+  }
+}
