@@ -389,7 +389,8 @@ export function DashboardPage() {
             <div>
               <h2 className="font-semibold">Dashboard · SLA Status</h2>
               <p className="mt-0.5 text-xs text-slate-500">
-                Planned release date is used when assigned; otherwise the required payment date is the deadline.
+                Planned release date is used when assigned; otherwise the required payment date is
+                the deadline.
               </p>
             </div>
             <span className="rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold text-slate-500">
@@ -398,7 +399,10 @@ export function DashboardPage() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {slaCards.map(({ label, count, detail, icon: Icon, className }) => (
-              <article className={`rounded-xl border border-slate-200 p-4 ${className}`} key={label}>
+              <article
+                className={`rounded-xl border border-slate-200 p-4 ${className}`}
+                key={label}
+              >
                 <div className="flex items-center justify-between gap-3">
                   <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/70 dark:bg-white/10">
                     <Icon size={18} />
