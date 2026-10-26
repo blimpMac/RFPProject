@@ -1,4 +1,4 @@
-name: UI UX Pro Max audit once
+name: Apply UI UX Pro Max refinements once
 
 on:
   push:
@@ -7,24 +7,32 @@ on:
       - '.github/workflows/uiux-audit-once.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  audit:
+  refine:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Generate design-system recommendation
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Apply UI UX refinement patch
+        run: python3 scripts/setup/apply-uiux-refinement.py
+      - name: Install dependencies
+        run: npm ci
+      - name: Format changed application files
+        run: npm run format
+      - name: Validate application
+        run: npm run check
+      - name: Commit validated refinements
         run: |
-          python3 .agents/skills/ui-ux-pro-max/scripts/search.py "internal finance operations request for payment approval dashboard" --design-system
-      - name: Audit accessibility and dense admin UX
-        run: |
-          python3 .agents/skills/ui-ux-pro-max/scripts/search.py "dense admin tables forms filters accessibility operational workflow" --domain ux
-      - name: Audit React implementation patterns
-        run: |
-          python3 .agents/skills/ui-ux-pro-max/scripts/search.py "React Tailwind finance dashboard data table filters responsive" --stack react
-      - name: Audit printable business document UX
-        run: |
-          python3 .agents/skills/ui-ux-pro-max/scripts/search.py "A4 printable finance receipt business document approval status" --domain ux
-
-# Triggered after the workflow was present on main so GitHub can execute it.
+          git rm .github/workflows/uiux-audit-once.yml scripts/setup/apply-uiux-refinement.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/ui.tsx src/components/DataTable.tsx src/layouts/AdminLayout.tsx src/pages/RequestPage.tsx src/main.tsx src/styles/ux-refinement.css
+          git commit -m "Refine website UX with UI UX Pro Max"
+          git push origin main
