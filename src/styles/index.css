@@ -1420,6 +1420,55 @@ body {
   content: '·';
 }
 
+.approval-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid #e3eaed;
+  background: #fbfdfd;
+  padding: 0.8rem 1rem;
+  color: #6d8089;
+  font-size: 0.72rem;
+}
+
+.approval-page-controls,
+.approval-page-controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.approval-page-controls select {
+  min-height: 2rem;
+  border: 1px solid #ccd9df;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0 0.45rem;
+  color: #29404e;
+}
+
+.approval-page-controls button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid #ccd9df;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #29404e;
+}
+
+.approval-page-controls button:hover:not(:disabled) {
+  border-color: #8da8b3;
+  background: #f1f7f7;
+}
+
+.approval-page-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
 .sla-badge {
   display: inline-flex;
   align-items: center;
@@ -1535,6 +1584,18 @@ body {
   background: #112a37;
 }
 
+.dark .approval-pagination {
+  border-color: #2a414e;
+  background: #0f2532;
+}
+
+.dark .approval-page-controls select,
+.dark .approval-page-controls button {
+  border-color: #3a5260;
+  background: #142d3b;
+  color: #e7eff2;
+}
+
 @media (max-width: 1279px) {
   .metric-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1572,6 +1633,16 @@ body {
   .recent-request-row {
     align-items: flex-start;
     flex-wrap: wrap;
+  }
+
+  .approval-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .approval-page-controls {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 

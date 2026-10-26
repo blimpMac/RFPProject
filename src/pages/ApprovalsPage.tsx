@@ -3,6 +3,8 @@ import {
   AlertTriangle,
   CalendarClock,
   Check,
+  ChevronLeft,
+  ChevronRight,
   FileQuestion,
   Search,
   ShieldCheck,
@@ -133,6 +135,8 @@ export function ApprovalsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [queueFocus, setQueueFocus] = useState<QueueFocus>('all');
   const [now, setNow] = useState(() => Date.now());
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const load = useCallback(
     () =>
       get<Result>('monitoring/requests?page=1&pageSize=200')
@@ -195,6 +199,17 @@ export function ApprovalsPage() {
           : /paid|returned to requestor/i.test(request.final_status)),
     );
   }, [company, matchesQueueFocus, rows, search, statusFilter, view]);
+  const pageCount = Math.max(1, Math.ceil(visibleRows.length / pageSize));
+  const paginatedRows = useMemo(
+    () => visibleRows.slice((page - 1) * pageSize, page * pageSize),
+    [page, pageSize, visibleRows],
+  );
+  useEffect(() => {
+    setPage(1);
+  }, [company, pageSize, queueFocus, search, statusFilter, view]);
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
   const companyOptions = [
     ...new Set(rows.flatMap((request) => (request.company ? [request.company] : []))),
   ];
@@ -411,7 +426,7 @@ export function ApprovalsPage() {
       )}
       <div className="card overflow-hidden">
         <div className="divide-y">
-          {visibleRows.map((request) => (
+          {paginatedRows.map((request) => (
             <div
               className="approval-request-row grid gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center"
               key={request.id}
@@ -450,6 +465,47 @@ export function ApprovalsPage() {
         </div>
         {!visibleRows.length && (
           <EmptyState title="No requests" body={`There are no ${view} approvals in this view.`} />
+        )}
+        {visibleRows.length > 0 && (
+          <div className="approval-pagination">
+            <p>
+              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, visibleRows.length)} of{' '}
+              {visibleRows.length}
+            </p>
+            <div className="approval-page-controls">
+              <label>
+                Rows
+                <select
+                  value={pageSize}
+                  onChange={(event) => setPageSize(Number(event.target.value))}
+                  aria-label="Approval rows per page"
+                >
+                  {[10, 20, 50].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <span>
+                Page {page} of {pageCount}
+              </span>
+              <button
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={page === 1}
+                aria-label="Previous approval page"
+              >
+                <ChevronLeft size={17} />
+              </button>
+              <button
+                onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+                disabled={page === pageCount}
+                aria-label="Next approval page"
+              >
+                <ChevronRight size={17} />
+              </button>
+            </div>
+          </div>
         )}
       </div>
       {selected && (
