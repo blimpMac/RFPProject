@@ -22,7 +22,9 @@ jobs:
           python scripts/setup/fix-workflow-remap.py
           python -m py_compile scripts/setup/apply-workflow-remap.py
       - name: Apply workflow remap
-        run: python scripts/setup/apply-workflow-remap.py
+        run: |
+          python scripts/setup/apply-workflow-remap.py
+          python scripts/setup/post-fix-workflow-remap.py
       - run: npm ci
       - name: Format generated and modified code
         run: npm run format
@@ -32,6 +34,7 @@ jobs:
         run: |
           rm scripts/setup/apply-workflow-remap.py
           rm scripts/setup/fix-workflow-remap.py
+          rm scripts/setup/post-fix-workflow-remap.py
           rm .github/workflows/apply-rfp-workflow-remap.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
