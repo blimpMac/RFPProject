@@ -21,6 +21,7 @@ export const requestSchema = z.object({
   amount: z.coerce.number().positive().max(999999999999.99),
   requiredPaymentDate: z.iso.date(),
   approvingHead: z.string().trim().min(2).max(160),
+  attachmentChecklist: z.array(z.string().trim().min(1).max(180)).max(40).default([]),
 });
 export const attachmentSchema = z.object({
   name: z.string().min(1).max(180),
@@ -48,6 +49,11 @@ export const financeSchema = z.object({
   action: z.enum([
     'approve',
     'reject',
+    'member_approve',
+    'member_reject',
+    'head_approve',
+    'head_reject',
+    'hard_copy_approve',
     'request_documents',
     'payment_processing',
     'check_preparation',

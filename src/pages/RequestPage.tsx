@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, CheckCircle2, ClipboardList, Copy } from 'lucide-react';
 import { FileDropzone } from '../components/FileDropzone';
+import { RequestAttachmentChecklist } from '../components/RequestAttachmentChecklist';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Button, Spinner } from '../components/ui';
 import { get, post } from '../lib/api';
@@ -43,6 +44,7 @@ type StartResult = {
 export function RequestPage() {
   const [form, setForm] = useState(initial);
   const [files, setFiles] = useState<File[]>([]);
+  const [attachmentChecklist, setAttachmentChecklist] = useState<string[]>([]);
   const [options, setOptions] = useState<PublicOptions>({ departments: [], requestTypes: [] });
   const [approvers, setApprovers] = useState<{ department: string; approver_name: string }[]>([]);
   const [limits, setLimits] = useState({ maxFiles: 10, maxSizeMb: 10 });
@@ -83,7 +85,11 @@ export function RequestPage() {
     setError('');
     try {
       const started = await post<StartResult>('submissions/start', {
-        request: { ...form, amount: Number(form.amount) },
+        request: {
+          ...form,
+          amount: Number(form.amount),
+          attachmentChecklist,
+        },
         attachments: files.map((f) => ({ name: f.name, type: f.type, size: f.size })),
         idempotencyKey: crypto.randomUUID(),
       });
@@ -110,6 +116,7 @@ export function RequestPage() {
       setSuccess({ rfpNumber: result.rfpNumber, trackingToken: started.trackingToken });
       setForm(initial);
       setFiles([]);
+      setAttachmentChecklist([]);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Submission failed.');
     } finally {
@@ -239,7 +246,8 @@ export function RequestPage() {
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">New RFP request</h1>
           <p className="mt-2 max-w-2xl text-base text-slate-600">
-            Complete the request details and attach supporting images or PDF documents.
+            Complete the request details. Supporting files are strongly recommended, but uploads
+            remain optional at submission.
           </p>
         </div>
         <form onSubmit={submit} className="card p-5 shadow-sm sm:p-7">
@@ -276,7 +284,10 @@ export function RequestPage() {
               label="Type"
               value={form.rfpType}
               options={options.requestTypes}
-              onChange={(v) => update('rfpType', v)}
+              onChange={(v) => {
+                update('rfpType', v);
+                setAttachmentChecklist([]);
+              }}
             />
             <Field
               label="Supplier / Payee"
@@ -315,7 +326,18 @@ export function RequestPage() {
                 onChange={(e) => update('purposeDescription', e.target.value)}
               />
             </div>
+            <RequestAttachmentChecklist
+              rfpType={form.rfpType}
+              selected={attachmentChecklist}
+              onChange={setAttachmentChecklist}
+            />
             <div className="md:col-span-2">
+              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                <strong>Attachment reminder:</strong> Upload supporting documents when available.
+                Files are not mandatory to submit because the system cannot reliably determine each
+                document type, but missing support may cause the request to be returned during
+                approval.
+              </div>
               <FileDropzone
                 files={files}
                 onChange={setFiles}

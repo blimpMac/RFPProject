@@ -23,6 +23,9 @@ const PasswordResetPage = lazy(() =>
 const DashboardPage = lazy(() =>
   import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })),
 );
+const DigitalRfpPrintPage = lazy(() =>
+  import('./pages/DigitalRfpPrintPage').then((m) => ({ default: m.DigitalRfpPrintPage })),
+);
 const MonitoringPage = lazy(() =>
   import('./pages/MonitoringPage').then((m) => ({ default: m.MonitoringPage })),
 );
@@ -63,6 +66,7 @@ export default function App() {
             <Route path="/admin/login" element={<LoginPage />} />
             <Route path="/admin/forgot-password" element={<PasswordRecoveryPage />} />
             <Route path="/admin/reset-password" element={<PasswordResetPage />} />
+            <Route path="/admin/rfp/:id/print" element={<DigitalRfpPrintPage />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<DashboardPage />} />
               <Route path="monitoring" element={<MonitoringPage />} />

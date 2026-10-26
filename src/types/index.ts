@@ -29,6 +29,22 @@ export type RfpRequest = {
   check_date_change_reason: string | null;
   finance_email_thread_id: string | null;
   raw_record?: {
+    submission_checklist?: string[];
+    finance_workflow?: {
+      member_status?: string | null;
+      member_reviewed_at?: string | null;
+      member_reviewed_by?: string | null;
+      head_status?: string | null;
+      head_reviewed_at?: string | null;
+      head_reviewed_by?: string | null;
+      hard_copy_status?: string | null;
+      hard_copy_approved_at?: string | null;
+      hard_copy_approved_by?: string | null;
+      processing_started_at?: string | null;
+      processing_due_at?: string | null;
+      updated_at?: string | null;
+      updated_by?: string | null;
+    };
     finance_operations?: {
       originals_received_date?: string | null;
       document_verification?: 'Complete' | 'Incomplete' | null;

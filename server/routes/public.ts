@@ -72,9 +72,27 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
       p_attachments: input.attachments,
     });
     if (started.error) throw new HttpError(400, started.error.message);
+    const existingRequest = await db
+      .from('rfp_requests')
+      .select('raw_record')
+      .eq('id', started.data.requestId)
+      .single();
+    if (existingRequest.error) throw existingRequest.error;
+    const existingRaw =
+      existingRequest.data.raw_record &&
+      typeof existingRequest.data.raw_record === 'object' &&
+      !Array.isArray(existingRequest.data.raw_record)
+        ? (existingRequest.data.raw_record as Record<string, unknown>)
+        : {};
     const companyUpdate = await db
       .from('rfp_requests')
-      .update({ company: input.request.company })
+      .update({
+        company: input.request.company,
+        raw_record: {
+          ...existingRaw,
+          submission_checklist: input.request.attachmentChecklist || [],
+        },
+      })
       .eq('id', started.data.requestId);
     if (companyUpdate.error) throw companyUpdate.error;
     const items = await db
@@ -188,11 +206,32 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     const request = await db
       .from('rfp_requests')
       .select(
-        'id,rfp_number,submitted_at,requestor_name,company,department,amount,required_payment_date,department_approval,finance_review,final_status,last_action,planned_check_date',
+        'id,rfp_number,submitted_at,requestor_name,company,department,project_class,rfp_type,supplier_payee,purpose_description,amount,required_payment_date,approving_head,department_approval,department_approval_at,finance_review,finance_review_at,final_status,last_action,planned_check_date,raw_record',
       )
       .eq('public_tracking_hash', sha256(token))
       .single();
     if (request.error || !request.data) throw new HttpError(404, 'Request not found.');
+    const rawRecord =
+      request.data.raw_record &&
+      typeof request.data.raw_record === 'object' &&
+      !Array.isArray(request.data.raw_record)
+        ? (request.data.raw_record as Record<string, unknown>)
+        : {};
+    const workflow =
+      rawRecord.finance_workflow &&
+      typeof rawRecord.finance_workflow === 'object' &&
+      !Array.isArray(rawRecord.finance_workflow)
+        ? (rawRecord.finance_workflow as Record<string, unknown>)
+        : {};
+    const financeOperations =
+      rawRecord.finance_operations &&
+      typeof rawRecord.finance_operations === 'object' &&
+      !Array.isArray(rawRecord.finance_operations)
+        ? (rawRecord.finance_operations as Record<string, unknown>)
+        : {};
+    const submissionChecklist = Array.isArray(rawRecord.submission_checklist)
+      ? rawRecord.submission_checklist.filter((item): item is string => typeof item === 'string')
+      : [];
     const [logs, attachments] = await Promise.all([
       db
         .from('approval_logs')
@@ -206,7 +245,10 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     ]);
     return json(200, {
       ok: true,
-      request: request.data,
+      request: { ...request.data, raw_record: undefined },
+      workflow,
+      financeOperations,
+      submissionChecklist,
       logs: logs.data || [],
       attachments: attachments.data || [],
     });

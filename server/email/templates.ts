@@ -6,6 +6,9 @@ export const emailTemplateKeys = [
   'department_approved',
   'department_rejected',
   'finance_review_required',
+  'finance_head_review_required',
+  'finance_head_rejected',
+  'hard_copy_verification_required',
   'processing_started',
   'finance_returned',
   'documentation_required',
@@ -28,6 +31,12 @@ const button = (label: string, url: string, color = '#1f6f4a') =>
   `<a href="${escape(url)}" style="display:inline-block;background:${color};color:#fff;text-decoration:none;padding:12px 18px;border-radius:7px;font-weight:700">${escape(label)}</a>`;
 const summary = (request: RequestRecord) =>
   `<table role="presentation" width="100%" cellspacing="0" style="margin:22px 0;border-collapse:collapse;background:#f8fafc;border:1px solid #e4e9ef;border-radius:8px">${row('RFP number', request.rfp_number)}${row('Requestor', request.requestor_name)}${row('Company', request.company || 'Not recorded')}${row('Department', request.department)}${row('Supplier / Payee', request.supplier_payee)}${row('Amount', money(request.amount))}${row('Required payment date', request.required_payment_date)}</table>`;
+const companyLogoPath = (request: RequestRecord) =>
+  /greenmetal|gemcor/i.test(String(request.company || ''))
+    ? '/brands/gemcor.png'
+    : '/brands/greenlight-power.png';
+const digitalReceipt = (request: RequestRecord, siteUrl: string) =>
+  `<div style="margin:22px 0;border:1px solid #cbd5df;border-radius:10px;overflow:hidden"><div style="padding:14px 16px;background:#f7f9fb;border-bottom:1px solid #dce3ea"><img src="${escape(`${siteUrl}${companyLogoPath(request)}`)}" alt="${escape(request.company || 'Company')}" style="display:block;max-width:170px;max-height:55px;object-fit:contain"><div style="margin-top:10px;font-size:17px;font-weight:800;color:#153b59">REQUEST FOR PAYMENT (RFP)</div><div style="font-size:12px;color:#667085">Digital RFP – System Generated · ${escape(request.rfp_number)}</div></div><div style="padding:0 16px 4px">${summary(request)}${row('Type', request.rfp_type || '—')}${row('Project / Cost Center', request.project_class || '—')}${row('Purpose', request.purpose_description || '—')}</div></div>`;
 
 function shell(title: string, body: string, preheader = title) {
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head><body style="margin:0;background:#eef2f6;font-family:Arial,sans-serif;color:#172033"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${escape(preheader)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef2f6"><tr><td align="center" style="padding:32px 12px"><table role="presentation" width="620" cellspacing="0" cellpadding="0" style="width:100%;max-width:620px;background:#fff;border:1px solid #d8e0e8;border-radius:14px;overflow:hidden;box-shadow:0 8px 30px rgba(16,42,67,.08)"><tr><td style="height:5px;background:#2f855a;font-size:0">&nbsp;</td></tr><tr><td style="padding:22px 28px;background:#102a43;color:#fff"><div style="font-size:18px;font-weight:700">RFP Monitoring System</div><div style="margin-top:4px;color:#c9d5e2;font-size:12px">GREENLIGHT POWER &times; GEMCOR</div></td></tr><tr><td style="padding:30px 28px"><h1 style="font-size:23px;line-height:1.3;margin:0 0 18px;color:#102a43">${escape(title)}</h1>${body}</td></tr><tr><td style="padding:18px 28px;background:#f7f9fb;border-top:1px solid #e4e9ef;color:#667085;font-size:12px;line-height:1.55">This is an automated workflow notification. Please keep the RFP number in the subject when following up.<br><span style="color:#8793a3">RFP Monitoring System &bull; Asia/Manila</span></td></tr></table></td></tr></table></body></html>`;
@@ -80,8 +89,8 @@ export function renderEmail(
     return {
       subject: `${request.rfp_number} approved by department`,
       html: shell(
-        `${rfp} approved`,
-        `<p>Your request is approved, please wait for further instructions.</p>${summary(request)}${remarks}`,
+        `${rfp} approved by Department Head`,
+        `<p>Your Department Head approved this request. Finance members have been notified and your digital RFP receipt is below.</p>${digitalReceipt(request, siteUrl)}${remarks}`,
       ),
     };
   if (template === 'department_rejected')
@@ -94,10 +103,34 @@ export function renderEmail(
     };
   if (template === 'finance_review_required')
     return {
-      subject: `Finance review required: ${request.rfp_number}`,
+      subject: `Finance member review required: ${request.rfp_number}`,
       html: shell(
-        `Finance review — ${rfp}`,
-        `<p>Department approval is complete. A finance approver may now review and act on this request.</p>${summary(request)}<p style="margin-top:24px">${button('Open finance approvals', `${siteUrl}/admin/approvals`, '#315c93')}</p>`,
+        `Finance member review — ${rfp}`,
+        `<p>Department approval is complete. At least one Finance member must approve before the request is sent to the Finance Head.</p>${digitalReceipt(request, siteUrl)}<p style="margin-top:24px">${button('Open Finance approvals', `${siteUrl}/admin/approvals`, '#315c93')}</p>`,
+      ),
+    };
+  if (template === 'finance_head_review_required')
+    return {
+      subject: `Finance Head review required: ${request.rfp_number}`,
+      html: shell(
+        `Finance Head approval — ${rfp}`,
+        `<p>A Finance member approved this request. A Finance Head / Administrator must now approve or decline it.</p>${digitalReceipt(request, siteUrl)}${remarks}<p style="margin-top:24px">${button('Open Finance approvals', `${siteUrl}/admin/approvals`, '#315c93')}</p>`,
+      ),
+    };
+  if (template === 'finance_head_rejected')
+    return {
+      subject: `${request.rfp_number} declined by Finance Head`,
+      html: shell(
+        `${rfp} declined by Finance Head`,
+        `<p>The Finance Head declined this request and returned it directly to you.</p>${digitalReceipt(request, siteUrl)}${remarks}`,
+      ),
+    };
+  if (template === 'hard_copy_verification_required')
+    return {
+      subject: `Hard-copy verification required: ${request.rfp_number}`,
+      html: shell(
+        `Hard-copy verification — ${rfp}`,
+        `<p>The Finance Head approved this request. Finance must receive and manually verify the hard-copy documents in the website before actual processing can start.</p>${digitalReceipt(request, siteUrl)}${remarks}<p style="margin-top:24px">${button('Open Finance approvals', `${siteUrl}/admin/approvals`, '#315c93')}</p>`,
       ),
     };
   if (template === 'processing_started')
@@ -105,7 +138,7 @@ export function renderEmail(
       subject: `${request.rfp_number} is processing`,
       html: shell(
         `${rfp} is processing`,
-        `<p>Finance approved this request and processing has started.</p>${summary(request)}<div style="margin:20px 0;padding:14px 16px;background:#edf8f2;border-radius:8px"><strong>Target release date:</strong> ${escape(payload.plannedCheckDate || 'To be confirmed')}</div>${remarks}`,
+        `<p>Hard-copy verification is approved and the 3-day Finance processing clock has started.</p>${digitalReceipt(request, siteUrl)}<div style="margin:20px 0;padding:14px 16px;background:#edf8f2;border-radius:8px"><strong>3-day processing deadline:</strong> ${escape(payload.processingDueAt || payload.plannedCheckDate || 'To be confirmed')}</div>${remarks}`,
       ),
     };
   if (template === 'finance_returned')

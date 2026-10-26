@@ -6,6 +6,7 @@ import {
   ChevronRight,
   FileCheck2,
   FileQuestion,
+  Printer,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -22,7 +23,7 @@ import { AttachmentPreviewSection } from '../components/AttachmentPreviewSection
 
 type Result = { rows: RfpRequest[] };
 type Action = { value: string; label: string };
-type QueueFocus = 'all' | 'originals' | 'due' | 'review' | 'signatory' | 'release';
+type QueueFocus = 'all' | 'member' | 'head' | 'hardcopy' | 'processing' | 'overdue';
 type SlaInfo = { label: string; detail: string; tone: 'neutral' | 'good' | 'warning' | 'danger' };
 type FinanceOperations = NonNullable<NonNullable<RfpRequest['raw_record']>['finance_operations']>;
 
@@ -39,13 +40,24 @@ const dayNumber = (day: string) => Date.parse(`${day}T00:00:00Z`) / 864e5;
 const financeOperations = (request: RfpRequest): FinanceOperations =>
   request.raw_record?.finance_operations || {};
 
-const requiresOriginals = (request: RfpRequest) => !/cash advance/i.test(request.rfp_type);
+const requiresOriginals = (request: RfpRequest) => {
+  void request;
+  return true;
+};
 
-const awaitingOriginals = (request: RfpRequest) =>
-  requiresOriginals(request) &&
-  request.department_approval === 'Approved' &&
-  !financeOperations(request).originals_received_date &&
-  !/paid|rejected|returned to requestor/i.test(request.final_status);
+const financeWorkflow = (request: RfpRequest) => request.raw_record?.finance_workflow || {};
+
+const processingOverdue = (request: RfpRequest, now: number) => {
+  const dueAt = financeWorkflow(request).processing_due_at;
+  return Boolean(
+    dueAt &&
+    new Date(dueAt).getTime() < now &&
+    !/paid|returned to requestor/i.test(request.final_status),
+  );
+};
+
+const displayStatus = (request: RfpRequest, now: number) =>
+  processingOverdue(request, now) ? 'Overdue' : request.final_status;
 
 function elapsedDays(value: string | null, now: number) {
   if (!value) return 0;
@@ -54,12 +66,44 @@ function elapsedDays(value: string | null, now: number) {
 
 function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
   const status = request.final_status;
+  const processingDue = financeWorkflow(request).processing_due_at;
+  if (processingDue && !/paid|returned to requestor/i.test(status)) {
+    const difference = new Date(processingDue).getTime() - now;
+    if (difference < 0) {
+      const overdueHours = Math.max(1, Math.ceil(Math.abs(difference) / 36e5));
+      return {
+        label: `${overdueHours}h overdue`,
+        detail: `3-day processing deadline was ${manilaDate(processingDue, true)}`,
+        tone: 'danger',
+      };
+    }
+    const hours = Math.max(1, Math.ceil(difference / 36e5));
+    return {
+      label: `${hours}h left in 3-day process`,
+      detail: `Processing deadline ${manilaDate(processingDue, true)}`,
+      tone: hours <= 24 ? 'warning' : 'good',
+    };
+  }
   if (status === 'Pending Department Approval') {
     const days = elapsedDays(request.submitted_at, now);
     return {
       label: `Department review · Day ${days + 1}`,
       detail: days > 1 ? `${days} days since submission` : 'Within department review window',
       tone: days > 1 ? 'warning' : 'neutral',
+    };
+  }
+  if (status === 'Pending Finance Head Review') {
+    return {
+      label: 'Finance Head decision',
+      detail: 'At least one Finance member has approved',
+      tone: 'warning',
+    };
+  }
+  if (status === 'Awaiting Hard Copy Verification') {
+    return {
+      label: 'Hard-copy gate',
+      detail: 'Manual document verification is required before processing',
+      tone: 'warning',
     };
   }
   if (['Pending Finance Review', 'Documentation Required'].includes(status)) {
@@ -111,15 +155,29 @@ function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
   };
 }
 
-const financeActionOptions = (status: string): Action[] => {
+const financeActionOptions = (status: string, financeHead: boolean): Action[] => {
   if (['Pending Finance Review', 'Documentation Required'].includes(status))
     return [
-      { value: 'approve', label: 'Approve and start processing' },
-      { value: 'reject', label: 'Return to Department Approver' },
-      { value: 'request_documents', label: 'Request documents' },
+      { value: 'member_approve', label: 'Approve as Finance member' },
+      { value: 'member_reject', label: 'Return to Department Head' },
+      { value: 'request_documents', label: 'Request documents / clarification' },
+    ];
+  if (status === 'Pending Finance Head Review')
+    return financeHead
+      ? [
+          { value: 'head_approve', label: 'Finance Head approve' },
+          { value: 'head_reject', label: 'Finance Head decline and return to Requestor' },
+        ]
+      : [];
+  if (status === 'Awaiting Hard Copy Verification')
+    return [
+      {
+        value: 'hard_copy_approve',
+        label: 'Approve hard copies and start 3-day processing',
+      },
     ];
   if (['Approved for Payment', 'Payment Processing'].includes(status))
-    return [{ value: 'payment_processing', label: 'Start processing' }];
+    return [{ value: 'payment_processing', label: 'Start legacy processing' }];
   if (status === 'Processing')
     return [{ value: 'check_preparation', label: 'Prepare check and documents' }];
   if (status === 'Check Preparation')
@@ -180,25 +238,25 @@ export function ApprovalsPage() {
   const finance = roles.some((role) =>
     ['super_administrator', 'administrator', 'finance_reviewer'].includes(role),
   );
+  const financeHead = roles.some((role) => ['super_administrator', 'administrator'].includes(role));
   const department = roles.some((role) =>
     ['super_administrator', 'administrator', 'department_approver'].includes(role),
   );
   const matchesQueueFocus = useCallback(
     (request: RfpRequest) => {
       if (queueFocus === 'all') return true;
-      if (queueFocus === 'originals') return awaitingOriginals(request);
-      if (queueFocus === 'due')
-        return (
-          request.final_status === 'Pending Finance Review' &&
-          elapsedDays(request.department_approval_at || request.submitted_at, now) === 0
-        );
-      if (queueFocus === 'review')
+      if (queueFocus === 'member')
         return ['Pending Finance Review', 'Documentation Required'].includes(request.final_status);
-      if (queueFocus === 'signatory')
-        return ['Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
-          request.final_status,
+      if (queueFocus === 'head') return request.final_status === 'Pending Finance Head Review';
+      if (queueFocus === 'hardcopy')
+        return request.final_status === 'Awaiting Hard Copy Verification';
+      if (queueFocus === 'processing')
+        return (
+          ['Processing', 'Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
+            request.final_status,
+          ) && !processingOverdue(request, now)
         );
-      return ['Check Released', 'Payment Released'].includes(request.final_status);
+      return processingOverdue(request, now);
     },
     [now, queueFocus],
   );
@@ -247,23 +305,21 @@ export function ApprovalsPage() {
       (request) => !/paid|returned to requestor/i.test(request.final_status),
     );
     return {
-      originals: activeRows.filter(awaitingOriginals).length,
-      due: activeRows.filter(
-        (request) =>
-          request.final_status === 'Pending Finance Review' &&
-          elapsedDays(request.department_approval_at || request.submitted_at, now) === 0,
-      ).length,
-      review: activeRows.filter((request) =>
+      member: activeRows.filter((request) =>
         ['Pending Finance Review', 'Documentation Required'].includes(request.final_status),
       ).length,
-      signatory: activeRows.filter((request) =>
-        ['Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
-          request.final_status,
-        ),
+      head: activeRows.filter((request) => request.final_status === 'Pending Finance Head Review')
+        .length,
+      hardcopy: activeRows.filter(
+        (request) => request.final_status === 'Awaiting Hard Copy Verification',
       ).length,
-      release: activeRows.filter((request) =>
-        ['Check Released', 'Payment Released'].includes(request.final_status),
+      processing: activeRows.filter(
+        (request) =>
+          ['Processing', 'Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
+            request.final_status,
+          ) && !processingOverdue(request, now),
       ).length,
+      overdue: activeRows.filter((request) => processingOverdue(request, now)).length,
     };
   }, [now, rows]);
   const hasFilters = Boolean(company || search || statusFilter || queueFocus !== 'all');
@@ -306,11 +362,11 @@ export function ApprovalsPage() {
           { value: 'department_reject', label: 'Return to Requestor' },
         ]
       : finance
-        ? financeActionOptions(selected.final_status)
+        ? financeActionOptions(selected.final_status, financeHead)
         : []
     : [];
   const departmentAction = action.startsWith('department_');
-  const needsTarget = ['approve', 'payment_processing'].includes(action);
+  const needsTarget = action === 'payment_processing';
 
   const save = async () => {
     if (!selected || !action) return;
@@ -318,17 +374,19 @@ export function ApprovalsPage() {
       setError('A target release date is required before processing can begin.');
       return;
     }
-    if (action === 'department_reject' && !remarks.trim()) {
-      setError('Remarks are required when returning a request to the Requestor.');
+    if (
+      ['department_reject', 'member_reject', 'head_reject', 'request_documents'].includes(action) &&
+      !remarks.trim()
+    ) {
+      setError('Remarks are required for return, decline, or document-request actions.');
       return;
     }
     if (
-      action === 'approve' &&
-      requiresOriginals(selected) &&
+      action === 'hard_copy_approve' &&
       (financeOperations(selected).document_verification !== 'Complete' ||
         !financeOperations(selected).originals_received_date)
     ) {
-      setError('Save a complete original-document verification before Finance approval.');
+      setError('Save a complete hard-copy verification before starting processing.');
       return;
     }
     if (
@@ -447,48 +505,48 @@ export function ApprovalsPage() {
       {finance && (
         <section className="queue-health-grid" aria-label="Finance queue health">
           <QueueHealthCard
-            active={queueFocus === 'originals'}
-            count={queueCounts.originals}
-            icon={<FileCheck2 size={18} />}
-            label="Awaiting originals"
-            detail="Regular RFPs only"
-            tone="warning"
-            onClick={() => applyQueueFocus('originals')}
-          />
-          <QueueHealthCard
-            active={queueFocus === 'due'}
-            count={queueCounts.due}
-            icon={<CalendarClock size={18} />}
-            label="Due for Finance today"
-            detail="SLA day 1 handoff"
-            tone="amber"
-            onClick={() => applyQueueFocus('due')}
-          />
-          <QueueHealthCard
-            active={queueFocus === 'review'}
-            count={queueCounts.review}
+            active={queueFocus === 'member'}
+            count={queueCounts.member}
             icon={<WalletCards size={18} />}
-            label="Pending Finance review"
-            detail="Requires Finance decision"
-            onClick={() => applyQueueFocus('review')}
+            label="Finance member review"
+            detail="At least one member approval"
+            onClick={() => applyQueueFocus('member')}
           />
           <QueueHealthCard
-            active={queueFocus === 'signatory'}
-            count={queueCounts.signatory}
+            active={queueFocus === 'head'}
+            count={queueCounts.head}
             icon={<ShieldCheck size={18} />}
-            label="Day 3 · Signatory"
-            detail="Check preparation / sign-off"
+            label="Finance Head review"
+            detail="Administrator decision gate"
             tone="violet"
-            onClick={() => applyQueueFocus('signatory')}
+            onClick={() => applyQueueFocus('head')}
           />
           <QueueHealthCard
-            active={queueFocus === 'release'}
-            count={queueCounts.release}
+            active={queueFocus === 'hardcopy'}
+            count={queueCounts.hardcopy}
+            icon={<FileCheck2 size={18} />}
+            label="Hard-copy verification"
+            detail="Required before processing"
+            tone="warning"
+            onClick={() => applyQueueFocus('hardcopy')}
+          />
+          <QueueHealthCard
+            active={queueFocus === 'processing'}
+            count={queueCounts.processing}
             icon={<CalendarClock size={18} />}
-            label="Day 4 · Depositing"
-            detail="Payment release stage"
+            label="3-day processing"
+            detail="Active monitoring window"
             tone="green"
-            onClick={() => applyQueueFocus('release')}
+            onClick={() => applyQueueFocus('processing')}
+          />
+          <QueueHealthCard
+            active={queueFocus === 'overdue'}
+            count={queueCounts.overdue}
+            icon={<CalendarClock size={18} />}
+            label="Overdue"
+            detail="Past the 3-day processing deadline"
+            tone="amber"
+            onClick={() => applyQueueFocus('overdue')}
           />
         </section>
       )}
@@ -605,7 +663,7 @@ export function ApprovalsPage() {
                   <td>{request.supplier_payee}</td>
                   <td className="finance-amount">{php.format(request.amount)}</td>
                   <td>
-                    <StatusBadge>{request.final_status}</StatusBadge>
+                    <StatusBadge>{displayStatus(request, now)}</StatusBadge>
                   </td>
                   <td>
                     <RequestSla request={request} now={now} />
@@ -665,13 +723,26 @@ export function ApprovalsPage() {
         <Modal title={selected.rfp_number} size="wide" onClose={() => setSelected(undefined)}>
           <div className="finance-modal-summary">
             <div>
-              <StatusBadge>{selected.final_status}</StatusBadge>
+              <StatusBadge>{displayStatus(selected, now)}</StatusBadge>
               <RequestSla request={selected} now={now} />
             </div>
-            <p>
-              {selected.company || 'Company not recorded'} · Submitted{' '}
-              {manilaDate(selected.submitted_at, true)}
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p>
+                {selected.company || 'Company not recorded'} · Submitted{' '}
+                {manilaDate(selected.submitted_at, true)}
+              </p>
+              {finance && (
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    window.open(`/admin/rfp/${selected.id}/print`, '_blank', 'noopener,noreferrer')
+                  }
+                >
+                  <Printer size={16} />
+                  Print digital RFP
+                </Button>
+              )}
+            </div>
           </div>
           {error && (
             <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-700" role="alert">
@@ -697,11 +768,20 @@ export function ApprovalsPage() {
               ['Submitted date', manilaDate(selected.submitted_at, true)],
               ['Target release', manilaDate(selected.planned_check_date)],
               ['SLA position', getSlaInfo(selected, now).label],
-              ['Current stage', selected.final_status],
+              ['Current stage', displayStatus(selected, now)],
               ['Approving heads', selected.approving_head],
               ['Department approval', selected.department_approval],
               ['Department remarks', selected.department_approval_remarks || '—'],
-              ['Finance review', selected.finance_review],
+              [
+                'Finance member review',
+                financeWorkflow(selected).member_status || selected.finance_review,
+              ],
+              ['Finance head review', financeWorkflow(selected).head_status || 'Pending'],
+              ['Hard-copy approval', financeWorkflow(selected).hard_copy_status || 'Pending'],
+              [
+                '3-day processing due',
+                manilaDate(financeWorkflow(selected).processing_due_at || null, true),
+              ],
               ['Finance remarks', selected.finance_remarks || '—'],
               ['Purpose', selected.purpose_description],
             ].map(([key, value]) => (
@@ -758,11 +838,7 @@ export function ApprovalsPage() {
                     id="verification-remarks"
                     className="input min-h-24"
                     disabled={!requiresOriginals(selected)}
-                    placeholder={
-                      requiresOriginals(selected)
-                        ? 'Required when documents are incomplete'
-                        : 'Hard-copy verification is not required for Cash Advances.'
-                    }
+                    placeholder={'Required when documents are incomplete'}
                     value={verificationRemarks}
                     onChange={(event) => setVerificationRemarks(event.target.value)}
                   />
@@ -800,8 +876,9 @@ export function ApprovalsPage() {
               </div>
               <div className="finance-update-footer">
                 <p>
-                  Regular RFPs require received originals and a complete verification before Finance
-                  approval. Cash Advances do not require hard copies.
+                  Every RFP must record received hard copies and a Complete verification after
+                  Finance Head approval. The 3-day processing clock starts only when a Finance
+                  member approves this hard-copy gate.
                 </p>
                 <Button onClick={() => void saveFinanceUpdates()} disabled={updateBusy}>
                   {updateBusy ? <Spinner label="Saving" /> : 'Save Finance updates'}

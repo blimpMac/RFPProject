@@ -8,6 +8,10 @@ import { departmentRereviewSchema, financeSchema, financeUpdateSchema } from '..
 import { getAssignedDepartments } from '../services/approving-heads.js';
 import { cancelPendingDepartmentReview } from '../services/workflow-notifications.js';
 import { auditTrailRow } from '../services/audit-trail.js';
+import {
+  isFinanceStageAction,
+  performFinanceStageAction,
+} from '../services/finance-stage-workflow.js';
 import type { RouteHandler } from './context.js';
 
 const tableMap: Record<string, { table: string; order: string; roles?: string[] }> = {
@@ -101,6 +105,24 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
       requests: dashboardRequests,
       recentActivity: logs.data || [],
     });
+  }
+
+  if (route.startsWith('digital-rfp/')) {
+    ensureMethod(event, 'GET');
+    await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    const requestId = z.uuid().parse(route.slice('digital-rfp/'.length));
+    const [request, attachments] = await Promise.all([
+      db.from('rfp_requests').select('*').eq('id', requestId).single(),
+      db
+        .from('request_attachments')
+        .select('id,original_filename,status')
+        .eq('request_id', requestId)
+        .eq('status', 'available')
+        .order('created_at'),
+    ]);
+    if (request.error || !request.data) throw new HttpError(404, 'Request not found.');
+    if (attachments.error) throw attachments.error;
+    return json(200, { ok: true, request: request.data, attachments: attachments.data || [] });
   }
 
   if (route === 'audit-trail') {
@@ -237,27 +259,31 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
     ensureMethod(event, 'POST');
     const staff = await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
     const input = financeSchema.parse(readJson(event));
-    if (input.action === 'approve') {
-      const request = await db
-        .from('rfp_requests')
-        .select('rfp_type,raw_record')
-        .eq('id', input.requestId)
-        .single();
-      if (request.error || !request.data) throw new HttpError(404, 'Request not found.');
-      if (!/cash advance/i.test(request.data.rfp_type || '')) {
-        const raw = request.data.raw_record as Record<string, unknown> | null;
-        const operations = raw?.finance_operations as Record<string, unknown> | undefined;
-        if (
-          operations?.document_verification !== 'Complete' ||
-          !operations.originals_received_date
-        ) {
-          throw new HttpError(
-            409,
-            'Complete the original-document verification before Finance approval.',
-          );
-        }
-      }
+    const normalizedAction =
+      input.action === 'approve'
+        ? 'member_approve'
+        : input.action === 'reject'
+          ? 'member_reject'
+          : input.action;
+
+    if (isFinanceStageAction(normalizedAction)) {
+      const request = await performFinanceStageAction(
+        db,
+        {
+          requestId: input.requestId,
+          action: normalizedAction,
+          remarks: input.remarks,
+        },
+        {
+          email: staff.user.email || '',
+          userId: staff.user.id,
+          roles: staff.roles,
+        },
+      );
+      const delivery = await flushEmailQueueForRequest(input.requestId);
+      return json(200, { ok: true, request, delivery });
     }
+
     const result = await db.rpc('finance_workflow_action', {
       p_request_id: input.requestId,
       p_action: input.action,
@@ -292,27 +318,21 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
       !Array.isArray(existingRaw.finance_operations)
         ? (existingRaw.finance_operations as Record<string, unknown>)
         : {};
-    const isCashAdvance = /cash advance/i.test(String(request.rfp_type || ''));
     const operations = {
       ...existingOperations,
-      originals_received_date: isCashAdvance ? null : input.originalsReceivedDate || null,
-      document_verification: isCashAdvance ? null : input.documentVerification || null,
-      verification_remarks: isCashAdvance ? null : input.verificationRemarks || null,
+      originals_received_date: input.originalsReceivedDate || null,
+      document_verification: input.documentVerification || null,
+      verification_remarks: input.verificationRemarks || null,
       updated_at: new Date().toISOString(),
       updated_by: staff.user.email,
     };
-    if (
-      !isCashAdvance &&
-      operations.document_verification === 'Complete' &&
-      !operations.originals_received_date
-    ) {
+    if (operations.document_verification === 'Complete' && !operations.originals_received_date) {
       throw new HttpError(
         400,
         'Record the original documents received date before marking them complete.',
       );
     }
     if (
-      !isCashAdvance &&
       operations.document_verification === 'Incomplete' &&
       !String(operations.verification_remarks || '').trim()
     ) {

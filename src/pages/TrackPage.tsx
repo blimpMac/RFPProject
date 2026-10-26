@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { get, post } from '../lib/api';
 import { manilaDate, php } from '../lib/format';
 import { Button, Spinner, StatusBadge } from '../components/ui';
+import { DigitalRfpReceipt } from '../components/DigitalRfpReceipt';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 
 type Tracking = {
@@ -13,6 +14,12 @@ type Tracking = {
     requestor_name: string;
     company: string | null;
     department: string;
+    project_class: string;
+    rfp_type: string;
+    supplier_payee: string;
+    purpose_description: string;
+    approving_head: string;
+    department_approval_at: string | null;
     amount: number;
     required_payment_date: string;
     department_approval: string;
@@ -21,6 +28,26 @@ type Tracking = {
     last_action: string;
     planned_check_date: string | null;
   };
+  workflow: {
+    member_status?: string | null;
+    member_reviewed_at?: string | null;
+    member_reviewed_by?: string | null;
+    head_status?: string | null;
+    head_reviewed_at?: string | null;
+    head_reviewed_by?: string | null;
+    hard_copy_status?: string | null;
+    hard_copy_approved_at?: string | null;
+    hard_copy_approved_by?: string | null;
+    processing_started_at?: string | null;
+    processing_due_at?: string | null;
+  };
+  financeOperations: {
+    originals_received_date?: string | null;
+    document_verification?: string | null;
+    verification_remarks?: string | null;
+    updated_by?: string | null;
+  };
+  submissionChecklist: string[];
   logs: { occurred_at: string; action: string; remarks: string | null; new_status: string }[];
   attachments: { id: string; original_filename: string; status: string }[];
 };
@@ -118,6 +145,15 @@ export function TrackPage() {
           ))}
         </div>
       </section>
+      {r.department_approval === 'Approved' && (
+        <DigitalRfpReceipt
+          request={r}
+          attachments={data!.attachments}
+          workflow={data!.workflow}
+          financeOperations={data!.financeOperations}
+          submissionChecklist={data!.submissionChecklist}
+        />
+      )}
       {r.final_status === 'Returned to Requestor' && (
         <section className="card p-5">
           <h2 className="font-semibold">Correct and resubmit this RFP</h2>
