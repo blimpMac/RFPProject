@@ -1320,12 +1320,6 @@ body {
   }
 }
 
-@media (max-width: 639px) {
-  .admin-new-request {
-    display: none !important;
-  }
-}
-
 @media (max-width: 480px) {
   .filter-grid,
   .metric-grid {

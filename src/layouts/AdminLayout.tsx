@@ -8,7 +8,6 @@ import {
   History,
   LogOut,
   Menu,
-  Plus,
   Search,
   Table2,
   UserCog,
@@ -313,15 +312,6 @@ export function AdminLayout() {
             </h1>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <a
-              className="admin-new-request btn btn-primary hidden sm:inline-flex"
-              href="/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Plus size={17} />
-              New request
-            </a>
             <ThemeToggle compact />
           </div>
         </header>
