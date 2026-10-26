@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   columnFilteringFeature,
   columnVisibilityFeature,
@@ -20,8 +20,10 @@ import {
   ChevronRight,
   Download,
   Eye,
+  RotateCcw,
   Search,
   SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import { Button, EmptyState, Modal, StatusBadge } from './ui';
 import { labelize, manilaDate, php } from '../lib/format';
@@ -116,6 +118,18 @@ export function DataTable({
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const focusSearch = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', focusSearch);
+    return () => window.removeEventListener('keydown', focusSearch);
+  }, []);
 
   const keys = useMemo(() => {
     const all = new Set<string>();
@@ -132,12 +146,6 @@ export function DataTable({
   );
   const columns = useMemo(
     () => [
-      {
-        id: 'select',
-        header: '',
-        enableHiding: false,
-        cell: () => <input type="checkbox" aria-label="Select row" />,
-      },
       ...keys.map((key) => ({
         accessorKey: key,
         header: columnLabel(key),
@@ -185,7 +193,7 @@ export function DataTable({
     table
       .getVisibleLeafColumns()
       .map((column) => column.id)
-      .filter((key) => !['select', 'actions'].includes(key));
+      .filter((key) => key !== 'actions');
   const rowsForExport = async () => {
     const source = loadExportRows ? await loadExportRows() : displayedExportRows;
     if (!search) return source;
@@ -251,16 +259,44 @@ export function DataTable({
 
   return (
     <div className="card min-w-0 overflow-hidden">
-      <div className="grid min-w-0 grid-cols-2 items-center gap-2 border-b p-3 sm:flex sm:flex-wrap">
-        <div className="relative col-span-2 min-w-0 w-full flex-1 sm:col-span-1 sm:max-w-sm">
+      <div className="table-toolbar grid min-w-0 grid-cols-2 items-center gap-2 p-3 sm:flex sm:flex-wrap sm:p-4">
+        <div className="relative col-span-2 min-w-0 w-full flex-1 sm:col-span-1 sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
           <input
+            ref={searchRef}
             className="input min-w-0 !pl-10"
             placeholder="Search visible rows…"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
+            aria-label="Search visible rows"
           />
+          {search ? (
+            <button
+              className="focus-ring absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:text-slate-700"
+              onClick={() => setSearch('')}
+              aria-label="Clear search"
+            >
+              <X size={16} />
+            </button>
+          ) : (
+            <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 sm:inline-flex">
+              Ctrl K
+            </kbd>
+          )}
         </div>
+        {(search || sorting.length > 0 || Object.keys(visibility).length > 0) && (
+          <button
+            className="table-reset"
+            onClick={() => {
+              setSearch('');
+              setSorting([]);
+              setVisibility({});
+            }}
+          >
+            <RotateCcw size={14} />
+            Reset view
+          </button>
+        )}
         <div className="relative min-w-0">
           <Button
             className="w-full sm:w-auto"
@@ -312,14 +348,14 @@ export function DataTable({
       )}
 
       <div className="max-h-[65vh] overflow-auto">
-        <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
+        <table className="data-grid min-w-full border-separate border-spacing-0 text-left text-sm">
           <thead className="sticky top-0 z-10 bg-slate-100">
             {table.getHeaderGroups().map((group) => (
               <tr key={group.id}>
                 {group.headers.map((header, index) => (
                   <th
                     key={header.id}
-                    className={`whitespace-nowrap border-b border-r px-3 py-3 font-semibold text-slate-600 ${index === 1 ? 'sticky left-0 z-10 bg-slate-100' : ''}`}
+                    className={`whitespace-nowrap border-b border-r px-3 py-3 font-semibold text-slate-600 ${index === 0 ? 'sticky left-0 z-10 bg-slate-100' : ''}`}
                   >
                     <button
                       className="flex items-center gap-1"
@@ -339,7 +375,7 @@ export function DataTable({
                 {row.getVisibleCells().map((cell, cellIndex) => (
                   <td
                     key={cell.id}
-                    className={`max-w-72 whitespace-nowrap border-b border-r px-3 py-2.5 ${cellIndex === 1 ? 'sticky left-0 bg-inherit font-medium' : ''}`}
+                    className={`max-w-72 whitespace-nowrap border-b border-r px-3 py-3 ${cellIndex === 0 ? 'sticky left-0 bg-inherit font-semibold' : ''}`}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
@@ -353,7 +389,7 @@ export function DataTable({
         )}
       </div>
 
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-sm text-slate-600">
+      <div className="table-footer flex min-w-0 flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm text-slate-600">
         <span>
           {total
             ? `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`
@@ -372,6 +408,7 @@ export function DataTable({
               ))}
             </select>
           </label>
+          <span className="hidden text-xs sm:inline">Page {page}</span>
           <button
             className="rounded border p-1.5 disabled:opacity-40"
             aria-label="Previous page"

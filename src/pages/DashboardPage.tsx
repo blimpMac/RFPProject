@@ -1,6 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Clock3, FileText, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
+  AlertTriangle,
+  ArrowRight,
+  Banknote,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  RefreshCw,
+  RotateCcw,
+  XCircle,
+} from 'lucide-react';
+import {
+  Bar,
+  BarChart,
   CartesianGrid,
   Cell,
   Line,
@@ -11,12 +24,10 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  BarChart,
-  Bar,
 } from 'recharts';
 import { get } from '../lib/api';
 import { manilaDate, php } from '../lib/format';
-import { EmptyState, Spinner, StatusBadge } from '../components/ui';
+import { Button, EmptyState, Spinner, StatusBadge } from '../components/ui';
 import { calculateDashboardStats } from '../features/dashboard/stats';
 
 type RequestRow = {
@@ -35,6 +46,7 @@ type Dashboard = {
   requests: RequestRow[];
   recentActivity: Record<string, unknown>[];
 };
+
 export function DashboardPage() {
   const [data, setData] = useState<Dashboard>();
   const [error, setError] = useState('');
@@ -42,236 +54,400 @@ export function DashboardPage() {
   const [company, setCompany] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const [now] = useState(() => Date.now());
-  useEffect(() => {
-    get<Dashboard>('dashboard')
-      .then(setData)
-      .catch((e) => setError(e.message));
+  const [now, setNow] = useState(() => Date.now());
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>();
+
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setRefreshing(true);
+    setError('');
+    try {
+      const result = await get<Dashboard>('dashboard');
+      setData(result);
+      setNow(Date.now());
+      setLastUpdated(new Date());
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not load the dashboard.');
+    } finally {
+      setRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void load(true);
+  }, [load]);
+
   const requests = useMemo(
     () =>
       data?.requests.filter(
-        (r) =>
-          (!department || r.department === department) &&
-          (!company || r.company === company) &&
-          (!from || r.submitted_at >= from) &&
-          (!to || r.submitted_at < `${to}T23:59:59`),
+        (request) =>
+          (!department || request.department === department) &&
+          (!company || request.company === company) &&
+          (!from || request.submitted_at >= from) &&
+          (!to || request.submitted_at < `${to}T23:59:59`),
       ) || [],
     [company, data, department, from, to],
   );
   const stats = useMemo(() => calculateDashboardStats(requests), [requests]);
   const monthly = useMemo(() => {
     const map = new Map<string, number>();
-    requests.forEach((r) => {
-      const k = new Intl.DateTimeFormat('en-PH', {
+    requests.forEach((request) => {
+      const key = new Intl.DateTimeFormat('en-PH', {
         timeZone: 'Asia/Manila',
         month: 'short',
         year: '2-digit',
-      }).format(new Date(r.submitted_at));
-      map.set(k, (map.get(k) || 0) + 1);
+      }).format(new Date(request.submitted_at));
+      map.set(key, (map.get(key) || 0) + 1);
     });
     return [...map].map(([month, count]) => ({ month, count })).reverse();
   }, [requests]);
   const byDepartment = useMemo(() => {
     const map = new Map<string, number[]>();
-    requests.forEach((r) => {
-      const end = r.finance_review_at || r.department_approval_at;
-      if (end) {
-        const list = map.get(r.department) || [];
-        list.push((new Date(end).getTime() - new Date(r.submitted_at).getTime()) / 36e5);
-        map.set(r.department, list);
-      }
+    requests.forEach((request) => {
+      const end = request.finance_review_at || request.department_approval_at;
+      if (!end) return;
+      const list = map.get(request.department) || [];
+      list.push((new Date(end).getTime() - new Date(request.submitted_at).getTime()) / 36e5);
+      map.set(request.department, list);
     });
-    return [...map].map(([name, v]) => ({
+    return [...map].map(([name, values]) => ({
       name,
-      hours: Math.round(v.reduce((a, b) => a + b, 0) / v.length),
+      hours: Math.round(values.reduce((total, value) => total + value, 0) / values.length),
     }));
   }, [requests]);
-  if (!data && !error) return <Spinner />;
-  if (error) return <p className="rounded bg-red-50 p-4 text-red-700">{error}</p>;
+
+  if (!data && !error) {
+    return (
+      <div className="card grid min-h-80 place-items-center">
+        <Spinner label="Preparing your workspace" />
+      </div>
+    );
+  }
+  if (!data && error) return <p className="rounded-xl bg-red-50 p-4 text-red-700">{error}</p>;
+
+  const filtersActive = Boolean(company || department || from || to);
+  const pendingValue = requests
+    .filter((request) => !/paid|released|rejected|returned/i.test(request.final_status))
+    .reduce((total, request) => total + Number(request.amount || 0), 0);
+  const overdue = requests.filter(
+    (request) =>
+      !/paid|released|rejected|returned/i.test(request.final_status) &&
+      now - new Date(request.submitted_at).getTime() > 4 * 864e5,
+  );
   const cards = [
-    ['Total RFP requests', stats.total, FileText, 'text-blue-700'],
-    ['Approved requests', stats.approved, CheckCircle2, 'text-emerald-700'],
-    ['Rejected requests', stats.rejected, XCircle, 'text-red-700'],
-    ['Pending requests', stats.pending, Clock3, 'text-amber-700'],
-    ['Average turnaround', `${stats.avg.toFixed(1)} hrs`, Clock3, 'text-slate-700'],
+    {
+      label: 'Requests in view',
+      value: stats.total.toLocaleString(),
+      detail: filtersActive ? 'Filtered result' : 'All accessible records',
+      icon: FileText,
+      tone: 'blue',
+    },
+    {
+      label: 'Pending value',
+      value: php.format(pendingValue),
+      detail: `${stats.pending} active request${stats.pending === 1 ? '' : 's'}`,
+      icon: Banknote,
+      tone: 'violet',
+    },
+    {
+      label: 'Completed',
+      value: stats.approved.toLocaleString(),
+      detail: stats.total
+        ? `${Math.round((stats.approved / stats.total) * 100)}% of requests`
+        : 'No requests yet',
+      icon: CheckCircle2,
+      tone: 'green',
+    },
+    {
+      label: 'Returned',
+      value: stats.rejected.toLocaleString(),
+      detail: 'Needs correction or review',
+      icon: XCircle,
+      tone: 'red',
+    },
+    {
+      label: 'Avg. turnaround',
+      value: `${stats.avg.toFixed(1)} hrs`,
+      detail: 'Submission to latest review',
+      icon: Clock3,
+      tone: 'amber',
+    },
   ] as const;
   const pie = [
-    { name: 'Approved', value: stats.approved, color: '#2f855a' },
-    { name: 'Rejected', value: stats.rejected, color: '#c05640' },
-    { name: 'Pending', value: stats.pending, color: '#d69e2e' },
+    { name: 'Completed', value: stats.approved, color: '#0f9f6e' },
+    { name: 'Returned', value: stats.rejected, color: '#e45d59' },
+    { name: 'In progress', value: stats.pending, color: '#f0a43c' },
   ];
-  const departments = [...new Set(data!.requests.map((r) => r.department))];
+  const departments = [...new Set(data!.requests.map((request) => request.department))];
   const companies = [
     ...new Set(data!.requests.flatMap((request) => (request.company ? [request.company] : []))),
   ];
-  const overdue = requests.filter(
-    (r) =>
-      !/paid|released|rejected|returned/i.test(r.final_status) &&
-      now - new Date(r.submitted_at).getTime() > 4 * 864e5,
-  );
+
+  const clearFilters = () => {
+    setCompany('');
+    setDepartment('');
+    setFrom('');
+    setTo('');
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <section className="dashboard-hero">
         <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="text-sm text-slate-500">
-            Operational summary based on live Supabase records.
+          <p className="eyebrow">Live operations</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+            Payment requests at a glance
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            Follow throughput, spot delayed requests, and move finance work forward from one view.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <select
-            className="input w-auto"
-            aria-label="Company"
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-          >
-            <option value="">All companies</option>
-            {companies.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-          <select
-            className="input w-auto"
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-          >
-            <option value="">All departments</option>
-            {departments.map((d) => (
-              <option key={d}>{d}</option>
-            ))}
-          </select>
-          <input
-            className="input w-auto"
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            aria-label="From date"
-          />
-          <input
-            className="input w-auto"
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            aria-label="To date"
-          />
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="last-updated">
+            <span aria-hidden="true" />
+            {lastUpdated
+              ? `Updated ${lastUpdated.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}`
+              : 'Connecting'}
+          </span>
+          <Button variant="secondary" disabled={refreshing} onClick={() => void load()}>
+            <RefreshCw className={refreshing ? 'animate-spin' : ''} size={16} />
+            Refresh
+          </Button>
         </div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        {cards.map(([label, value, Icon, color]) => (
-          <div className="card p-4" key={label}>
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-500">{label}</p>
-              <Icon className={color} size={19} />
-            </div>
-            <p className="mt-3 text-2xl font-semibold">{value}</p>
+      </section>
+
+      {error && (
+        <p className="rounded-xl bg-red-50 p-4 text-sm font-medium text-red-700" role="alert">
+          {error}
+        </p>
+      )}
+
+      <section className="filter-panel" aria-label="Dashboard filters">
+        <div className="filter-panel-heading">
+          <div>
+            <p className="text-sm font-semibold">Refine overview</p>
+            <p className="text-xs text-slate-500">All figures and charts update together.</p>
           </div>
+          {filtersActive && (
+            <button className="filter-reset" onClick={clearFilters}>
+              <RotateCcw size={14} />
+              Reset filters
+            </button>
+          )}
+        </div>
+        <div className="filter-grid">
+          <label>
+            <span>Company</span>
+            <select
+              className="input"
+              value={company}
+              onChange={(event) => setCompany(event.target.value)}
+            >
+              <option value="">All companies</option>
+              {companies.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Department</span>
+            <select
+              className="input"
+              value={department}
+              onChange={(event) => setDepartment(event.target.value)}
+            >
+              <option value="">All departments</option>
+              {departments.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Submitted from</span>
+            <input
+              className="input"
+              type="date"
+              value={from}
+              onChange={(event) => setFrom(event.target.value)}
+            />
+          </label>
+          <label>
+            <span>Submitted to</span>
+            <input
+              className="input"
+              type="date"
+              value={to}
+              onChange={(event) => setTo(event.target.value)}
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="metric-grid" aria-label="Request performance">
+        {cards.map(({ label, value, detail, icon: Icon, tone }) => (
+          <article className="metric-card" data-tone={tone} key={label}>
+            <div className="metric-icon">
+              <Icon size={19} />
+            </div>
+            <p className="metric-label">{label}</p>
+            <p className="metric-value">{value}</p>
+            <p className="metric-detail">{detail}</p>
+          </article>
         ))}
-      </div>
-      <div className="grid gap-4 xl:grid-cols-3">
-        <ChartCard title="Request status">
-          <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie data={pie} dataKey="value" innerRadius={56} outerRadius={82}>
-                {pie.map((x) => (
-                  <Cell key={x.name} fill={x.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex justify-center gap-4 text-xs">
-            {pie.map((x) => (
-              <span key={x.name}>
-                <i
-                  className="mr-1 inline-block h-2 w-2 rounded-full"
-                  style={{ background: x.color }}
-                />
-                {x.name} {x.value}
+      </section>
+
+      <div className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
+        <ChartCard title="Request mix" subtitle="Current status distribution">
+          <div className="relative">
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie data={pie} dataKey="value" innerRadius={68} outerRadius={94} paddingAngle={3}>
+                  {pie.map((item) => (
+                    <Cell key={item.name} fill={item.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="chart-center-label" aria-hidden="true">
+              <strong>{stats.total}</strong>
+              <span>Total</span>
+            </div>
+          </div>
+          <div className="chart-legend">
+            {pie.map((item) => (
+              <span key={item.name}>
+                <i style={{ background: item.color }} />
+                {item.name}
+                <strong>{item.value}</strong>
               </span>
             ))}
           </div>
         </ChartCard>
-        <ChartCard title="Monthly request trends">
-          <ResponsiveContainer width="100%" height={275}>
-            <LineChart data={monthly}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="month" />
-              <YAxis allowDecimals={false} />
+        <ChartCard title="Request volume" subtitle="Submissions by month">
+          <ResponsiveContainer width="100%" height={290}>
+            <LineChart data={monthly} margin={{ top: 12, right: 12, left: -18, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="4 5" vertical={false} />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
               <Tooltip />
-              <Line dataKey="count" stroke="#315c93" strokeWidth={2} />
+              <Line
+                type="monotone"
+                dataKey="count"
+                stroke="#087ea4"
+                strokeWidth={3}
+                dot={{ fill: '#087ea4', strokeWidth: 3, r: 3 }}
+                activeDot={{ r: 5 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>
-        <ChartCard title="Processing duration by department">
-          <ResponsiveContainer width="100%" height={275}>
-            <BarChart data={byDepartment} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-              <XAxis type="number" />
-              <YAxis type="category" dataKey="name" width={82} />
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[1.18fr_0.82fr]">
+        <ChartCard title="Processing time" subtitle="Average hours by department">
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={byDepartment}
+              layout="vertical"
+              margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="4 5" horizontal={false} />
+              <XAxis type="number" axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="name" width={92} axisLine={false} tickLine={false} />
               <Tooltip />
-              <Bar dataKey="hours" fill="#52796f" />
+              <Bar dataKey="hours" fill="#13a079" radius={[0, 6, 6, 0]} barSize={18} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
-      </div>
-      <div className="grid gap-4 xl:grid-cols-2">
-        <section className="card">
-          <div className="flex items-center justify-between border-b px-5 py-4">
-            <h2 className="font-semibold">Recently submitted</h2>
-          </div>
-          {requests.slice(0, 6).map((r) => (
-            <div className="flex items-center gap-3 border-b px-5 py-3 last:border-0" key={r.id}>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">{r.rfp_number}</p>
-                <p className="truncate text-xs text-slate-500">
-                  {r.company || 'Company not recorded'} · {r.department} ·{' '}
-                  {manilaDate(r.submitted_at, true)}
-                </p>
-              </div>
-              <span className="text-sm">{php.format(r.amount)}</span>
-              <StatusBadge>{r.final_status}</StatusBadge>
+
+        <section className="card overflow-hidden">
+          <div className="section-heading">
+            <div>
+              <h2>Attention required</h2>
+              <p>Open requests older than four days</p>
             </div>
-          ))}
-          {!requests.length && (
-            <EmptyState title="No requests" body="No requests match the current filters." />
-          )}
-        </section>
-        <section className="card">
-          <div className="flex items-center justify-between border-b px-5 py-4">
-            <h2 className="font-semibold">Attention required</h2>
-            <span className="flex items-center gap-1 text-xs text-amber-700">
+            <span className="attention-count">
               <AlertTriangle size={14} />
-              {overdue.length} overdue
+              {overdue.length}
             </span>
           </div>
-          {overdue.slice(0, 6).map((r) => (
-            <div className="flex items-center gap-3 border-b px-5 py-3 last:border-0" key={r.id}>
-              <div className="flex-1">
-                <p className="font-medium">{r.rfp_number}</p>
-                <p className="text-xs text-slate-500">
-                  Pending {Math.floor((Date.now() - new Date(r.submitted_at).getTime()) / 864e5)}{' '}
-                  days
-                </p>
+          <div className="divide-y">
+            {overdue.slice(0, 5).map((request) => (
+              <div className="request-row" key={request.id}>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{request.rfp_number}</p>
+                  <p className="mt-0.5 truncate text-xs text-slate-500">
+                    {request.department} · Pending{' '}
+                    {Math.floor((now - new Date(request.submitted_at).getTime()) / 864e5)} days
+                  </p>
+                </div>
+                <StatusBadge>{request.final_status}</StatusBadge>
               </div>
-              <StatusBadge>{r.final_status}</StatusBadge>
-            </div>
-          ))}
+            ))}
+          </div>
           {!overdue.length && (
-            <EmptyState
-              title="Nothing overdue"
-              body="No filtered requests are older than four days."
-            />
+            <EmptyState title="Everything is moving" body="No requests in this view are overdue." />
           )}
+          <Link className="section-link" to="/admin/approvals">
+            Open approval queue <ArrowRight size={15} />
+          </Link>
         </section>
       </div>
+
+      <section className="card overflow-hidden">
+        <div className="section-heading">
+          <div>
+            <h2>Recently submitted</h2>
+            <p>The latest payment requests in this view</p>
+          </div>
+          <Link className="section-link-inline" to="/admin/monitoring">
+            View all <ArrowRight size={15} />
+          </Link>
+        </div>
+        <div className="divide-y">
+          {requests.slice(0, 6).map((request) => (
+            <div className="request-row recent-request-row" key={request.id}>
+              <div className="request-id-mark" aria-hidden="true">
+                {request.rfp_number.slice(-2)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">{request.rfp_number}</p>
+                <p className="mt-0.5 truncate text-xs text-slate-500">
+                  {request.company || 'Company not recorded'} · {request.department} ·{' '}
+                  {manilaDate(request.submitted_at, true)}
+                </p>
+              </div>
+              <span className="hidden text-sm font-semibold sm:block">
+                {php.format(request.amount)}
+              </span>
+              <StatusBadge>{request.final_status}</StatusBadge>
+            </div>
+          ))}
+        </div>
+        {!requests.length && (
+          <EmptyState title="No requests found" body="Try resetting the current filters." />
+        )}
+      </section>
     </div>
   );
 }
-function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+
+function ChartCard({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="card p-4">
-      <h2 className="mb-2 font-semibold">{title}</h2>
+    <section className="card chart-card p-5 sm:p-6">
+      <div className="mb-3">
+        <h2 className="font-semibold">{title}</h2>
+        <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
+      </div>
       {children}
     </section>
   );

@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { ClipboardList, Database, RefreshCw, ScrollText } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
-import { Spinner } from '../components/ui';
+import { Button, Spinner } from '../components/ui';
 import { get } from '../lib/api';
 import { useAuth } from '../components/AuthProvider';
 
 const tabs = [
-  ['requests', 'In Progress Requests'],
-  ['forms', 'Form Responses'],
-  ['logs', 'Approval Log'],
+  ['requests', 'Active requests', 'Current RFP workflow records', Database],
+  ['forms', 'Form responses', 'Original submitted response data', ClipboardList],
+  ['logs', 'Approval log', 'Recorded decisions and status changes', ScrollText],
 ] as const;
 const defaults: Record<string, string[]> = {
   requests: [
@@ -57,33 +58,64 @@ export function MonitoringPage() {
   const [data, setData] = useState<Result>();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
+  const [lastUpdated, setLastUpdated] = useState<Date>();
+  const load = useCallback(() => {
     setLoading(true);
     setError('');
-    get<Result>(`monitoring/${tab}?page=${page}&pageSize=${pageSize}`)
-      .then(setData)
-      .catch((e) => setError(e.message))
+    return get<Result>(`monitoring/${tab}?page=${page}&pageSize=${pageSize}`)
+      .then((result) => {
+        setData(result);
+        setLastUpdated(new Date());
+      })
+      .catch((cause) => setError(cause.message))
       .finally(() => setLoading(false));
-  }, [tab, page, pageSize]);
+  }, [page, pageSize, tab]);
+  useEffect(() => {
+    void load();
+  }, [load]);
   const change = (key: string) => {
     setTab(key as typeof tab);
     setPage(1);
   };
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Monitoring Sheets</h1>
-        <p className="text-sm text-slate-500">Workbook-style access to live Supabase records.</p>
-      </div>
-      <div className="overflow-x-auto border-b">
-        <div className="flex min-w-max">
-          {available.map(([key, label]) => (
+    <div className="space-y-5">
+      <section className="dashboard-hero">
+        <div>
+          <p className="eyebrow">Records workspace</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">RFP monitor</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            Search, inspect, sort, and export the same live records used by the approval workflow.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {lastUpdated && (
+            <span className="last-updated">
+              <span aria-hidden="true" />
+              Updated{' '}
+              {lastUpdated.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}
+            </span>
+          )}
+          <Button variant="secondary" disabled={loading} onClick={() => void load()}>
+            <RefreshCw className={loading ? 'animate-spin' : ''} size={16} />
+            Refresh
+          </Button>
+        </div>
+      </section>
+
+      <div className="workspace-tabs overflow-x-auto">
+        <div className="flex min-w-max gap-1 p-1.5">
+          {available.map(([key, label, description, Icon]) => (
             <button
               key={key}
               onClick={() => change(key)}
-              className={`border-b-2 px-4 py-3 text-sm font-medium ${tab === key ? 'border-[#173f6b] text-[#173f6b]' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+              className={`workspace-tab ${tab === key ? 'workspace-tab-active' : ''}`}
+              aria-pressed={tab === key}
             >
-              {label}
+              <Icon size={17} />
+              <span className="text-left">
+                <strong>{label}</strong>
+                <small>{description}</small>
+              </span>
             </button>
           ))}
         </div>
@@ -107,7 +139,7 @@ export function MonitoringPage() {
             setPage(1);
           }}
           defaultKeys={defaults[tab]}
-          title={tabs.find(([k]) => k === tab)?.[1] || tab}
+          title={tabs.find(([key]) => key === tab)?.[1] || tab}
         />
       )}
     </div>
