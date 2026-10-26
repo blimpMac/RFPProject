@@ -162,7 +162,8 @@ export function DataTable({
         enableHiding: false,
         cell: ({ row }: { row: { original: Row } }) => (
           <button
-            className="rounded p-1.5 text-[#173f6b] hover:bg-blue-50"
+            type="button"
+            className="focus-ring table-icon-button text-[#173f6b] hover:bg-blue-50"
             onClick={() => setSelected(row.original)}
             aria-label="View details"
           >
@@ -272,7 +273,8 @@ export function DataTable({
           />
           {search ? (
             <button
-              className="focus-ring absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:text-slate-700"
+              type="button"
+              className="focus-ring table-search-clear absolute right-0 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
               onClick={() => setSearch('')}
               aria-label="Clear search"
             >
@@ -302,6 +304,8 @@ export function DataTable({
             className="w-full sm:w-auto"
             variant="secondary"
             disabled={!hideableColumns.length}
+            aria-expanded={columnsOpen}
+            aria-haspopup="menu"
             onClick={() => setColumnsOpen(!columnsOpen)}
             title={hideableColumns.length ? 'Choose visible columns' : 'No columns available'}
           >
@@ -311,7 +315,7 @@ export function DataTable({
           {columnsOpen && hideableColumns.length > 0 && (
             <div className="absolute left-0 z-20 mt-2 max-h-80 w-[min(16rem,calc(100vw-2.5rem))] overflow-auto rounded-lg border bg-white p-3 shadow-xl sm:left-auto sm:right-0">
               {hideableColumns.map((column) => (
-                <label key={column.id} className="flex items-center gap-2 py-1 text-sm">
+                <label key={column.id} className="flex min-h-11 items-center gap-2 py-2 text-sm">
                   <input
                     type="checkbox"
                     checked={column.getIsVisible()}
@@ -349,29 +353,55 @@ export function DataTable({
 
       <div className="max-h-[65vh] overflow-auto">
         <table className="data-grid min-w-full border-separate border-spacing-0 text-left text-sm">
+          <caption className="sr-only">
+            {title}. Use the column headings to sort the currently loaded records.
+          </caption>
           <thead className="sticky top-0 z-10 bg-slate-100">
             {table.getHeaderGroups().map((group) => (
               <tr key={group.id}>
-                {group.headers.map((header, index) => (
-                  <th
-                    key={header.id}
-                    className={`whitespace-nowrap border-b border-r px-3 py-3 font-semibold text-slate-600 ${index === 0 ? 'sticky left-0 z-10 bg-slate-100' : ''}`}
-                  >
-                    <button
-                      className="flex items-center gap-1"
-                      onClick={header.column.getToggleSortingHandler()}
+                {group.headers.map((header, index) => {
+                  const sorted = header.column.getIsSorted();
+                  return (
+                    <th
+                      key={header.id}
+                      aria-sort={
+                        sorted === 'asc'
+                          ? 'ascending'
+                          : sorted === 'desc'
+                            ? 'descending'
+                            : header.column.getCanSort()
+                              ? 'none'
+                              : undefined
+                      }
+                      className={`whitespace-nowrap border-b border-r px-3 py-2 font-semibold text-slate-600 ${index === 0 ? 'sticky left-0 z-10 bg-slate-100' : ''}`}
                     >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getCanSort() && <ChevronDown size={13} />}
-                    </button>
-                  </th>
-                ))}
+                      <button
+                        type="button"
+                        className="focus-ring flex min-h-11 items-center gap-1 rounded-md px-1 text-left"
+                        onClick={header.column.getToggleSortingHandler()}
+                        disabled={!header.column.getCanSort()}
+                      >
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getCanSort() && (
+                          <ChevronDown
+                            aria-hidden="true"
+                            size={14}
+                            className={`transition-transform ${sorted === 'asc' ? 'rotate-180 text-[#087ea4]' : sorted === 'desc' ? 'text-[#087ea4]' : 'opacity-50'}`}
+                          />
+                        )}
+                      </button>
+                    </th>
+                  );
+                })}
               </tr>
             ))}
           </thead>
           <tbody>
             {table.getRowModel().rows.map((row, rowIndex) => (
-              <tr key={row.id} className={rowIndex % 2 ? 'bg-slate-50/60' : 'bg-white'}>
+              <tr
+                key={row.id}
+                className={`data-grid-row ${rowIndex % 2 ? 'bg-slate-50/60' : 'bg-white'}`}
+              >
                 {row.getVisibleCells().map((cell, cellIndex) => (
                   <td
                     key={cell.id}
@@ -390,16 +420,18 @@ export function DataTable({
       </div>
 
       <div className="table-footer flex min-w-0 flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm text-slate-600">
-        <span>
+        <span aria-live="polite">
           {total
             ? `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`
             : '0 rows'}
+          {search ? ' · filtered view' : ''}
         </span>
         <div className="flex min-w-0 items-center gap-2">
           <label className="whitespace-nowrap">
             Rows{' '}
             <select
-              className="rounded border px-2 py-1"
+              className="input !min-h-11 !w-auto !py-1 !pl-2 !pr-8"
+              aria-label="Rows per page"
               value={pageSize}
               onChange={(event) => onPageSize(Number(event.target.value))}
             >
@@ -410,7 +442,8 @@ export function DataTable({
           </label>
           <span className="hidden text-xs sm:inline">Page {page}</span>
           <button
-            className="rounded border p-1.5 disabled:opacity-40"
+            type="button"
+            className="focus-ring table-page-button disabled:opacity-40"
             aria-label="Previous page"
             disabled={page <= 1}
             onClick={() => onPage(page - 1)}
@@ -418,7 +451,8 @@ export function DataTable({
             <ChevronLeft size={17} />
           </button>
           <button
-            className="rounded border p-1.5 disabled:opacity-40"
+            type="button"
+            className="focus-ring table-page-button disabled:opacity-40"
             aria-label="Next page"
             disabled={page * pageSize >= total}
             onClick={() => onPage(page + 1)}

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { X } from 'lucide-react';
 import clsx from 'clsx';
 import { statusTone } from '../lib/format';
 
@@ -60,14 +61,38 @@ export function Modal({
       panelRef.current?.scrollTo({ top: 0 });
       closeRef.current?.focus({ preventScroll: true });
     });
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseRef.current();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== 'Tab' || !panelRef.current) return;
+
+      const focusable = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => element.getAttribute('aria-hidden') !== 'true');
+      if (!focusable.length) {
+        event.preventDefault();
+        panelRef.current.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       window.cancelAnimationFrame(frame);
-      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus({ preventScroll: true });
     };
@@ -94,11 +119,12 @@ export function Modal({
           </h2>
           <button
             ref={closeRef}
-            className="rounded p-2 text-slate-500 hover:bg-slate-100"
+            type="button"
+            className="focus-ring modal-close-button text-slate-500 hover:bg-slate-100 hover:text-slate-800"
             onClick={onClose}
-            aria-label="Close"
+            aria-label="Close dialog"
           >
-            ×
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
         <div className="p-5">{children}</div>

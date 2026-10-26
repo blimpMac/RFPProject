@@ -1,0 +1,209 @@
+/* UI/UX Pro Max refinement layer: accessibility, touch targets, scanning, and form hierarchy. */
+html {
+  scroll-padding-top: 6rem;
+}
+
+body,
+#root,
+.admin-shell,
+.admin-content {
+  min-height: 100dvh;
+}
+
+button,
+a,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+button:focus-visible {
+  outline: 3px solid rgba(49, 115, 219, 0.38);
+  outline-offset: 2px;
+}
+
+.btn {
+  min-height: 2.75rem;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 0.75rem;
+  z-index: 1000;
+  transform: translateY(-160%);
+  border-radius: 0.65rem;
+  background: #ffffff;
+  padding: 0.7rem 0.9rem;
+  color: #082638;
+  font-size: 0.875rem;
+  font-weight: 800;
+  box-shadow: 0 8px 28px rgba(8, 38, 56, 0.2);
+  transition: transform 0.16s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+#main-content:focus {
+  outline: none;
+}
+
+.admin-mobile-menu,
+.admin-collapse,
+.modal-close-button,
+.table-icon-button,
+.table-page-button {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+.modal-close-button,
+.table-icon-button,
+.table-page-button,
+.table-search-clear {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 0.65rem;
+}
+
+.table-search-clear {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.table-page-button {
+  border: 1px solid #ccd9df;
+  background: #ffffff;
+  color: #29404e;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.table-page-button:hover:not(:disabled),
+.table-icon-button:hover:not(:disabled) {
+  border-color: #9db2bd;
+  background: #eef7f5;
+  color: #08705f;
+}
+
+.data-grid-row {
+  transition: background-color 0.14s ease;
+}
+
+.data-grid-row:hover {
+  background: #f0f8f6;
+}
+
+.data-grid tbody td {
+  vertical-align: middle;
+}
+
+.form-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-top: 0.2rem;
+  border-top: 1px solid #e2eaee;
+  padding-top: 1.25rem;
+}
+
+.form-section-heading:first-child {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+.form-section-heading h2 {
+  margin: 0;
+  color: #142432;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.form-section-heading p {
+  max-width: 46rem;
+  margin: 0.2rem 0 0;
+  color: #667785;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.form-step-badge {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #b9e2d8;
+  border-radius: 0.65rem;
+  background: #eaf8f4;
+  color: #08705f;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.dark .skip-link {
+  background: #e7edf6;
+  color: #08111f;
+}
+
+.dark .table-page-button {
+  border-color: #536176;
+  background: #162235;
+  color: #eef3f9;
+}
+
+.dark .table-page-button:hover:not(:disabled),
+.dark .table-icon-button:hover:not(:disabled) {
+  border-color: #5c8177;
+  background: #17372f;
+  color: #9ee8d5;
+}
+
+.dark .data-grid-row:hover {
+  background: #142738;
+}
+
+.dark .form-section-heading {
+  border-color: #334155;
+}
+
+.dark .form-section-heading h2 {
+  color: #edf3f9;
+}
+
+.dark .form-section-heading p {
+  color: #aebacd;
+}
+
+.dark .form-step-badge {
+  border-color: #286b5a;
+  background: #12382f;
+  color: #9ee8d5;
+}
+
+@media (max-width: 640px) {
+  .table-toolbar .btn {
+    min-height: 2.75rem;
+  }
+
+  .form-section-heading {
+    gap: 0.7rem;
+  }
+
+  .form-section-heading p {
+    font-size: 0.8rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link,
+  .data-grid-row,
+  .table-page-button {
+    transition: none;
+  }
+}

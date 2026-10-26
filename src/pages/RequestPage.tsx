@@ -253,14 +253,21 @@ export function RequestPage() {
         </div>
         <form onSubmit={submit} className="card p-5 shadow-sm sm:p-7">
           <div className="grid gap-5 md:grid-cols-2">
+            <FormSection
+              number="1"
+              title="Requestor & organization"
+              description="Tell us who is requesting payment and which company and department own the request."
+            />
             <Field
               label="Requestor Name"
+              autoComplete="name"
               value={form.requestorName}
               onChange={(v) => update('requestorName', v)}
             />
             <Field
               label="Requestor Email"
               type="email"
+              autoComplete="email"
               value={form.requestorEmail}
               onChange={(v) => update('requestorEmail', v)}
             />
@@ -275,6 +282,11 @@ export function RequestPage() {
               value={form.department}
               options={options.departments}
               onChange={(v) => update('department', v)}
+            />
+            <FormSection
+              number="2"
+              title="Payment details"
+              description="Classify the request, identify the payee, and provide the amount and required payment date."
             />
             <Field
               label="Project / Class"
@@ -304,6 +316,7 @@ export function RequestPage() {
             <Field
               label="Amount (PHP)"
               type="number"
+              inputMode="decimal"
               min="0.01"
               step="0.01"
               value={form.amount}
@@ -333,6 +346,11 @@ export function RequestPage() {
                 onChange={(e) => update('purposeDescription', e.target.value)}
               />
             </div>
+            <FormSection
+              number="3"
+              title="Supporting documents"
+              description="Review the requirements for the selected Type and attach any files already available. Attachments remain optional at submission."
+            />
             <RequestAttachmentChecklist
               rfpType={form.rfpType}
               selected={attachmentChecklist}
@@ -368,6 +386,28 @@ export function RequestPage() {
         </form>
       </main>
       <SiteFooter />
+    </div>
+  );
+}
+
+function FormSection({
+  number,
+  title,
+  description,
+}: {
+  number: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="form-section-heading md:col-span-2">
+      <span className="form-step-badge" aria-hidden="true">
+        {number}
+      </span>
+      <div>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
     </div>
   );
 }

@@ -148,159 +148,172 @@ export function AdminLayout() {
     );
 
   return (
-    <div className={`admin-shell min-h-screen ${collapsed ? 'admin-shell-collapsed' : ''}`}>
-      <button
-        className="admin-mobile-menu fixed left-3 top-3 z-40 p-2 lg:hidden"
-        onClick={() => setOpen(!open)}
-        aria-label={open ? 'Close navigation' : 'Open navigation'}
-        aria-expanded={open}
-        aria-controls="staff-sidebar"
-      >
-        {open ? <X size={20} /> : <Menu size={20} />}
-      </button>
-      {open && (
+    <>
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
+      <div className={`admin-shell min-h-screen ${collapsed ? 'admin-shell-collapsed' : ''}`}>
         <button
-          className="fixed inset-0 z-20 bg-slate-950/45 backdrop-blur-[2px] lg:hidden"
-          onClick={() => setOpen(false)}
-          aria-label="Close navigation menu"
-        />
-      )}
-      <aside
-        id="staff-sidebar"
-        className={`admin-sidebar fixed inset-y-0 left-0 z-30 flex flex-col transition-all ${collapsed ? 'w-20' : 'w-72'} ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
-      >
-        <div className="admin-brand flex h-[5.25rem] items-center justify-between px-4">
-          <Link
-            to="/admin"
-            className={`min-w-0 items-center gap-3 ${collapsed ? 'hidden' : 'flex'}`}
-            onClick={() => setOpen(false)}
-          >
-            <span className="admin-brand-mark" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </span>
-            <span className="min-w-0">
-              <strong className="block truncate text-sm tracking-wide">RFP CONTROL</strong>
-              <small className="block text-[0.68rem] font-semibold uppercase tracking-[0.17em] text-slate-400">
-                Finance operations
-              </small>
-            </span>
-          </Link>
+          type="button"
+          className="admin-mobile-menu fixed left-3 top-3 z-40 p-2 lg:hidden"
+          onClick={() => setOpen(!open)}
+          aria-label={open ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={open}
+          aria-controls="staff-sidebar"
+        >
+          {open ? <X size={20} /> : <Menu size={20} />}
+        </button>
+        {open && (
           <button
-            className="admin-collapse hidden rounded-xl p-2 lg:block"
-            onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
-          >
-            <ChevronLeft
-              className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}
-              size={18}
-            />
-          </button>
-        </div>
-
-        {!collapsed && (
-          <div className="px-3 pt-4">
-            <label className="admin-nav-search">
-              <Search size={15} aria-hidden="true" />
-              <span className="sr-only">Find a workspace page</span>
-              <input
-                value={navigationSearch}
-                onChange={(event) => setNavigationSearch(event.target.value)}
-                placeholder="Find a page"
-              />
-            </label>
-          </div>
+            type="button"
+            className="fixed inset-0 z-20 bg-slate-950/45 backdrop-blur-[2px] lg:hidden"
+            onClick={() => setOpen(false)}
+            aria-label="Close navigation menu"
+          />
         )}
-
-        <nav className="flex-1 overflow-y-auto px-3 pb-3 pt-4" aria-label="Staff navigation">
-          {(['Workspace', 'Administration'] as const).map((group) => {
-            const items = visibleItems.filter((item) => item.group === group);
-            if (!items.length) return null;
-            return (
-              <div className="mb-5" key={group}>
-                {!collapsed && <p className="admin-nav-label">{group}</p>}
-                <div className="space-y-1">
-                  {items.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <NavLink
-                        key={item.to}
-                        to={item.to}
-                        end={item.to === '/admin'}
-                        onClick={() => setOpen(false)}
-                        aria-label={collapsed ? item.label : undefined}
-                        title={collapsed ? item.label : undefined}
-                        className={({ isActive }) =>
-                          `admin-sidebar-link ${isActive ? 'admin-sidebar-link-active' : ''}`
-                        }
-                      >
-                        <span className="admin-nav-icon">
-                          <Icon size={18} />
-                        </span>
-                        {!collapsed && (
-                          <span className="min-w-0">
-                            <strong className="block truncate">{item.label}</strong>
-                            <small className="block truncate">{item.description}</small>
-                          </span>
-                        )}
-                      </NavLink>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-          {!visibleItems.length && !collapsed && (
-            <p className="px-3 py-6 text-center text-xs text-slate-400">No matching pages</p>
-          )}
-        </nav>
-
-        <div className="admin-sidebar-footer p-3">
-          <div className={`admin-profile ${collapsed ? 'justify-center p-2' : ''}`}>
-            <span className="admin-avatar">{initials(identity?.fullName)}</span>
-            {!collapsed && (
-              <span className="min-w-0 flex-1">
-                <strong className="block truncate text-sm">
-                  {identity?.fullName || 'Staff account'}
-                </strong>
-                <small className="block truncate text-xs text-slate-400">
-                  {primaryRole ? roleLabels[primaryRole] : identity?.email}
+        <aside
+          id="staff-sidebar"
+          className={`admin-sidebar fixed inset-y-0 left-0 z-30 flex flex-col transition-all ${collapsed ? 'w-20' : 'w-72'} ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
+        >
+          <div className="admin-brand flex h-[5.25rem] items-center justify-between px-4">
+            <Link
+              to="/admin"
+              className={`min-w-0 items-center gap-3 ${collapsed ? 'hidden' : 'flex'}`}
+              onClick={() => setOpen(false)}
+            >
+              <span className="admin-brand-mark" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+              <span className="min-w-0">
+                <strong className="block truncate text-sm tracking-wide">RFP CONTROL</strong>
+                <small className="block text-[0.68rem] font-semibold uppercase tracking-[0.17em] text-slate-400">
+                  Finance operations
                 </small>
               </span>
-            )}
+            </Link>
+            <button
+              type="button"
+              className="admin-collapse hidden rounded-xl p-2 lg:block"
+              onClick={() => setCollapsed(!collapsed)}
+              aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+            >
+              <ChevronLeft
+                className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}
+                size={18}
+              />
+            </button>
           </div>
-          <button
-            className={`admin-sidebar-link mt-2 w-full ${collapsed ? 'justify-center' : ''}`}
-            onClick={() => supabase.auth.signOut()}
-            title={collapsed ? 'Sign out' : undefined}
-          >
-            <span className="admin-nav-icon">
-              <LogOut size={18} />
-            </span>
-            {!collapsed && <strong>Sign out</strong>}
-          </button>
-        </div>
-      </aside>
 
-      <div className="admin-content transition-all">
-        <header className="admin-topbar flex min-h-[5.25rem] items-center gap-4 px-4 pl-16 lg:px-8">
-          <div className="min-w-0">
-            <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-slate-400">
-              Operations workspace
-            </p>
-            <h1 className="truncate text-lg font-semibold tracking-tight">
-              {currentItem?.label || 'RFP workspace'}
-            </h1>
+          {!collapsed && (
+            <div className="px-3 pt-4">
+              <label className="admin-nav-search">
+                <Search size={15} aria-hidden="true" />
+                <span className="sr-only">Find a workspace page</span>
+                <input
+                  value={navigationSearch}
+                  onChange={(event) => setNavigationSearch(event.target.value)}
+                  placeholder="Find a page"
+                />
+              </label>
+            </div>
+          )}
+
+          <nav className="flex-1 overflow-y-auto px-3 pb-3 pt-4" aria-label="Staff navigation">
+            {(['Workspace', 'Administration'] as const).map((group) => {
+              const items = visibleItems.filter((item) => item.group === group);
+              if (!items.length) return null;
+              return (
+                <div className="mb-5" key={group}>
+                  {!collapsed && <p className="admin-nav-label">{group}</p>}
+                  <div className="space-y-1">
+                    {items.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          end={item.to === '/admin'}
+                          onClick={() => setOpen(false)}
+                          aria-label={collapsed ? item.label : undefined}
+                          title={collapsed ? item.label : undefined}
+                          className={({ isActive }) =>
+                            `admin-sidebar-link ${isActive ? 'admin-sidebar-link-active' : ''}`
+                          }
+                        >
+                          <span className="admin-nav-icon">
+                            <Icon size={18} />
+                          </span>
+                          {!collapsed && (
+                            <span className="min-w-0">
+                              <strong className="block truncate">{item.label}</strong>
+                              <small className="block truncate">{item.description}</small>
+                            </span>
+                          )}
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            {!visibleItems.length && !collapsed && (
+              <p className="px-3 py-6 text-center text-xs text-slate-400">No matching pages</p>
+            )}
+          </nav>
+
+          <div className="admin-sidebar-footer p-3">
+            <div className={`admin-profile ${collapsed ? 'justify-center p-2' : ''}`}>
+              <span className="admin-avatar">{initials(identity?.fullName)}</span>
+              {!collapsed && (
+                <span className="min-w-0 flex-1">
+                  <strong className="block truncate text-sm">
+                    {identity?.fullName || 'Staff account'}
+                  </strong>
+                  <small className="block truncate text-xs text-slate-400">
+                    {primaryRole ? roleLabels[primaryRole] : identity?.email}
+                  </small>
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              className={`admin-sidebar-link mt-2 w-full ${collapsed ? 'justify-center' : ''}`}
+              onClick={() => supabase.auth.signOut()}
+              title={collapsed ? 'Sign out' : undefined}
+            >
+              <span className="admin-nav-icon">
+                <LogOut size={18} />
+              </span>
+              {!collapsed && <strong>Sign out</strong>}
+            </button>
           </div>
-          <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle compact />
-          </div>
-        </header>
-        <main className="page-enter mx-auto w-full max-w-[100rem] p-4 sm:p-6 lg:p-8">
-          <Outlet />
-        </main>
+        </aside>
+
+        <div className="admin-content transition-all">
+          <header className="admin-topbar flex min-h-[5.25rem] items-center gap-4 px-4 pl-16 lg:px-8">
+            <div className="min-w-0">
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-slate-400">
+                Operations workspace
+              </p>
+              <h1 className="truncate text-lg font-semibold tracking-tight">
+                {currentItem?.label || 'RFP workspace'}
+              </h1>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <ThemeToggle compact />
+            </div>
+          </header>
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="page-enter mx-auto w-full max-w-[100rem] p-4 sm:p-6 lg:p-8"
+          >
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
