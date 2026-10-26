@@ -26,12 +26,6 @@ const staffAccountSchema = z.discriminatedUnion('accessLevel', [
   z.object({
     email: z.email(),
     fullName: z.string().min(2).max(160),
-    accessLevel: z.literal('finance_head'),
-    department: z.string().max(100).optional(),
-  }),
-  z.object({
-    email: z.email(),
-    fullName: z.string().min(2).max(160),
     accessLevel: z.literal('approver'),
     department: z.string().min(1).max(100),
   }),
@@ -105,13 +99,11 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
           department: profile?.department || null,
           assignedDepartments: departmentsByUser.get(user.id) || [],
           active: profile?.active ?? true,
-          accessLevel: roles.includes('finance_head')
-            ? 'finance_head'
-            : roles.includes('department_approver')
-              ? 'approver'
-              : roles.includes('finance_reviewer')
-                ? 'staff'
-                : null,
+          accessLevel: roles.includes('department_approver')
+            ? 'approver'
+            : roles.includes('finance_reviewer')
+              ? 'staff'
+              : null,
           protected: profile?.protected_account ?? isLegacyProtectedStaffEmail(user.email),
         };
       });
@@ -173,7 +165,7 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
         .object({
           userId: z.uuid(),
           fullName: z.string().min(2).max(160),
-          accessLevel: z.enum(['staff', 'finance_head', 'approver']),
+          accessLevel: z.enum(['staff', 'approver']),
           department: z.string().max(100).optional(),
           active: z.boolean(),
         })

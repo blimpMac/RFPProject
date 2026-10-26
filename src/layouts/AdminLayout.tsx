@@ -59,7 +59,7 @@ const navigationItems: NavigationItem[] = [
     description: 'Recorded system activity',
     group: 'Workspace',
     icon: History,
-    allowedRoles: ['super_administrator', 'administrator', 'finance_head', 'finance_reviewer'],
+    allowedRoles: ['super_administrator', 'administrator', 'finance_reviewer'],
   },
   {
     to: '/admin/documents',
@@ -67,7 +67,7 @@ const navigationItems: NavigationItem[] = [
     description: 'Supporting files and records',
     group: 'Workspace',
     icon: FileStack,
-    allowedRoles: ['super_administrator', 'administrator', 'finance_head', 'finance_reviewer'],
+    allowedRoles: ['super_administrator', 'administrator', 'finance_reviewer'],
   },
   {
     to: '/admin/approver-management',
@@ -98,7 +98,6 @@ const navigationItems: NavigationItem[] = [
 const roleLabels: Record<Role, string> = {
   super_administrator: 'Super administrator',
   administrator: 'Administrator',
-  finance_head: 'Finance Head',
   department_approver: 'Department approver',
   finance_reviewer: 'Finance reviewer',
 };

@@ -1,10 +1,7 @@
-export type AccessLevel = 'staff' | 'finance_head' | 'approver';
+export type AccessLevel = 'staff' | 'approver';
 
-export const accessRole = (level: AccessLevel) => {
-  if (level === 'approver') return 'department_approver';
-  if (level === 'finance_head') return 'finance_head';
-  return 'finance_reviewer';
-};
+export const accessRole = (level: AccessLevel) =>
+  level === 'approver' ? 'department_approver' : 'finance_reviewer';
 
 export const normalizeDepartment = (value: string | null | undefined) =>
   String(value ?? '')
@@ -15,7 +12,7 @@ export const normalizeDepartment = (value: string | null | undefined) =>
 export const isDepartmentOnly = (roles: string[]) =>
   roles.includes('department_approver') &&
   !roles.some((role) =>
-    ['super_administrator', 'administrator', 'finance_head', 'finance_reviewer'].includes(role),
+    ['super_administrator', 'administrator', 'finance_reviewer'].includes(role),
   );
 
 export const canAccessDepartment = (
