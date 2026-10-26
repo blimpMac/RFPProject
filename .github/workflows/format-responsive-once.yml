@@ -31,3 +31,5 @@ jobs:
           git add scripts/verification/verify-live-responsive.ts src/styles/digital-rfp.css .github/workflows/format-responsive-once.yml
           git commit -m "Validate responsive layout fixes"
           git push
+
+# Retry after browser-evaluation type fix.
