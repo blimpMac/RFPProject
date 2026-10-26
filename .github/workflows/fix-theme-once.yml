@@ -1,0 +1,72 @@
+name: Fix theme binding once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-theme-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-theme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Bind Tailwind dark mode to the app toggle
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          css_path = Path('src/styles/index.css')
+          css = css_path.read_text()
+          directive = '@custom-variant dark (&:where(.dark, .dark *));'
+          if directive not in css:
+              marker = "@import 'tailwindcss';\n"
+              if marker not in css:
+                  raise SystemExit('Tailwind import marker not found')
+              css = css.replace(marker, marker + '\n' + directive + '\n', 1)
+              css_path.write_text(css)
+
+          main_path = Path('src/main.tsx')
+          main = main_path.read_text()
+          marker = "import './styles/ux-refinement.css';\n\n"
+          init = """import './styles/ux-refinement.css';\n\nconst themeStorageKey = 'rfp-theme';\nconst savedTheme = localStorage.getItem(themeStorageKey);\nconst initialTheme =\n  savedTheme === 'light' || savedTheme === 'dark'\n    ? savedTheme\n    : window.matchMedia?.('(prefers-color-scheme: dark)').matches\n      ? 'dark'\n      : 'light';\n\ndocument.documentElement.classList.toggle('dark', initialTheme === 'dark');\ndocument.documentElement.dataset.theme = initialTheme;\ndocument.documentElement.style.colorScheme = initialTheme;\n\n"""
+          if "const themeStorageKey = 'rfp-theme';" not in main:
+              if marker not in main:
+                  raise SystemExit('main.tsx insertion marker not found')
+              main = main.replace(marker, init, 1)
+              main_path.write_text(main)
+          PY
+      - name: Install dependencies
+        run: npm ci
+      - name: Format changed files
+        run: npx prettier --write src/main.tsx src/styles/index.css .github/workflows/fix-theme-once.yml
+      - name: Validate application
+        run: npm run check
+      - name: Verify generated dark utilities use class selector
+        run: |
+          npm run build >/dev/null
+          if grep -R "prefers-color-scheme: dark" dist/assets/*.css >/dev/null 2>&1; then
+            echo "Unexpected media-query-driven dark utilities remain in generated CSS"
+            exit 1
+          fi
+          if ! grep -R "\.dark" dist/assets/*.css >/dev/null 2>&1; then
+            echo "Expected .dark selectors were not generated"
+            exit 1
+          fi
+      - name: Commit validated theme fix
+        run: |
+          git rm .github/workflows/fix-theme-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/main.tsx src/styles/index.css
+          git commit -m 'Make light and dark mode consistent'
+          git push origin main
