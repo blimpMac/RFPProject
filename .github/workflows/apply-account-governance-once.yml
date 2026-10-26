@@ -19,7 +19,9 @@ jobs:
           node-version: 24
           cache: npm
       - name: Apply governance changes
-        run: python scripts/temporary/apply-account-governance.py
+        run: |
+          python scripts/temporary/apply-account-governance.py
+          sed -i "/import { administrativeRoles } from '..\/domain\/access.js';/d" server/services/finance-stage-workflow.ts
       - run: npm ci
       - name: Format modified code
         run: npx prettier --write server/routes/administration.ts server/services/account-governance.ts server/services/finance-stage-workflow.ts src/pages/SettingsPage.tsx src/pages/ApprovalsPage.tsx src/layouts/AdminLayout.tsx src/pages/ApprovingHeadsPage.tsx scripts/setup/promote-superadmin.ts
