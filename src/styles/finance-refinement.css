@@ -1,19 +1,22 @@
-/* Finance dashboard refinement: keep the queue scannable and move secondary detail into the request modal. */
-
+/* Compact Finance registry: summary first, full details in the Digital RFP receipt. */
+.queue-health-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
 .queue-health-card {
   min-height: 6rem;
   align-items: center;
 }
-
 .queue-health-card strong {
   line-height: 1.35;
 }
-
 .queue-health-count {
   margin-left: auto;
   align-self: flex-start;
 }
 
+.approval-filter-panel {
+  grid-template-columns: auto minmax(15rem, 1fr) repeat(4, minmax(9rem, 0.55fr)) auto;
+}
 .approval-filter-panel > .input,
 .approval-search,
 .approval-view-toggle,
@@ -21,16 +24,13 @@
   height: 2.8rem;
   min-height: 2.8rem;
 }
-
 .approval-view-toggle {
   width: 100%;
 }
-
 .approval-view-toggle button {
   height: 100%;
   min-height: 0;
 }
-
 .approval-clear {
   display: inline-flex;
   align-items: center;
@@ -44,7 +44,6 @@
 .live-refresh-indicator {
   min-height: 2.8rem;
 }
-
 .live-refresh-indicator {
   display: inline-flex;
   align-items: center;
@@ -59,79 +58,74 @@
 }
 
 .finance-request-table {
-  min-width: 48rem;
+  min-width: 52rem;
 }
-
-/* Requestor, SLA, and planned release remain available in the request popup. */
-.finance-request-table th:nth-child(2),
-.finance-request-table td:nth-child(2),
-.finance-request-table th:nth-child(6),
-.finance-request-table td:nth-child(6),
-.finance-request-table th:nth-child(7),
-.finance-request-table td:nth-child(7) {
-  display: none;
-}
-
-.finance-request-table td:first-child small {
-  display: none;
-}
-
 .finance-request-table th,
 .finance-request-table td {
   padding-left: 1rem;
   padding-right: 1rem;
 }
-
-.finance-request-table th:nth-child(4),
-.finance-request-table td:nth-child(4) {
+.finance-request-table th:nth-child(3),
+.finance-request-table td:nth-child(3) {
   text-align: right;
 }
-
-.finance-request-table th:nth-child(5),
-.finance-request-table td:nth-child(5) {
+.finance-request-table th:last-child,
+.finance-request-table td:last-child {
   width: 15rem;
+  text-align: right;
+}
+.finance-request-table .sla-badge {
+  display: flex;
+  width: max-content;
+  margin-top: 0.35rem;
+}
+.finance-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.3rem;
+}
+.finance-row-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2rem;
+  border: 1px solid #d3dfe4;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.35rem 0.5rem;
+  color: #315d70;
+  font-size: 0.67rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.finance-row-actions button:hover {
+  border-color: #8bb4c1;
+  background: #f2f8f9;
 }
 
-.finance-detail-grid > div {
-  min-height: 4.35rem;
+.finance-detail-grid-compact > div {
+  display: none;
+  min-height: 4rem;
   background: #fff;
 }
-
-/*
- * Keep the approval portion of the request popup visually balanced:
- * Approving heads and Purpose span the row, while the approval/review
- * status and remarks form two clean side-by-side rows.
- */
-@media (min-width: 481px) {
-  .finance-detail-grid > :nth-child(13) {
-    grid-column: 1 / -1;
-    grid-row: 7;
-  }
-
-  .finance-detail-grid > :nth-child(14) {
-    grid-column: 1;
-    grid-row: 8;
-  }
-
-  .finance-detail-grid > :nth-child(16) {
-    grid-column: 2;
-    grid-row: 8;
-  }
-
-  .finance-detail-grid > :nth-child(15) {
-    grid-column: 1;
-    grid-row: 9;
-  }
-
-  .finance-detail-grid > :nth-child(17) {
-    grid-column: 2;
-    grid-row: 9;
-  }
-
-  .finance-detail-grid > :nth-child(18) {
-    grid-column: 1 / -1;
-    grid-row: 10;
-  }
+.finance-detail-grid-compact > :nth-child(1),
+.finance-detail-grid-compact > :nth-child(2),
+.finance-detail-grid-compact > :nth-child(6),
+.finance-detail-grid-compact > :nth-child(7),
+.finance-detail-grid-compact > :nth-child(9),
+.finance-detail-grid-compact > :nth-child(22) {
+  display: block;
+}
+.finance-receipt-preview {
+  margin-top: 1rem;
+  max-height: min(72vh, 62rem);
+  overflow: auto;
+  border-radius: 0.5rem;
+  background: #edf1f5;
+  padding: 0.75rem;
+}
+.finance-receipt-preview .digital-rfp-sheet {
+  box-shadow: none;
 }
 
 .dark .live-refresh-indicator {
@@ -139,75 +133,55 @@
   background: #0f2532;
   color: #afc1c8;
 }
-
-@media (max-width: 1279px) and (min-width: 768px) {
-  .queue-health-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .queue-health-card {
-    grid-column: span 2;
-  }
-
-  .queue-health-card:nth-child(4),
-  .queue-health-card:nth-child(5) {
-    grid-column: span 3;
-  }
+.dark .finance-row-actions button {
+  border-color: #2a414e;
+  background: #102734;
+  color: #c0d3da;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1279px) {
+  .approval-filter-panel {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .approval-search {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 900px) {
   .queue-health-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .queue-health-card:last-child {
-    grid-column: 1 / -1;
-  }
-
   .approval-filter-panel {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .approval-filter-panel > .input,
-  .approval-clear {
-    width: 100%;
+  .approval-search {
+    grid-column: 1/-1;
   }
-
   .finance-refresh-group {
     width: 100%;
   }
-
   .finance-refresh-group .btn,
   .live-refresh-indicator {
-    width: 100%;
+    flex: 1;
     justify-content: center;
   }
-
-  .finance-request-table {
-    min-width: 40rem;
-  }
 }
-
-@media (max-width: 480px) {
+@media (max-width: 560px) {
   .queue-health-grid,
   .approval-filter-panel {
     grid-template-columns: 1fr;
   }
-
-  .queue-health-card:last-child {
-    grid-column: auto;
-  }
-
-  .approval-view-toggle,
   .approval-search {
     grid-column: auto;
   }
-
-  .finance-detail-grid > div {
-    min-height: 0;
-  }
-
   .finance-request-table {
-    min-width: 36rem;
+    min-width: 46rem;
+  }
+  .finance-row-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .finance-row-actions button {
+    justify-content: center;
   }
 }

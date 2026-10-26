@@ -1,5 +1,6 @@
 import { HttpError } from '../lib/http.js';
 import { adminClient } from '../lib/supabase.js';
+import { canActAsFinanceHead, canPerformFinanceStageAction } from '../lib/staff-access.js';
 
 type DatabaseClient = ReturnType<typeof adminClient>;
 type RequestRow = Record<string, unknown>;
@@ -38,10 +39,6 @@ const uniqueEmails = (emails: (string | null | undefined)[]) => [
 
 export function isFinanceStageAction(action: string) {
   return stageActions.has(action);
-}
-
-function isFinanceHead(roles: string[]) {
-  return roles.includes('super_administrator');
 }
 
 async function emailsForRoles(db: DatabaseClient, roles: string[]) {
@@ -117,6 +114,9 @@ export async function performFinanceStageAction(
   input: FinanceStageInput,
   actor: FinanceActor,
 ) {
+  if (!canPerformFinanceStageAction(input.action, actor.roles)) {
+    throw new HttpError(403, 'Your account is not authorized for this Finance action.');
+  }
   const current = await db.from('rfp_requests').select('*').eq('id', input.requestId).single();
   if (current.error || !current.data) throw new HttpError(404, 'Request not found.');
   const request = current.data as RequestRow;
@@ -188,7 +188,7 @@ export async function performFinanceStageAction(
       break;
 
     case 'head_approve':
-      if (!isFinanceHead(actor.roles))
+      if (!canActAsFinanceHead(actor.roles))
         throw new HttpError(
           403,
           'Only the Super Administrator, acting as Finance Head, can approve this stage.',
@@ -205,7 +205,7 @@ export async function performFinanceStageAction(
       break;
 
     case 'head_reject':
-      if (!isFinanceHead(actor.roles))
+      if (!canActAsFinanceHead(actor.roles))
         throw new HttpError(
           403,
           'Only the Super Administrator, acting as Finance Head, can decline this stage.',

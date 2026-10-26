@@ -5,6 +5,7 @@ import { manilaDate, php } from '../lib/format';
 import { Button, Spinner, StatusBadge } from '../components/ui';
 import { DigitalRfpReceipt } from '../components/DigitalRfpReceipt';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import type { FinanceReceipt } from '../../shared/contracts/digital-rfp';
 
 type Tracking = {
   request: {
@@ -48,6 +49,7 @@ type Tracking = {
     verification_remarks?: string | null;
     updated_by?: string | null;
   };
+  financeReceipt?: FinanceReceipt;
   submissionChecklist: string[];
   logs: { occurred_at: string; action: string; remarks: string | null; new_status: string }[];
   attachments: { id: string; original_filename: string; status: string }[];
@@ -153,6 +155,7 @@ export function TrackPage() {
           attachments={data!.attachments}
           workflow={data!.workflow}
           financeOperations={data!.financeOperations}
+          financeReceipt={data!.financeReceipt}
           submissionChecklist={data!.submissionChecklist}
         />
       )}

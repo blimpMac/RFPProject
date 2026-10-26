@@ -74,6 +74,13 @@ export const financeUpdateSchema = z.object({
   financeRemarks: z.string().trim().max(1500).nullable().optional(),
   plannedCheckDate: z.iso.date().nullable().optional(),
   changeReason: z.string().trim().max(1000).nullable().optional(),
+  checkNumber: z.string().trim().max(120).nullable().optional(),
+  paymentReference: z.string().trim().max(180).nullable().optional(),
+  processingStatus: z
+    .enum(['For Processing', 'Check Preparation', 'Check Approval', 'Check Released', 'Paid'])
+    .nullable()
+    .optional(),
+  lateDocuments: z.array(z.string().trim().min(1).max(180)).max(40).optional(),
 });
 export const resubmitSchema = z.object({
   requestId: z.uuid(),

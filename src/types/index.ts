@@ -31,6 +31,7 @@ export type RfpRequest = {
   finance_email_thread_id: string | null;
   raw_record?: {
     request_type?: 'Regular' | 'Emergency';
+    payment_method?: string | null;
     submission_checklist?: string[];
     finance_workflow?: {
       member_status?: string | null;
@@ -46,6 +47,24 @@ export type RfpRequest = {
       processing_due_at?: string | null;
       updated_at?: string | null;
       updated_by?: string | null;
+    };
+    finance_receipt?: {
+      hard_copy?: {
+        received_date?: string | null;
+        status?: 'Complete' | 'Incomplete' | null;
+        remarks?: string | null;
+        verified_by?: string | null;
+        verified_at?: string | null;
+      };
+      processing?: {
+        approved_by?: string | null;
+        approved_at?: string | null;
+        target_release_date?: string | null;
+        check_number?: string | null;
+        payment_reference?: string | null;
+        status?: string | null;
+      };
+      late_documents?: string[];
     };
     finance_operations?: {
       originals_received_date?: string | null;

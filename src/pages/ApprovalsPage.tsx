@@ -6,6 +6,8 @@ import {
   ChevronRight,
   FileCheck2,
   FileQuestion,
+  Eye,
+  Pencil,
   Printer,
   RefreshCw,
   Search,
@@ -20,12 +22,21 @@ import { manilaDate, php } from '../lib/format';
 import type { RfpRequest } from '../types';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { AttachmentPreviewSection } from '../components/AttachmentPreviewSection';
+import {
+  DigitalRfpReceipt,
+  type DigitalRfpAttachment,
+  type DigitalRfpOperations,
+  type DigitalRfpWorkflow,
+} from '../components/DigitalRfpReceipt';
+import { normalizeFinanceReceipt } from '../../shared/contracts/digital-rfp';
 
 type Result = { rows: RfpRequest[] };
 type Action = { value: string; label: string };
-type QueueFocus = 'all' | 'member' | 'head' | 'hardcopy' | 'processing' | 'overdue';
+type QueueFocus = 'all' | 'member' | 'head' | 'hardcopy' | 'processing';
 type SlaInfo = { label: string; detail: string; tone: 'neutral' | 'good' | 'warning' | 'danger' };
 type FinanceOperations = NonNullable<NonNullable<RfpRequest['raw_record']>['finance_operations']>;
+type ReceiptData = { request: RfpRequest; attachments: DigitalRfpAttachment[] };
+type ModalMode = 'view' | 'edit';
 
 const manilaDay = (value: string | number | Date) =>
   new Intl.DateTimeFormat('en-CA', {
@@ -204,6 +215,8 @@ export function ApprovalsPage() {
   const [company, setCompany] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [queueFocus, setQueueFocus] = useState<QueueFocus>('all');
   const [now, setNow] = useState(() => Date.now());
   const [lastRefresh, setLastRefresh] = useState(() => Date.now());
@@ -213,6 +226,13 @@ export function ApprovalsPage() {
   const [documentVerification, setDocumentVerification] = useState('');
   const [verificationRemarks, setVerificationRemarks] = useState('');
   const [financeNotes, setFinanceNotes] = useState('');
+  const [checkNumber, setCheckNumber] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [processingStatus, setProcessingStatus] = useState('');
+  const [lateDocuments, setLateDocuments] = useState('');
+  const [modalMode, setModalMode] = useState<ModalMode>('view');
+  const [receiptData, setReceiptData] = useState<ReceiptData>();
+  const [receiptLoading, setReceiptLoading] = useState(false);
   const [updateBusy, setUpdateBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const load = useCallback(
@@ -235,9 +255,7 @@ export function ApprovalsPage() {
     void load();
   }, [load]);
   useAutoRefresh(load);
-  const finance = roles.some((role) =>
-    ['super_administrator', 'administrator', 'finance_reviewer'].includes(role),
-  );
+  const finance = roles.some((role) => ['super_administrator', 'finance_reviewer'].includes(role));
   const financeHead = roles.includes('super_administrator');
   const department = roles.some((role) =>
     ['super_administrator', 'administrator', 'department_approver'].includes(role),
@@ -254,9 +272,9 @@ export function ApprovalsPage() {
         return (
           ['Processing', 'Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
             request.final_status,
-          ) && !processingOverdue(request, now)
+          ) || processingOverdue(request, now)
         );
-      return processingOverdue(request, now);
+      return true;
     },
     [now, queueFocus],
   );
@@ -266,6 +284,8 @@ export function ApprovalsPage() {
       (request) =>
         (!company || request.company === company) &&
         (!statusFilter || request.final_status === statusFilter) &&
+        (!fromDate || manilaDay(request.submitted_at || 0) >= fromDate) &&
+        (!toDate || manilaDay(request.submitted_at || 0) <= toDate) &&
         (!query ||
           [
             request.rfp_number,
@@ -284,7 +304,7 @@ export function ApprovalsPage() {
           ? !/paid|returned to requestor/i.test(request.final_status)
           : /paid|returned to requestor/i.test(request.final_status)),
     );
-  }, [company, matchesQueueFocus, rows, search, statusFilter, view]);
+  }, [company, fromDate, matchesQueueFocus, rows, search, statusFilter, toDate, view]);
   const pageCount = Math.max(1, Math.ceil(visibleRows.length / pageSize));
   const paginatedRows = useMemo(
     () => visibleRows.slice((page - 1) * pageSize, page * pageSize),
@@ -292,7 +312,7 @@ export function ApprovalsPage() {
   );
   useEffect(() => {
     setPage(1);
-  }, [company, pageSize, queueFocus, search, statusFilter, view]);
+  }, [company, fromDate, pageSize, queueFocus, search, statusFilter, toDate, view]);
   useEffect(() => {
     if (page > pageCount) setPage(pageCount);
   }, [page, pageCount]);
@@ -313,16 +333,17 @@ export function ApprovalsPage() {
       hardcopy: activeRows.filter(
         (request) => request.final_status === 'Awaiting Hard Copy Verification',
       ).length,
-      processing: activeRows.filter(
-        (request) =>
-          ['Processing', 'Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
-            request.final_status,
-          ) && !processingOverdue(request, now),
+      processing: activeRows.filter((request) =>
+        ['Processing', 'Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
+          request.final_status,
+        ),
       ).length,
       overdue: activeRows.filter((request) => processingOverdue(request, now)).length,
     };
   }, [now, rows]);
-  const hasFilters = Boolean(company || search || statusFilter || queueFocus !== 'all');
+  const hasFilters = Boolean(
+    company || search || statusFilter || fromDate || toDate || queueFocus !== 'all',
+  );
   const applyQueueFocus = (focus: QueueFocus) => {
     setQueueFocus((current) => (current === focus ? 'all' : focus));
     setView('pending');
@@ -331,11 +352,19 @@ export function ApprovalsPage() {
     setCompany('');
     setSearch('');
     setStatusFilter('');
+    setFromDate('');
+    setToDate('');
     setQueueFocus('all');
   };
-  const openRequest = (request: RfpRequest) => {
+  const openRequest = (request: RfpRequest, mode: ModalMode = 'view') => {
     const operations = financeOperations(request);
+    const receipt = normalizeFinanceReceipt(request.raw_record, {
+      finalStatus: request.final_status,
+      plannedCheckDate: request.planned_check_date,
+    });
     setSelected(request);
+    setModalMode(mode);
+    setReceiptData(undefined);
     setAction('');
     setRemarks('');
     setCheckDate(request.planned_check_date || '');
@@ -344,8 +373,19 @@ export function ApprovalsPage() {
     setDocumentVerification(operations.document_verification || '');
     setVerificationRemarks(operations.verification_remarks || '');
     setFinanceNotes(request.finance_remarks || '');
+    setCheckNumber(receipt.processing.checkNumber || '');
+    setPaymentReference(receipt.processing.paymentReference || '');
+    setProcessingStatus(receipt.processing.status || '');
+    setLateDocuments(receipt.lateDocuments.join('\n'));
     setNotice('');
     setError('');
+    if (finance || mode === 'view') {
+      setReceiptLoading(true);
+      get<ReceiptData>(`digital-rfp/${encodeURIComponent(request.id)}`)
+        .then((result) => setReceiptData(result))
+        .catch((cause) => setError(cause.message))
+        .finally(() => setReceiptLoading(false));
+    }
   };
   const departmentReturn = selected?.final_status === 'Returned to Department Approver';
   const departmentPending = selected?.final_status === 'Pending Department Approval';
@@ -462,12 +502,19 @@ export function ApprovalsPage() {
         financeRemarks: financeNotes || null,
         plannedCheckDate: checkDate || null,
         changeReason: reason || null,
+        checkNumber: checkNumber || null,
+        paymentReference: paymentReference || null,
+        processingStatus: processingStatus || null,
+        lateDocuments: lateDocuments
+          .split('\n')
+          .map((item) => item.trim())
+          .filter(Boolean),
       });
       setRows((current) =>
         current.map((request) => (request.id === result.request.id ? result.request : request)),
       );
       openRequest(result.request);
-      setNotice('Finance records saved and added to the approval log.');
+      setNotice('Digital RFP receipt saved and added to the approval log.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Finance updates could not be saved.');
     } finally {
@@ -517,7 +564,7 @@ export function ApprovalsPage() {
             count={queueCounts.head}
             icon={<ShieldCheck size={18} />}
             label="Finance Head review"
-            detail="Administrator decision gate"
+            detail="Super Administrator decision"
             tone="violet"
             onClick={() => applyQueueFocus('head')}
           />
@@ -535,18 +582,13 @@ export function ApprovalsPage() {
             count={queueCounts.processing}
             icon={<CalendarClock size={18} />}
             label="3-day processing"
-            detail="Active monitoring window"
+            detail={
+              queueCounts.overdue
+                ? `${queueCounts.overdue} overdue · 3-day window`
+                : '3-day monitoring window'
+            }
             tone="green"
             onClick={() => applyQueueFocus('processing')}
-          />
-          <QueueHealthCard
-            active={queueFocus === 'overdue'}
-            count={queueCounts.overdue}
-            icon={<CalendarClock size={18} />}
-            label="Overdue"
-            detail="Past the 3-day processing deadline"
-            tone="amber"
-            onClick={() => applyQueueFocus('overdue')}
           />
         </section>
       )}
@@ -593,6 +635,22 @@ export function ApprovalsPage() {
             <option key={item}>{item}</option>
           ))}
         </select>
+        <input
+          className="input"
+          aria-label="Submitted from date"
+          title="Submitted from"
+          type="date"
+          value={fromDate}
+          onChange={(event) => setFromDate(event.target.value)}
+        />
+        <input
+          className="input"
+          aria-label="Submitted to date"
+          title="Submitted to"
+          type="date"
+          value={toDate}
+          onChange={(event) => setToDate(event.target.value)}
+        />
         <select
           className="input"
           aria-label="Company"
@@ -632,24 +690,28 @@ export function ApprovalsPage() {
           <table className="finance-request-table">
             <thead>
               <tr>
-                <th>RFP No.</th>
+                <th>Request</th>
                 <th>Requestor / Department</th>
-                <th>Supplier / Payee</th>
                 <th>Amount</th>
-                <th>Current Status</th>
-                <th>SLA Stage</th>
-                <th>Planned Check</th>
+                <th>Status / SLA</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {paginatedRows.map((request) => (
-                <tr key={request.id} onClick={() => openRequest(request)}>
+                <tr
+                  key={request.id}
+                  onClick={() => {
+                    if (finance) openRequest(request, 'view');
+                    else if (department) openRequest(request, 'edit');
+                  }}
+                >
                   <td>
                     <button
                       className="finance-rfp-link"
                       onClick={(event) => {
                         event.stopPropagation();
-                        openRequest(request);
+                        openRequest(request, finance ? 'view' : 'edit');
                       }}
                     >
                       {request.rfp_number}
@@ -660,15 +722,49 @@ export function ApprovalsPage() {
                     <strong>{request.requestor_name}</strong>
                     <small>{request.department}</small>
                   </td>
-                  <td>{request.supplier_payee}</td>
                   <td className="finance-amount">{php.format(request.amount)}</td>
                   <td>
                     <StatusBadge>{displayStatus(request, now)}</StatusBadge>
-                  </td>
-                  <td>
                     <RequestSla request={request} now={now} />
                   </td>
-                  <td>{manilaDate(request.planned_check_date)}</td>
+                  <td>
+                    <div className="finance-row-actions">
+                      {finance && (
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openRequest(request, 'view');
+                          }}
+                        >
+                          <Eye size={14} /> View
+                        </button>
+                      )}
+                      {(finance || department) && (
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openRequest(request, 'edit');
+                          }}
+                        >
+                          <Pencil size={14} /> {finance ? 'Edit' : 'Review'}
+                        </button>
+                      )}
+                      {finance && (
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            window.open(
+                              `/admin/rfp/${request.id}/print`,
+                              '_blank',
+                              'noopener,noreferrer',
+                            );
+                          }}
+                        >
+                          <Printer size={14} /> Print
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -720,7 +816,11 @@ export function ApprovalsPage() {
         )}
       </div>
       {selected && (
-        <Modal title={selected.rfp_number} size="wide" onClose={() => setSelected(undefined)}>
+        <Modal
+          title={`Digital RFP · ${selected.rfp_number}`}
+          size="wide"
+          onClose={() => setSelected(undefined)}
+        >
           <div className="finance-modal-summary">
             <div>
               <StatusBadge>{displayStatus(selected, now)}</StatusBadge>
@@ -732,15 +832,28 @@ export function ApprovalsPage() {
                 {manilaDate(selected.submitted_at, true)}
               </p>
               {finance && (
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    window.open(`/admin/rfp/${selected.id}/print`, '_blank', 'noopener,noreferrer')
-                  }
-                >
-                  <Printer size={16} />
-                  Print digital RFP
-                </Button>
+                <>
+                  <Button
+                    variant="secondary"
+                    onClick={() => openRequest(selected, modalMode === 'view' ? 'edit' : 'view')}
+                  >
+                    {modalMode === 'view' ? <Pencil size={16} /> : <Eye size={16} />}
+                    {modalMode === 'view' ? 'Edit receipt' : 'View receipt'}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() =>
+                      window.open(
+                        `/admin/rfp/${selected.id}/print`,
+                        '_blank',
+                        'noopener,noreferrer',
+                      )
+                    }
+                  >
+                    <Printer size={16} />
+                    Print
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -754,55 +867,87 @@ export function ApprovalsPage() {
               {notice}
             </p>
           )}
-          <h3 className="finance-section-title">Request details</h3>
-          <div className="finance-detail-grid">
-            {[
-              ['Requestor', selected.requestor_name],
-              ['Department', selected.department],
-              ['Requestor email', selected.requestor_email],
-              ['RFP type', selected.rfp_type],
-              ['Type of request', String(selected.raw_record?.request_type || 'Not recorded')],
-              ['Supplier / Payee', selected.supplier_payee],
-              ['Amount', php.format(selected.amount)],
-              ['Project / Class', selected.project_class],
-              ['Required date', manilaDate(selected.required_payment_date)],
-              ['Submitted date', manilaDate(selected.submitted_at, true)],
-              ['Target release', manilaDate(selected.planned_check_date)],
-              ['SLA position', getSlaInfo(selected, now).label],
-              ['Current stage', displayStatus(selected, now)],
-              ['Approving heads', selected.approving_head],
-              ['Department approval', selected.department_approval],
-              ['Department remarks', selected.department_approval_remarks || '—'],
-              [
-                'Finance member review',
-                financeWorkflow(selected).member_status || selected.finance_review,
-              ],
-              ['Finance head review', financeWorkflow(selected).head_status || 'Pending'],
-              ['Hard-copy approval', financeWorkflow(selected).hard_copy_status || 'Pending'],
-              [
-                '3-day processing due',
-                manilaDate(financeWorkflow(selected).processing_due_at || null, true),
-              ],
-              ['Finance remarks', selected.finance_remarks || '—'],
-              ['Purpose', selected.purpose_description],
-            ].map(([key, value]) => (
-              <div
-                key={key}
-                className={
-                  ['Purpose', 'Approving heads', 'Department remarks', 'Finance remarks'].includes(
-                    key,
-                  )
-                    ? 'finance-detail-wide'
-                    : ''
-                }
-              >
-                <p>{key}</p>
-                <strong>{value}</strong>
+          {modalMode === 'view' && finance ? (
+            receiptLoading ? (
+              <div className="grid min-h-64 place-items-center">
+                <Spinner label="Loading receipt" />
               </div>
-            ))}
-          </div>
-          <AttachmentPreviewSection requestId={selected.id} />
-          {finance && (
+            ) : receiptData ? (
+              <div className="finance-receipt-preview">
+                <DigitalRfpReceipt
+                  request={receiptData.request}
+                  attachments={receiptData.attachments}
+                  workflow={
+                    (receiptData.request.raw_record?.finance_workflow || {}) as DigitalRfpWorkflow
+                  }
+                  financeOperations={
+                    (receiptData.request.raw_record?.finance_operations ||
+                      {}) as DigitalRfpOperations
+                  }
+                  financeReceipt={normalizeFinanceReceipt(receiptData.request.raw_record, {
+                    finalStatus: receiptData.request.final_status,
+                    plannedCheckDate: receiptData.request.planned_check_date,
+                  })}
+                  submissionChecklist={receiptData.request.raw_record?.submission_checklist || []}
+                />
+              </div>
+            ) : null
+          ) : (
+            <>
+              <h3 className="finance-section-title">Request overview</h3>
+              <div className="finance-detail-grid finance-detail-grid-compact">
+                {[
+                  ['Requestor', selected.requestor_name],
+                  ['Department', selected.department],
+                  ['Requestor email', selected.requestor_email],
+                  ['RFP type', selected.rfp_type],
+                  ['Type of request', String(selected.raw_record?.request_type || 'Not recorded')],
+                  ['Supplier / Payee', selected.supplier_payee],
+                  ['Amount', php.format(selected.amount)],
+                  ['Project / Class', selected.project_class],
+                  ['Required date', manilaDate(selected.required_payment_date)],
+                  ['Submitted date', manilaDate(selected.submitted_at, true)],
+                  ['Target release', manilaDate(selected.planned_check_date)],
+                  ['SLA position', getSlaInfo(selected, now).label],
+                  ['Current stage', displayStatus(selected, now)],
+                  ['Approving heads', selected.approving_head],
+                  ['Department approval', selected.department_approval],
+                  ['Department remarks', selected.department_approval_remarks || '—'],
+                  [
+                    'Finance member review',
+                    financeWorkflow(selected).member_status || selected.finance_review,
+                  ],
+                  ['Finance head review', financeWorkflow(selected).head_status || 'Pending'],
+                  ['Hard-copy approval', financeWorkflow(selected).hard_copy_status || 'Pending'],
+                  [
+                    '3-day processing due',
+                    manilaDate(financeWorkflow(selected).processing_due_at || null, true),
+                  ],
+                  ['Finance remarks', selected.finance_remarks || '—'],
+                  ['Purpose', selected.purpose_description],
+                ].map(([key, value]) => (
+                  <div
+                    key={key}
+                    className={
+                      [
+                        'Purpose',
+                        'Approving heads',
+                        'Department remarks',
+                        'Finance remarks',
+                      ].includes(key)
+                        ? 'finance-detail-wide'
+                        : ''
+                    }
+                  >
+                    <p>{key}</p>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+              <AttachmentPreviewSection requestId={selected.id} />
+            </>
+          )}
+          {finance && modalMode === 'edit' && (
             <section className="finance-update-section">
               <h3 className="finance-section-title">Finance updates</h3>
               <div className="finance-update-grid">
@@ -864,6 +1009,56 @@ export function ApprovalsPage() {
                     onChange={(event) => setReason(event.target.value)}
                   />
                 </div>
+                <div className="field">
+                  <label htmlFor="check-number">Check number</label>
+                  <input
+                    id="check-number"
+                    className="input"
+                    placeholder="If issued"
+                    value={checkNumber}
+                    onChange={(event) => setCheckNumber(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="payment-reference">Payment reference</label>
+                  <input
+                    id="payment-reference"
+                    className="input"
+                    placeholder="Bank or payment reference"
+                    value={paymentReference}
+                    onChange={(event) => setPaymentReference(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="processing-status">Receipt processing status</label>
+                  <select
+                    id="processing-status"
+                    className="input"
+                    value={processingStatus}
+                    onChange={(event) => setProcessingStatus(event.target.value)}
+                  >
+                    <option value="">Use workflow status</option>
+                    {[
+                      'For Processing',
+                      'Check Preparation',
+                      'Check Approval',
+                      'Check Released',
+                      'Paid',
+                    ].map((status) => (
+                      <option key={status}>{status}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label htmlFor="late-documents">Late documents received</label>
+                  <textarea
+                    id="late-documents"
+                    className="input min-h-24"
+                    placeholder={'One document per line'}
+                    value={lateDocuments}
+                    onChange={(event) => setLateDocuments(event.target.value)}
+                  />
+                </div>
                 <div className="field finance-update-wide">
                   <label htmlFor="finance-notes">Finance remarks / internal notes</label>
                   <textarea
@@ -887,7 +1082,7 @@ export function ApprovalsPage() {
               </div>
             </section>
           )}
-          {choices.length > 0 && (
+          {modalMode === 'edit' && choices.length > 0 && (
             <div className="mt-6 border-t pt-5">
               <h3 className="font-semibold">Next workflow action</h3>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -926,12 +1121,12 @@ export function ApprovalsPage() {
               </div>
             </div>
           )}
-          {(finance || department) && !choices.length && (
+          {modalMode === 'edit' && (finance || department) && !choices.length && (
             <p className="mt-5 rounded bg-slate-50 p-3 text-sm text-slate-600">
               No further system action is available for this status.
             </p>
           )}
-          {!finance && !department && (
+          {modalMode === 'edit' && !finance && !department && (
             <p className="mt-5 rounded bg-blue-50 p-3 text-sm text-blue-800">
               <FileQuestion className="mr-2 inline" size={16} />
               Department decisions are completed through the secure email review link.

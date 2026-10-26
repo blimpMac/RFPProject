@@ -5,7 +5,7 @@ import {
   isLegacyProtectedStaffEmail,
   protectedAccountLabel,
 } from '../domain/access.js';
-import { sendEmailPreview } from '../email/service.js';
+import { flushEmailQueueForRequest, sendEmailPreview } from '../email/service.js';
 import { emailTemplateKeys, renderEmailPreview } from '../email/templates.js';
 import { requireStaff } from '../lib/auth.js';
 import { ensureMethod, HttpError, json, readJson } from '../lib/http.js';
@@ -18,6 +18,11 @@ import {
   resolveDepartmentHeadTarget,
 } from '../services/account-governance.js';
 import type { RouteHandler } from './context.js';
+import { refreshPendingDepartmentReviews } from '../services/workflow-notifications.js';
+
+async function refreshDepartmentReviewers(requestIds: string[]) {
+  for (const requestId of requestIds) await flushEmailQueueForRequest(requestId);
+}
 
 const staffAccountSchema = z.discriminatedUnion('accessLevel', [
   z.object({
@@ -147,13 +152,16 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
       }
       try {
         if (input.accessLevel === 'approver') {
-          await assignDepartmentHead(
+          const departments = await assignDepartmentHead(
             db,
             staff.user.id,
             invited.data.user.id,
             input.fullName,
             email,
             department,
+          );
+          await refreshDepartmentReviewers(
+            await refreshPendingDepartmentReviews(db, departments, config.REVIEW_TOKEN_HOURS),
           );
         }
       } catch (cause) {
@@ -221,7 +229,7 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
         .eq('id', input.userId);
       if (profile.error) throw profile.error;
       if (input.accessLevel === 'approver' && input.active) {
-        await assignDepartmentHead(
+        const departments = await assignDepartmentHead(
           db,
           staff.user.id,
           input.userId,
@@ -229,8 +237,12 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
           target.data.user.email,
           department,
         );
+        await refreshDepartmentReviewers(
+          await refreshPendingDepartmentReviews(db, departments, config.REVIEW_TOKEN_HOURS),
+        );
       } else {
-        await clearDepartmentHeadAssignments(db, input.userId);
+        const departments = await clearDepartmentHeadAssignments(db, input.userId);
+        await refreshPendingDepartmentReviews(db, departments, config.REVIEW_TOKEN_HOURS);
       }
       return json(200, { ok: true });
     }
@@ -255,7 +267,8 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
       ) {
         throw new HttpError(409, 'Administrative accounts cannot be removed here.');
       }
-      await clearDepartmentHeadAssignments(db, input.userId);
+      const departments = await clearDepartmentHeadAssignments(db, input.userId);
+      await refreshPendingDepartmentReviews(db, departments, config.REVIEW_TOKEN_HOURS);
       const removed = await db.auth.admin.deleteUser(input.userId);
       if (removed.error) throw removed.error;
       return json(200, { ok: true });

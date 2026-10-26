@@ -109,7 +109,11 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
 
   if (route.startsWith('digital-rfp/')) {
     ensureMethod(event, 'GET');
-    await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    const staff = await requireStaff(event, [
+      'super_administrator',
+      'finance_reviewer',
+      'department_approver',
+    ]);
     const requestId = z.uuid().parse(route.slice('digital-rfp/'.length));
     const [request, attachments] = await Promise.all([
       db.from('rfp_requests').select('*').eq('id', requestId).single(),
@@ -122,6 +126,12 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
     ]);
     if (request.error || !request.data) throw new HttpError(404, 'Request not found.');
     if (attachments.error) throw attachments.error;
+    if (isDepartmentOnly(staff.roles)) {
+      const departments = await getAssignedDepartments(db, staff.user.id);
+      if (!departments.includes(normalizeDepartment(request.data.department))) {
+        throw new HttpError(403, 'This request belongs to a department you are not assigned to.');
+      }
+    }
     return json(200, { ok: true, request: request.data, attachments: attachments.data || [] });
   }
 
@@ -257,7 +267,7 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
 
   if (route === 'finance/action') {
     ensureMethod(event, 'POST');
-    const staff = await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    const staff = await requireStaff(event, ['super_administrator', 'finance_reviewer']);
     const input = financeSchema.parse(readJson(event));
     const normalizedAction =
       input.action === 'approve'
@@ -300,7 +310,7 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
 
   if (route === 'finance/update') {
     ensureMethod(event, 'POST');
-    const staff = await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    const staff = await requireStaff(event, ['super_administrator', 'finance_reviewer']);
     const input = financeUpdateSchema.parse(readJson(event));
     const current = await db.from('rfp_requests').select('*').eq('id', input.requestId).single();
     if (current.error || !current.data) throw new HttpError(404, 'Request not found.');
@@ -318,14 +328,37 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
       !Array.isArray(existingRaw.finance_operations)
         ? (existingRaw.finance_operations as Record<string, unknown>)
         : {};
+    const existingReceipt =
+      existingRaw.finance_receipt &&
+      typeof existingRaw.finance_receipt === 'object' &&
+      !Array.isArray(existingRaw.finance_receipt)
+        ? (existingRaw.finance_receipt as Record<string, unknown>)
+        : {};
+    const existingProcessing =
+      existingReceipt.processing &&
+      typeof existingReceipt.processing === 'object' &&
+      !Array.isArray(existingReceipt.processing)
+        ? (existingReceipt.processing as Record<string, unknown>)
+        : {};
+    const existingHardCopy =
+      existingReceipt.hard_copy &&
+      typeof existingReceipt.hard_copy === 'object' &&
+      !Array.isArray(existingReceipt.hard_copy)
+        ? (existingReceipt.hard_copy as Record<string, unknown>)
+        : {};
+    const nowIso = new Date().toISOString();
     const operations = {
       ...existingOperations,
       originals_received_date: input.originalsReceivedDate || null,
       document_verification: input.documentVerification || null,
       verification_remarks: input.verificationRemarks || null,
-      updated_at: new Date().toISOString(),
+      updated_at: nowIso,
       updated_by: staff.user.email,
     };
+    const verificationChanged =
+      operations.originals_received_date !== (existingOperations.originals_received_date || null) ||
+      operations.document_verification !== (existingOperations.document_verification || null) ||
+      operations.verification_remarks !== (existingOperations.verification_remarks || null);
     if (operations.document_verification === 'Complete' && !operations.originals_received_date) {
       throw new HttpError(
         400,
@@ -344,15 +377,59 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
       throw new HttpError(400, 'Add a reason for changing the planned release date.');
     }
 
+    const receipt = {
+      ...existingReceipt,
+      hard_copy: {
+        ...existingHardCopy,
+        received_date: operations.originals_received_date,
+        status: operations.document_verification,
+        remarks: operations.verification_remarks,
+        verified_by: verificationChanged
+          ? staff.user.email
+          : existingHardCopy.verified_by || existingOperations.updated_by || null,
+        verified_at: verificationChanged
+          ? nowIso
+          : existingHardCopy.verified_at || existingOperations.updated_at || null,
+      },
+      processing: {
+        ...existingProcessing,
+        target_release_date: nextDate,
+        check_number:
+          input.checkNumber === undefined
+            ? existingProcessing.check_number || null
+            : input.checkNumber || null,
+        payment_reference:
+          input.paymentReference === undefined
+            ? existingProcessing.payment_reference || null
+            : input.paymentReference || null,
+        status:
+          input.processingStatus === undefined
+            ? existingProcessing.status || null
+            : input.processingStatus || null,
+      },
+      late_documents:
+        input.lateDocuments === undefined
+          ? Array.isArray(existingReceipt.late_documents)
+            ? existingReceipt.late_documents
+            : []
+          : input.lateDocuments,
+      updated_at: nowIso,
+      updated_by: staff.user.email,
+    };
+
     const version = Number(request.version || 1);
     const updated = await db
       .from('rfp_requests')
       .update({
-        raw_record: { ...existingRaw, finance_operations: operations },
+        raw_record: {
+          ...existingRaw,
+          finance_operations: operations,
+          finance_receipt: receipt,
+        },
         finance_remarks: input.financeRemarks || null,
         planned_check_date: nextDate,
         check_date_last_updated:
-          nextDate !== previousDate ? new Date().toISOString() : request.check_date_last_updated,
+          nextDate !== previousDate ? nowIso : request.check_date_last_updated,
         check_date_change_reason:
           nextDate !== previousDate ? input.changeReason || null : request.check_date_change_reason,
         version: version + 1,
@@ -370,10 +447,14 @@ export const handleStaffRoutes: RouteHandler = async ({ event, route, db }) => {
     const log = await db.from('approval_logs').insert({
       request_id: input.requestId,
       rfp_number: String(request.rfp_number),
-      action: 'Finance Records Updated',
+      action: 'Digital RFP Receipt Updated',
       actor_email: staff.user.email,
       actor_user_id: staff.user.id,
-      remarks: input.financeRemarks || input.verificationRemarks || input.changeReason || null,
+      remarks:
+        input.changeReason ||
+        input.financeRemarks ||
+        input.verificationRemarks ||
+        (input.lateDocuments?.length ? `Late documents: ${input.lateDocuments.join(', ')}` : null),
       previous_status: String(request.final_status),
       new_status: String(request.final_status),
     });

@@ -114,7 +114,7 @@ export function renderEmail(
       subject: `Finance Head review required: ${request.rfp_number}`,
       html: shell(
         `Finance Head approval — ${rfp}`,
-        `<p>A Finance member approved this request. A Finance Head / Administrator must now approve or decline it.</p>${digitalReceipt(request, siteUrl)}${remarks}<p style="margin-top:24px">${button('Open Finance approvals', `${siteUrl}/admin/approvals`, '#315c93')}</p>`,
+        `<p>A Finance member approved this request. The Super Administrator, acting as Finance Head, must now approve or decline it.</p>${digitalReceipt(request, siteUrl)}${remarks}<p style="margin-top:24px">${button('Open Finance approvals', `${siteUrl}/admin/approvals`, '#315c93')}</p>`,
       ),
     };
   if (template === 'finance_head_rejected')

@@ -115,6 +115,7 @@ export async function clearDepartmentHeadAssignments(db: DatabaseClient, userId:
     if (removed.error) throw removed.error;
     await deactivateLegacyApprover(db, departmentKey);
   }
+  return departments;
 }
 
 export async function assignDepartmentHead(
@@ -125,7 +126,7 @@ export async function assignDepartmentHead(
   email: string,
   department: string,
 ) {
-  await clearDepartmentHeadAssignments(db, userId);
+  const previousDepartments = await clearDepartmentHeadAssignments(db, userId);
   const departmentKey = normalizeDepartment(department);
   const cleared = await db
     .from('department_approving_heads')
@@ -140,4 +141,5 @@ export async function assignDepartmentHead(
   });
   if (inserted.error) throw inserted.error;
   await activateLegacyApprover(db, department, fullName, email);
+  return [...new Set([...previousDepartments, departmentKey])];
 }

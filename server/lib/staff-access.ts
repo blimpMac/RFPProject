@@ -15,6 +15,19 @@ export const isDepartmentOnly = (roles: string[]) =>
     ['super_administrator', 'administrator', 'finance_reviewer'].includes(role),
   );
 
+export const canAccessFinance = (roles: string[]) =>
+  roles.some((role) => ['super_administrator', 'finance_reviewer'].includes(role));
+
+export const canActAsFinanceHead = (roles: string[]) => roles.includes('super_administrator');
+
+export const canPerformFinanceStageAction = (action: string, roles: string[]) => {
+  if (!canAccessFinance(roles)) return false;
+  if (['head_approve', 'head_reject'].includes(action)) return canActAsFinanceHead(roles);
+  return ['member_approve', 'member_reject', 'request_documents', 'hard_copy_approve'].includes(
+    action,
+  );
+};
+
 export const canAccessDepartment = (
   staffDepartment: string | null | undefined,
   requestDepartment: string | null | undefined,

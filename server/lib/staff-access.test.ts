@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   accessRole,
+  canAccessFinance,
+  canActAsFinanceHead,
+  canPerformFinanceStageAction,
   canAccessDepartment,
   isDepartmentOnly,
   normalizeDepartment,
@@ -12,6 +15,19 @@ test('normalizes department labels consistently', () => {
   assert.equal(normalizeDepartment('- Operations'), 'operations');
   assert.equal(canAccessDepartment('Finance', '– finance'), true);
   assert.equal(canAccessDepartment('', 'Finance'), false);
+});
+
+test('keeps legacy administrators outside Finance permissions', () => {
+  assert.equal(canAccessFinance(['administrator']), false);
+  assert.equal(canAccessFinance(['finance_reviewer']), true);
+  assert.equal(canAccessFinance(['super_administrator']), true);
+  assert.equal(canActAsFinanceHead(['finance_reviewer']), false);
+  assert.equal(canActAsFinanceHead(['administrator']), false);
+  assert.equal(canActAsFinanceHead(['super_administrator']), true);
+  assert.equal(canPerformFinanceStageAction('member_approve', ['finance_reviewer']), true);
+  assert.equal(canPerformFinanceStageAction('member_approve', ['administrator']), false);
+  assert.equal(canPerformFinanceStageAction('head_approve', ['finance_reviewer']), false);
+  assert.equal(canPerformFinanceStageAction('head_approve', ['super_administrator']), true);
 });
 
 test('maps account access levels to workflow roles', () => {

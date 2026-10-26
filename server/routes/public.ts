@@ -13,10 +13,12 @@ import { enforceSubmissionLimit } from '../lib/rate-limit.js';
 import { getPublicApprovers } from '../services/approving-heads.js';
 import { rfpRequestTypes } from '../../shared/constants/request-types.js';
 import {
+  assertCurrentDepartmentReviewToken,
   cancelPendingDepartmentReview,
   queueSubmissionReceipt,
 } from '../services/workflow-notifications.js';
 import type { RouteHandler } from './context.js';
+import { normalizeFinanceReceipt } from '../../shared/contracts/digital-rfp.js';
 
 export const handlePublicRoutes: RouteHandler = async ({ event, route, db, config }) => {
   if (route === 'public-config') {
@@ -235,6 +237,10 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     const submissionChecklist = Array.isArray(rawRecord.submission_checklist)
       ? rawRecord.submission_checklist.filter((item): item is string => typeof item === 'string')
       : [];
+    const financeReceipt = normalizeFinanceReceipt(rawRecord, {
+      finalStatus: request.data.final_status,
+      plannedCheckDate: request.data.planned_check_date,
+    });
     const [logs, attachments] = await Promise.all([
       db
         .from('approval_logs')
@@ -255,6 +261,7 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
       },
       workflow,
       financeOperations,
+      financeReceipt,
       submissionChecklist,
       logs: logs.data || [],
       attachments: attachments.data || [],
@@ -265,20 +272,7 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
 
   const token = decodeURIComponent(route.slice(7));
   if (event.httpMethod === 'GET') {
-    const tokenRecord = await db
-      .from('approval_tokens')
-      .select('request_id,expires_at,used_at,revoked_at')
-      .eq('token_hash', sha256(token))
-      .single();
-    const record = tokenRecord.data;
-    if (
-      !record ||
-      record.used_at ||
-      record.revoked_at ||
-      new Date(record.expires_at) < new Date()
-    ) {
-      throw new HttpError(410, 'This review link is invalid, expired, or already used.');
-    }
+    const record = await assertCurrentDepartmentReviewToken(db, sha256(token));
     const request = await db
       .from('rfp_requests')
       .select(
@@ -340,6 +334,7 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
 
   if (event.httpMethod === 'POST') {
     const input = decisionSchema.parse({ ...(readJson(event) as object), token });
+    await assertCurrentDepartmentReviewToken(db, sha256(input.token));
     const decision = await db.rpc('consume_department_review', {
       p_token_hash: sha256(input.token),
       p_decision: input.decision,

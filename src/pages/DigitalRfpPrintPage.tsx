@@ -11,6 +11,7 @@ import {
 import { Button, Spinner } from '../components/ui';
 import { get } from '../lib/api';
 import type { RfpRequest } from '../types';
+import { normalizeFinanceReceipt } from '../../shared/contracts/digital-rfp';
 
 type PrintData = {
   request: RfpRequest;
@@ -22,9 +23,7 @@ export function DigitalRfpPrintPage() {
   const { roles, loading: authLoading } = useAuth();
   const [data, setData] = useState<PrintData>();
   const [error, setError] = useState('');
-  const finance = roles.some((role) =>
-    ['super_administrator', 'administrator', 'finance_reviewer'].includes(role),
-  );
+  const finance = roles.some((role) => ['super_administrator', 'finance_reviewer'].includes(role));
 
   useEffect(() => {
     if (!finance || !id) return;
@@ -61,6 +60,10 @@ export function DigitalRfpPrintPage() {
   const workflow = (request.raw_record?.finance_workflow || {}) as DigitalRfpWorkflow;
   const financeOperations = (request.raw_record?.finance_operations || {}) as DigitalRfpOperations;
   const checklist = request.raw_record?.submission_checklist || [];
+  const financeReceipt = normalizeFinanceReceipt(request.raw_record, {
+    finalStatus: request.final_status,
+    plannedCheckDate: request.planned_check_date,
+  });
 
   return (
     <main className="digital-rfp-print-page">
@@ -79,6 +82,7 @@ export function DigitalRfpPrintPage() {
         attachments={data!.attachments}
         workflow={workflow}
         financeOperations={financeOperations}
+        financeReceipt={financeReceipt}
         submissionChecklist={checklist}
       />
     </main>
