@@ -68,9 +68,9 @@ const navigationItems: NavigationItem[] = [
     allowedRoles: ['super_administrator', 'administrator', 'finance_reviewer'],
   },
   {
-    to: '/admin/settings',
-    label: 'Accounts',
-    description: 'Roles and user access',
+    to: '/admin/account-management',
+    label: 'Account Management',
+    description: 'Finance members and department heads',
     group: 'Administration',
     icon: Users,
     allowedRoles: ['super_administrator'],
@@ -78,7 +78,7 @@ const navigationItems: NavigationItem[] = [
 ];
 
 const roleLabels: Record<Role, string> = {
-  super_administrator: 'Super administrator · Finance Head',
+  super_administrator: 'Finance Head (Super Admin)',
   administrator: 'Administrator',
   department_approver: 'Department Head',
   finance_reviewer: 'Finance Member',

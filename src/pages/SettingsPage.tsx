@@ -100,9 +100,9 @@ export function SettingsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Account Management</h1>
           <p className="mt-1 max-w-3xl text-sm text-slate-500">
-            The single Super Administrator is automatically the Finance Head. Create Finance Members
-            for Finance, or one Department Head for each non-Finance department. Edit a Department
-            Head to transfer that account to another available department.
+            The Finance Head is the Super Admin. Create Finance Members for Finance, or one
+            Department Head for each non-Finance department. Edit a Department Head to transfer that
+            account to another available department.
           </p>
         </div>
         <Button onClick={() => setAccount('new')}>
@@ -226,7 +226,7 @@ function AccountRow({
     ['super_administrator', 'administrator'].includes(role),
   );
   const accessLabel = user.roles.includes('super_administrator')
-    ? 'Super Administrator · Finance Head'
+    ? 'Finance Head (Super Admin)'
     : user.roles.includes('administrator')
       ? 'Administrator'
       : user.accessLevel === 'approver'
@@ -357,7 +357,7 @@ function AccountForm({
         {accessLevel === 'staff' ? (
           <div className="rounded border bg-slate-50 p-3 text-sm text-slate-700">
             Department: <strong>Finance</strong>. Finance Head approval belongs only to the Super
-            Administrator.
+            Admin account.
           </div>
         ) : (
           <div className="field">

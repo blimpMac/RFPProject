@@ -23,7 +23,7 @@ function departmentLabel(value: string | null) {
   return value?.replace(/^[- ]+/, '') || 'No department assigned';
 }
 function roleLabel(roles: string[]) {
-  if (roles.includes('super_administrator')) return 'Super Administrator';
+  if (roles.includes('super_administrator')) return 'Finance Head (Super Admin)';
   if (roles.includes('administrator')) return 'Administrator';
   return 'Department Approver';
 }

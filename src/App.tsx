@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './components/AuthProvider';
 import { Spinner } from './components/ui';
 
@@ -35,12 +35,6 @@ const ApprovalsPage = lazy(() =>
 const DocumentsPage = lazy(() =>
   import('./pages/DocumentsPage').then((m) => ({ default: m.DocumentsPage })),
 );
-const ApproverManagementPage = lazy(() =>
-  import('./pages/ApproverManagementPage').then((m) => ({ default: m.ApproverManagementPage })),
-);
-const ApprovingHeadsPage = lazy(() =>
-  import('./pages/ApprovingHeadsPage').then((m) => ({ default: m.ApprovingHeadsPage })),
-);
 const SettingsPage = lazy(() =>
   import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
@@ -72,10 +66,17 @@ export default function App() {
               <Route path="monitoring" element={<MonitoringPage />} />
               <Route path="approvals" element={<ApprovalsPage />} />
               <Route path="documents" element={<DocumentsPage />} />
-              <Route path="approver-management" element={<ApproverManagementPage />} />
-              <Route path="approving-heads" element={<ApprovingHeadsPage />} />
+              <Route path="account-management" element={<SettingsPage />} />
+              <Route
+                path="approver-management"
+                element={<Navigate to="../account-management" replace />}
+              />
+              <Route
+                path="approving-heads"
+                element={<Navigate to="../account-management" replace />}
+              />
               <Route path="audit-trail" element={<AuditTrailPage />} />
-              <Route path="settings" element={<SettingsPage />} />
+              <Route path="settings" element={<Navigate to="../account-management" replace />} />
             </Route>
             <Route
               path="*"
