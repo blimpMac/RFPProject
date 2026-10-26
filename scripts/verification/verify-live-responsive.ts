@@ -12,30 +12,29 @@ if (!supabaseUrl || !serviceKey || !publishableKey) {
 }
 
 const liveUrl = 'https://greenlight-rfp.vercel.app';
+const themeStorageKey = 'rfp-theme';
 const viewports = [
   { name: 'phone-320', width: 320, height: 800 },
+  { name: 'phone-360', width: 360, height: 800 },
   { name: 'phone-390', width: 390, height: 844 },
   { name: 'tablet-768', width: 768, height: 1024 },
+  { name: 'landscape-1024', width: 1024, height: 768 },
   { name: 'desktop-1440', width: 1440, height: 1000 },
 ];
 const publicRoutes = [
   { path: '/', heading: 'New RFP request', name: 'request' },
-  { path: '/admin/login', heading: 'Sign in to your account', name: 'login' },
+  { path: '/admin/login', heading: 'Staff sign in', name: 'login' },
 ];
 const staffRoutes = [
-  { path: '/admin', heading: 'Dashboard', name: 'dashboard' },
-  { path: '/admin/monitoring', heading: 'Monitoring Sheets', name: 'monitoring' },
+  { path: '/admin', heading: 'Payment requests at a glance', name: 'dashboard' },
+  { path: '/admin/monitoring', heading: 'RFP monitor', name: 'monitoring' },
   { path: '/admin/approvals', heading: 'Finance Dashboard', name: 'approvals' },
   { path: '/admin/documents', heading: 'Document Management', name: 'documents' },
-  {
-    path: '/admin/approver-management',
-    heading: 'Approver Management',
-    name: 'approver-management',
-  },
-  { path: '/admin/approving-heads', heading: 'Edit Approval Team', name: 'approval-team' },
-  { path: '/admin/settings', heading: 'Account Manager', name: 'account-manager' },
+  { path: '/admin/account-management', heading: 'Account Management', name: 'account-management' },
+  { path: '/admin/audit-trail', heading: 'Audit Trail', name: 'audit-trail' },
 ];
 
+type RouteCheck = (typeof publicRoutes)[number] | (typeof staffRoutes)[number];
 type LayoutMetrics = {
   viewportWidth: number;
   documentWidth: number;
@@ -43,21 +42,36 @@ type LayoutMetrics = {
 };
 
 async function assertResponsiveLayout(page: Page, label: string) {
-  const metrics = await page.evaluate<LayoutMetrics>(`(() => ({
+  const metrics = await page.evaluate<LayoutMetrics>(() => ({
     viewportWidth: window.innerWidth,
     documentWidth: document.documentElement.scrollWidth,
-    bodyWidth: document.body.scrollWidth
-  }))()`);
+    bodyWidth: document.body.scrollWidth,
+  }));
   const overflow = Math.max(metrics.documentWidth, metrics.bodyWidth) - metrics.viewportWidth;
   if (overflow > 1) {
     throw new Error(`${label} has ${overflow}px of document-level horizontal overflow.`);
   }
 }
 
-async function openAndCheck(page: Page, route: { path: string; heading: string; name: string }) {
+async function openAndCheck(page: Page, route: RouteCheck, staff = false) {
   await page.goto(`${liveUrl}${route.path}`, { waitUntil: 'networkidle' });
-  await page.getByRole('heading', { name: route.heading, exact: true }).waitFor();
+  const scope = staff ? page.locator('#main-content') : page;
+  await scope.getByRole('heading', { name: route.heading, exact: true }).first().waitFor();
   await assertResponsiveLayout(page, route.name);
+}
+
+async function setThemeAndCheck(page: Page, theme: 'light' | 'dark', label: string) {
+  await page.evaluate(
+    ({ key, value }) => localStorage.setItem(key, value),
+    { key: themeStorageKey, value: theme },
+  );
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction((expected) => document.documentElement.dataset.theme === expected, theme);
+  const classState = await page.evaluate(() => document.documentElement.classList.contains('dark'));
+  if (classState !== (theme === 'dark')) {
+    throw new Error(`${label} did not apply ${theme} mode consistently.`);
+  }
+  await assertResponsiveLayout(page, `${label} ${theme} mode`);
 }
 
 const db = createClient(supabaseUrl, serviceKey, {
@@ -71,6 +85,15 @@ const superadmin = users.data.users.find(
     (process.env.SUPERADMIN_EMAIL || 'gpigemcorqbbackup@gmail.com').toLowerCase(),
 );
 if (!superadmin?.email) throw new Error('The retained Super Administrator account was not found.');
+
+const latestRequest = await db
+  .from('rfp_requests')
+  .select('id')
+  .order('submitted_at', { ascending: false })
+  .limit(1)
+  .maybeSingle();
+if (latestRequest.error) throw latestRequest.error;
+
 const login = await db.auth.admin.generateLink({
   type: 'magiclink',
   email: superadmin.email,
@@ -100,6 +123,13 @@ try {
   for (const viewport of viewports) {
     await publicPage.setViewportSize(viewport);
     for (const route of publicRoutes) await openAndCheck(publicPage, route);
+
+    if (viewport.name === 'phone-320' || viewport.name === 'desktop-1440') {
+      await publicPage.goto(liveUrl, { waitUntil: 'networkidle' });
+      await setThemeAndCheck(publicPage, 'light', `request ${viewport.name}`);
+      await setThemeAndCheck(publicPage, 'dark', `request ${viewport.name}`);
+    }
+
     if (viewport.name === 'phone-320') {
       await publicPage.goto(liveUrl, { waitUntil: 'networkidle' });
       await publicPage.screenshot({
@@ -119,7 +149,27 @@ try {
 
   for (const viewport of viewports) {
     await staffPage.setViewportSize(viewport);
-    for (const route of staffRoutes) await openAndCheck(staffPage, route);
+    for (const route of staffRoutes) await openAndCheck(staffPage, route, true);
+
+    if (viewport.name === 'phone-320' || viewport.name === 'desktop-1440') {
+      await staffPage.goto(`${liveUrl}/admin`, { waitUntil: 'networkidle' });
+      await setThemeAndCheck(staffPage, 'light', `dashboard ${viewport.name}`);
+      await setThemeAndCheck(staffPage, 'dark', `dashboard ${viewport.name}`);
+    }
+
+    if (latestRequest.data?.id) {
+      await staffPage.goto(`${liveUrl}/admin/rfp/${latestRequest.data.id}/print`, {
+        waitUntil: 'networkidle',
+      });
+      await staffPage.locator('.digital-rfp-sheet').waitFor();
+      await assertResponsiveLayout(staffPage, `digital RFP ${viewport.name}`);
+      if (viewport.name === 'phone-320') {
+        await staffPage.screenshot({
+          path: 'artifacts/responsive/digital-rfp-phone-320.png',
+          fullPage: true,
+        });
+      }
+    }
 
     if (viewport.name === 'phone-320') {
       await staffPage.goto(`${liveUrl}/admin`, { waitUntil: 'networkidle' });
@@ -137,15 +187,7 @@ try {
         fullPage: true,
       });
 
-      await staffPage.goto(`${liveUrl}/admin/approver-management`, {
-        waitUntil: 'networkidle',
-      });
-      await staffPage.getByRole('button', { name: 'Add an approver' }).click();
-      await staffPage.getByRole('heading', { name: 'Add an approver', exact: true }).waitFor();
-      await assertResponsiveLayout(staffPage, 'add approver modal');
-      await staffPage.getByRole('button', { name: 'Cancel' }).click();
-
-      await staffPage.goto(`${liveUrl}/admin/settings`, { waitUntil: 'networkidle' });
+      await staffPage.goto(`${liveUrl}/admin/account-management`, { waitUntil: 'networkidle' });
       await staffPage.getByRole('button', { name: 'Add account' }).click();
       await staffPage.getByRole('heading', { name: 'Add account', exact: true }).waitFor();
       await assertResponsiveLayout(staffPage, 'add account modal');
@@ -156,6 +198,13 @@ try {
       await staffPage.getByRole('button', { name: 'Cancel' }).click();
       await staffPage.screenshot({
         path: 'artifacts/responsive/account-manager-phone-320.png',
+        fullPage: true,
+      });
+
+      await staffPage.goto(`${liveUrl}/admin/approvals`, { waitUntil: 'networkidle' });
+      await assertResponsiveLayout(staffPage, 'finance dashboard phone-320');
+      await staffPage.screenshot({
+        path: 'artifacts/responsive/finance-phone-320.png',
         fullPage: true,
       });
     }
@@ -169,7 +218,9 @@ try {
         viewports: viewports.map((viewport) => viewport.name),
         publicPages: publicRoutes.length,
         staffPages: staffRoutes.length,
-        modalChecks: 2,
+        modalChecks: 1,
+        themeChecks: ['light', 'dark'],
+        digitalRfpChecked: Boolean(latestRequest.data?.id),
         mobileNavigation: true,
         documentOverflow: false,
       },
