@@ -1,0 +1,72 @@
+name: Install UI UX Pro Max once
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install UI UX Pro Max for Codex
+        run: npx --yes --package ui-ux-pro-max-cli@2.15.0 uipro init --ai codex --offline --force
+      - name: Add project Codex guidance
+        run: |
+          cat > AGENTS.md <<'EOF'
+          # RFPProject agent instructions
+
+          ## UI/UX Pro Max
+          For any task that designs, reviews, refactors, or implements user interface or user experience, use the project skill at `.agents/skills/ui-ux-pro-max/SKILL.md` before making substantial UI decisions.
+
+          Use its local search tooling to ground design decisions when helpful, for example:
+          - `python3 .agents/skills/ui-ux-pro-max/scripts/search.py "financial operations dashboard" --design-system`
+          - `python3 .agents/skills/ui-ux-pro-max/scripts/search.py "forms accessibility validation" --domain ux`
+          - `python3 .agents/skills/ui-ux-pro-max/scripts/search.py "React Tailwind data table" --stack react`
+
+          ## Product design constraints
+          - This is an internal Request for Payment monitoring and approval system. Prioritize clarity, speed, auditability, accessibility, and dense-but-readable operational data over decorative effects.
+          - Preserve the established Greenlight/Gemcor brand identity. Use the existing website assets in `public/brands/`, especially `greenlight-power.png` and `gemcor.png`; do not invent replacement company logos.
+          - Keep the visual direction professional and finance-oriented: light surfaces, strong hierarchy, dark navy section headers where already established, restrained green accents, readable tables, clear status badges, and minimal motion.
+          - Preserve the existing workflow and authorization model when doing visual work. Do not change approval states, role permissions, notification behavior, or business rules unless the task explicitly asks for those functional changes.
+          - Requestor, Department Head, Finance Member, and Super Administrator/Finance Head experiences should remain visibly distinct and permission-appropriate.
+          - The Digital RFP Receipt is a business document: keep it A4-printable, compact, high-contrast, logo-correct by company, and free from dashboard-only controls in print output.
+          - Reuse existing components, spacing conventions, CSS tokens, Lucide icons, and interaction patterns before introducing new primitives.
+          - Avoid generic AI-dashboard styling, neon gradients, excessive glassmorphism, oversized cards, unnecessary animation, and low-density layouts that reduce operational scanning speed.
+
+          ## Accessibility and responsive requirements
+          - Maintain visible keyboard focus and native/semantic controls.
+          - Maintain adequate text/background contrast and do not rely on color alone for status meaning.
+          - Ensure forms, tables, filters, modals, chips, and long identifiers reflow without clipping.
+          - Check representative widths around 375px, 768px, 1024px, and 1440px for meaningful UI changes.
+          - Respect reduced-motion preferences for any new animation.
+
+          ## Validation
+          After code changes, run `npm run check` and fix formatting, typecheck, lint, tests, and production build failures before considering the task complete.
+          EOF
+      - name: Verify skill installation
+        run: |
+          test -f .agents/skills/ui-ux-pro-max/SKILL.md
+          test -f .agents/skills/ui-ux-pro-max/scripts/search.py
+          python3 .agents/skills/ui-ux-pro-max/scripts/search.py "financial operations dashboard" --domain ux --json > /tmp/uiux-smoke.json
+          test -s /tmp/uiux-smoke.json
+      - run: npm ci
+      - name: Validate application
+        run: npm run check
+      - name: Commit validated integration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/install-ui-ux-pro-max-once.yml
+          git add .agents AGENTS.md
+          git commit -m 'Integrate UI UX Pro Max for Codex'
+          git push origin main
