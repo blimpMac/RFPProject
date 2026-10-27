@@ -9,7 +9,7 @@ import { AccountForm, AccountRow, EmailForm } from '../features/accounts/Account
 import { useAccountDirectory } from '../features/accounts/useAccountDirectory';
 import { del, post } from '../lib/api';
 
-type AccessFilter = 'all' | 'administrator' | 'approver' | 'staff';
+type AccessFilter = 'all' | 'approver' | 'staff';
 const PAGE_SIZE = 6;
 export function SettingsPage() {
   const { roles } = useAuth();
@@ -34,8 +34,6 @@ export function SettingsPage() {
           statusFilter === 'all' || (statusFilter === 'active' ? user.active : !user.active);
         const accessMatches =
           accessFilter === 'all' ||
-          (accessFilter === 'administrator' &&
-            user.roles.some((role) => ['super_administrator', 'administrator'].includes(role))) ||
           (accessFilter === 'approver' && user.accessLevel === 'approver') ||
           (accessFilter === 'staff' && user.accessLevel === 'staff');
         const searchMatches =
@@ -142,7 +140,6 @@ export function SettingsPage() {
               onChange={(event) => setAccessFilter(event.target.value as AccessFilter)}
             >
               <option value="all">All access</option>
-              <option value="administrator">Administrators</option>
               <option value="approver">Department Heads</option>
               <option value="staff">Finance Members</option>
             </select>

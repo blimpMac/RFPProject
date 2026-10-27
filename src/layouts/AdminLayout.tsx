@@ -18,6 +18,7 @@ import { useAuth } from '../components/AuthProvider';
 import { supabase } from '../lib/supabase';
 import { Spinner } from '../components/ui';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { EditNameModal } from '../features/profile/EditNameModal';
 import type { Role } from '../types';
 
 type NavigationItem = {
@@ -57,7 +58,7 @@ const navigationItems: NavigationItem[] = [
     description: 'Recorded system activity',
     group: 'Workspace',
     icon: History,
-    allowedRoles: ['super_administrator', 'administrator', 'finance_reviewer'],
+    allowedRoles: ['super_administrator', 'finance_reviewer'],
   },
   {
     to: '/admin/documents',
@@ -65,7 +66,7 @@ const navigationItems: NavigationItem[] = [
     description: 'Supporting files and records',
     group: 'Workspace',
     icon: FileStack,
-    allowedRoles: ['super_administrator', 'administrator', 'finance_reviewer'],
+    allowedRoles: ['super_administrator', 'finance_reviewer'],
   },
   {
     to: '/admin/account-management',
@@ -79,7 +80,6 @@ const navigationItems: NavigationItem[] = [
 
 const roleLabels: Record<Role, string> = {
   super_administrator: 'Finance Head (Super Admin)',
-  administrator: 'Administrator',
   department_approver: 'Department Head',
   finance_reviewer: 'Finance Member',
 };
@@ -98,11 +98,12 @@ function initials(name?: string | null) {
 }
 
 export function AdminLayout() {
-  const { session, roles, identity, loading } = useAuth();
+  const { session, roles, identity, loading, refresh } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [navigationSearch, setNavigationSearch] = useState('');
+  const [editingName, setEditingName] = useState(false);
 
   const availableItems = useMemo(
     () => navigationItems.filter((item) => canViewNavigationItem(item, roles)),
@@ -280,6 +281,17 @@ export function AdminLayout() {
             <button
               type="button"
               className={`admin-sidebar-link mt-2 w-full ${collapsed ? 'justify-center' : ''}`}
+              onClick={() => setEditingName(true)}
+              title={collapsed ? 'Edit my name' : undefined}
+            >
+              <span className="admin-nav-icon" aria-hidden="true">
+                ✎
+              </span>
+              {!collapsed && <strong>Edit my name</strong>}
+            </button>
+            <button
+              type="button"
+              className={`admin-sidebar-link mt-2 w-full ${collapsed ? 'justify-center' : ''}`}
               onClick={() => supabase.auth.signOut()}
               title={collapsed ? 'Sign out' : undefined}
             >
@@ -314,6 +326,13 @@ export function AdminLayout() {
           </main>
         </div>
       </div>
+      {editingName && identity && (
+        <EditNameModal
+          currentName={identity.fullName}
+          onClose={() => setEditingName(false)}
+          onSaved={refresh}
+        />
+      )}
     </>
   );
 }
