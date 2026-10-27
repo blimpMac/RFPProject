@@ -349,10 +349,8 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
       if (profile.data?.protected_account ?? isLegacyProtectedStaffEmail(target.data.user.email)) {
         throw new HttpError(409, 'This protected operational account cannot be removed.');
       }
-      if (
-        targetRoles.data?.some((row) => ['super_administrator', 'administrator'].includes(row.role))
-      ) {
-        throw new HttpError(409, 'Administrative accounts cannot be removed here.');
+      if (targetRoles.data?.some((row) => row.role === 'super_administrator')) {
+        throw new HttpError(409, 'The Super Administrator account cannot be removed here.');
       }
       const departments = await clearDepartmentHeadAssignments(db, input.userId);
       await refreshPendingDepartmentReviews(db, departments, config.REVIEW_TOKEN_HOURS);

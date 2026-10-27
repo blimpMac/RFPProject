@@ -281,7 +281,7 @@ function AccountRow({
             {user.accessLevel === 'approver' ? 'Edit / Transfer' : 'Edit'}
           </Button>
         )}
-        {!user.protected && !isAdministrator && (
+        {!user.protected && !user.roles.includes('super_administrator') && (
           <Button variant="danger" disabled={busy} onClick={onRemove}>
             <Trash2 size={16} />
             Delete
