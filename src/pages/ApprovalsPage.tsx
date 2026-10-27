@@ -1,26 +1,28 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import {
-  CalendarClock,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  FileCheck2,
-  FileQuestion,
-  Eye,
-  Pencil,
-  Printer,
-  RefreshCw,
-  Search,
-  ShieldCheck,
-  WalletCards,
-  X,
-} from 'lucide-react';
-import { Button, EmptyState, Modal, Spinner, StatusBadge } from '../components/ui';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Eye, Pencil, Printer, RefreshCw } from 'lucide-react';
+import { Button, Modal, Spinner, StatusBadge } from '../components/ui';
 import { useAuth } from '../components/AuthProvider';
 import { get, post } from '../lib/api';
 import { manilaDate, php } from '../lib/format';
 import type { RfpRequest } from '../types';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { ApprovalQueueFilters } from '../features/approvals/ApprovalQueueFilters';
+import { ApprovalQueueTable } from '../features/approvals/ApprovalQueueTable';
+import { FinanceQueueHealth } from '../features/approvals/FinanceQueueHealth';
+import { FinanceUpdateForm } from '../features/approvals/FinanceUpdateForm';
+import { RequestSla } from '../features/approvals/RequestSla';
+import { WorkflowActionPanel } from '../features/approvals/WorkflowActionPanel';
+import {
+  displayStatus,
+  financeActionOptions,
+  financeOperations,
+  financeWorkflow,
+  getSlaInfo,
+  manilaDay,
+  processingOverdue,
+  requiresOriginals,
+  type QueueFocus,
+} from '../features/approvals/workflow';
 import { AttachmentPreviewSection } from '../components/AttachmentPreviewSection';
 import {
   DigitalRfpReceipt,
@@ -31,174 +33,8 @@ import {
 import { normalizeFinanceReceipt } from '../../shared/contracts/digital-rfp';
 
 type Result = { rows: RfpRequest[] };
-type Action = { value: string; label: string };
-type QueueFocus = 'all' | 'member' | 'head' | 'hardcopy' | 'processing';
-type SlaInfo = { label: string; detail: string; tone: 'neutral' | 'good' | 'warning' | 'danger' };
-type FinanceOperations = NonNullable<NonNullable<RfpRequest['raw_record']>['finance_operations']>;
 type ReceiptData = { request: RfpRequest; attachments: DigitalRfpAttachment[] };
 type ModalMode = 'view' | 'edit';
-
-const manilaDay = (value: string | number | Date) =>
-  new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date(value));
-
-const dayNumber = (day: string) => Date.parse(`${day}T00:00:00Z`) / 864e5;
-
-const financeOperations = (request: RfpRequest): FinanceOperations =>
-  request.raw_record?.finance_operations || {};
-
-const requiresOriginals = (request: RfpRequest) => {
-  void request;
-  return true;
-};
-
-const financeWorkflow = (request: RfpRequest) => request.raw_record?.finance_workflow || {};
-
-const processingOverdue = (request: RfpRequest, now: number) => {
-  const dueAt = financeWorkflow(request).processing_due_at;
-  return Boolean(
-    dueAt &&
-    new Date(dueAt).getTime() < now &&
-    !/paid|returned to requestor/i.test(request.final_status),
-  );
-};
-
-const displayStatus = (request: RfpRequest, now: number) =>
-  processingOverdue(request, now) ? 'Overdue' : request.final_status;
-
-function elapsedDays(value: string | null, now: number) {
-  if (!value) return 0;
-  return Math.max(0, dayNumber(manilaDay(now)) - dayNumber(manilaDay(value)));
-}
-
-function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
-  const status = request.final_status;
-  const processingDue = financeWorkflow(request).processing_due_at;
-  if (processingDue && !/paid|returned to requestor/i.test(status)) {
-    const difference = new Date(processingDue).getTime() - now;
-    if (difference < 0) {
-      const overdueHours = Math.max(1, Math.ceil(Math.abs(difference) / 36e5));
-      return {
-        label: `${overdueHours}h overdue`,
-        detail: `3-day processing deadline was ${manilaDate(processingDue, true)}`,
-        tone: 'danger',
-      };
-    }
-    const hours = Math.max(1, Math.ceil(difference / 36e5));
-    return {
-      label: `${hours}h left in 3-day process`,
-      detail: `Processing deadline ${manilaDate(processingDue, true)}`,
-      tone: hours <= 24 ? 'warning' : 'good',
-    };
-  }
-  if (status === 'Pending Department Approval') {
-    const days = elapsedDays(request.submitted_at, now);
-    return {
-      label: `Department review · Day ${days + 1}`,
-      detail: days > 1 ? `${days} days since submission` : 'Within department review window',
-      tone: days > 1 ? 'warning' : 'neutral',
-    };
-  }
-  if (status === 'Pending Finance Head Review') {
-    return {
-      label: 'Finance Head decision',
-      detail: 'At least one Finance member has approved',
-      tone: 'warning',
-    };
-  }
-  if (status === 'Awaiting Hard Copy Verification') {
-    return {
-      label: 'Hard-copy gate',
-      detail: 'Manual document verification is required before processing',
-      tone: 'warning',
-    };
-  }
-  if (['Pending Finance Review', 'Documentation Required'].includes(status)) {
-    const days = elapsedDays(request.department_approval_at || request.submitted_at, now);
-    return {
-      label: `${status === 'Documentation Required' ? 'Documents' : 'Finance review'} · Day ${days + 1}`,
-      detail:
-        days > 0
-          ? `${days} day${days === 1 ? '' : 's'} since finance handoff`
-          : 'Received by Finance today',
-      tone: days > 1 ? 'danger' : days > 0 ? 'warning' : 'neutral',
-    };
-  }
-  if (/returned/i.test(status)) {
-    return {
-      label: 'Returned for action',
-      detail: 'Waiting for correction or re-review',
-      tone: 'warning',
-    };
-  }
-  if (/paid/i.test(status)) {
-    return { label: 'Completed', detail: 'Payment workflow completed', tone: 'good' };
-  }
-  if (request.planned_check_date) {
-    const today = manilaDay(now);
-    const difference = dayNumber(request.planned_check_date) - dayNumber(today);
-    if (difference < 0)
-      return {
-        label: `${Math.abs(difference)} day${Math.abs(difference) === 1 ? '' : 's'} overdue`,
-        detail: `Target was ${manilaDate(request.planned_check_date)}`,
-        tone: 'danger',
-      };
-    if (difference === 0)
-      return {
-        label: 'Release due today',
-        detail: 'Planned release date is today',
-        tone: 'warning',
-      };
-    return {
-      label: `${difference} day${difference === 1 ? '' : 's'} to target`,
-      detail: `Planned for ${manilaDate(request.planned_check_date)}`,
-      tone: 'good',
-    };
-  }
-  return {
-    label: 'No target date',
-    detail: 'Set a release target when processing begins',
-    tone: /processing|check/i.test(status) ? 'warning' : 'neutral',
-  };
-}
-
-const financeActionOptions = (status: string, financeHead: boolean): Action[] => {
-  if (['Pending Finance Review', 'Documentation Required'].includes(status))
-    return [
-      { value: 'member_approve', label: 'Approve as Finance member' },
-      { value: 'member_reject', label: 'Return to Department Head' },
-      { value: 'request_documents', label: 'Request documents / clarification' },
-    ];
-  if (status === 'Pending Finance Head Review')
-    return financeHead
-      ? [
-          { value: 'head_approve', label: 'Finance Head approve' },
-          { value: 'head_reject', label: 'Finance Head decline and return to Requestor' },
-        ]
-      : [];
-  if (status === 'Awaiting Hard Copy Verification')
-    return [
-      {
-        value: 'hard_copy_approve',
-        label: 'Approve hard copies and start 3-day processing',
-      },
-    ];
-  if (['Approved for Payment', 'Payment Processing'].includes(status))
-    return [{ value: 'payment_processing', label: 'Start legacy processing' }];
-  if (status === 'Processing')
-    return [{ value: 'check_preparation', label: 'Prepare check and documents' }];
-  if (status === 'Check Preparation')
-    return [{ value: 'awaiting_signatory', label: 'Send for check approval' }];
-  if (['Check Approval', 'Awaiting Signatory'].includes(status))
-    return [{ value: 'check_released', label: 'Record check release' }];
-  if (['Check Released', 'Payment Released'].includes(status))
-    return [{ value: 'payment_released', label: 'Mark payment completed' }];
-  return [];
-};
 
 export function ApprovalsPage() {
   const { roles } = useAuth();
@@ -550,124 +386,31 @@ export function ApprovalsPage() {
         </div>
       </div>
       {finance && (
-        <section className="queue-health-grid" aria-label="Finance queue health">
-          <QueueHealthCard
-            active={queueFocus === 'member'}
-            count={queueCounts.member}
-            icon={<WalletCards size={18} />}
-            label="Finance member review"
-            detail="At least one member approval"
-            onClick={() => applyQueueFocus('member')}
-          />
-          <QueueHealthCard
-            active={queueFocus === 'head'}
-            count={queueCounts.head}
-            icon={<ShieldCheck size={18} />}
-            label="Finance Head review"
-            detail="Super Administrator decision"
-            tone="violet"
-            onClick={() => applyQueueFocus('head')}
-          />
-          <QueueHealthCard
-            active={queueFocus === 'hardcopy'}
-            count={queueCounts.hardcopy}
-            icon={<FileCheck2 size={18} />}
-            label="Hard-copy verification"
-            detail="Required before processing"
-            tone="warning"
-            onClick={() => applyQueueFocus('hardcopy')}
-          />
-          <QueueHealthCard
-            active={queueFocus === 'processing'}
-            count={queueCounts.processing}
-            icon={<CalendarClock size={18} />}
-            label="3-day processing"
-            detail={
-              queueCounts.overdue
-                ? `${queueCounts.overdue} overdue · 3-day window`
-                : '3-day monitoring window'
-            }
-            tone="green"
-            onClick={() => applyQueueFocus('processing')}
-          />
-        </section>
+        <FinanceQueueHealth
+          queueFocus={queueFocus}
+          counts={queueCounts}
+          onFocus={applyQueueFocus}
+        />
       )}
 
-      <section className="approval-filter-panel" aria-label="Approval queue filters">
-        <div className="approval-view-toggle" role="group" aria-label="Request view">
-          <button
-            className={view === 'pending' ? 'active' : ''}
-            onClick={() => setView('pending')}
-            aria-pressed={view === 'pending'}
-          >
-            Active
-          </button>
-          <button
-            className={view === 'completed' ? 'active' : ''}
-            onClick={() => setView('completed')}
-            aria-pressed={view === 'completed'}
-          >
-            Completed / returned
-          </button>
-        </div>
-        <label className="approval-search">
-          <Search size={16} aria-hidden="true" />
-          <span className="sr-only">Search approval queue</span>
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search RFP, payee, or requestor"
-          />
-          {search && (
-            <button onClick={() => setSearch('')} aria-label="Clear approval search">
-              <X size={15} />
-            </button>
-          )}
-        </label>
-        <select
-          className="input"
-          aria-label="Status"
-          value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
-        >
-          <option value="">All statuses</option>
-          {statusOptions.map((item) => (
-            <option key={item}>{item}</option>
-          ))}
-        </select>
-        <input
-          className="input"
-          aria-label="Submitted from date"
-          title="Submitted from"
-          type="date"
-          value={fromDate}
-          onChange={(event) => setFromDate(event.target.value)}
-        />
-        <input
-          className="input"
-          aria-label="Submitted to date"
-          title="Submitted to"
-          type="date"
-          value={toDate}
-          onChange={(event) => setToDate(event.target.value)}
-        />
-        <select
-          className="input"
-          aria-label="Company"
-          value={company}
-          onChange={(event) => setCompany(event.target.value)}
-        >
-          <option value="">All companies</option>
-          {companyOptions.map((item) => (
-            <option key={item}>{item}</option>
-          ))}
-        </select>
-        {hasFilters && (
-          <button className="approval-clear" onClick={clearFilters}>
-            Clear filters
-          </button>
-        )}
-      </section>
+      <ApprovalQueueFilters
+        view={view}
+        search={search}
+        statusFilter={statusFilter}
+        fromDate={fromDate}
+        toDate={toDate}
+        company={company}
+        statusOptions={statusOptions}
+        companyOptions={companyOptions}
+        hasFilters={hasFilters}
+        onViewChange={setView}
+        onSearchChange={setSearch}
+        onStatusChange={setStatusFilter}
+        onFromDateChange={setFromDate}
+        onToDateChange={setToDate}
+        onCompanyChange={setCompany}
+        onClear={clearFilters}
+      />
       {error && !selected && (
         <p className="rounded bg-red-50 p-3 text-sm text-red-700" role="alert">
           {error}
@@ -678,143 +421,20 @@ export function ApprovalsPage() {
           {notice}
         </p>
       )}
-      <div className="card overflow-hidden">
-        <div className="finance-table-heading">
-          <div>
-            <h2>RFP Requests</h2>
-            <p>Choose a request to review details and manage its Finance status.</p>
-          </div>
-          <span>{visibleRows.length} matching requests</span>
-        </div>
-        <div className="finance-table-wrap">
-          <table className="finance-request-table">
-            <thead>
-              <tr>
-                <th>Request</th>
-                <th>Requestor / Department</th>
-                <th>Amount</th>
-                <th>Status / SLA</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedRows.map((request) => (
-                <tr
-                  key={request.id}
-                  onClick={() => {
-                    if (finance) openRequest(request, 'view');
-                    else if (department) openRequest(request, 'edit');
-                  }}
-                >
-                  <td>
-                    <button
-                      className="finance-rfp-link"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openRequest(request, finance ? 'view' : 'edit');
-                      }}
-                    >
-                      {request.rfp_number}
-                    </button>
-                    <small>{request.company || 'Company not recorded'}</small>
-                  </td>
-                  <td>
-                    <strong>{request.requestor_name}</strong>
-                    <small>{request.department}</small>
-                  </td>
-                  <td className="finance-amount">{php.format(request.amount)}</td>
-                  <td>
-                    <StatusBadge>{displayStatus(request, now)}</StatusBadge>
-                    <RequestSla request={request} now={now} />
-                  </td>
-                  <td>
-                    <div className="finance-row-actions">
-                      {finance && (
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            openRequest(request, 'view');
-                          }}
-                        >
-                          <Eye size={14} /> View
-                        </button>
-                      )}
-                      {(finance || department) && (
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            openRequest(request, 'edit');
-                          }}
-                        >
-                          <Pencil size={14} /> {finance ? 'Edit' : 'Review'}
-                        </button>
-                      )}
-                      {finance && (
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            window.open(
-                              `/admin/rfp/${request.id}/print`,
-                              '_blank',
-                              'noopener,noreferrer',
-                            );
-                          }}
-                        >
-                          <Printer size={14} /> Print
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!visibleRows.length && (
-          <EmptyState title="No requests" body={`There are no ${view} approvals in this view.`} />
-        )}
-        {visibleRows.length > 0 && (
-          <div className="approval-pagination">
-            <p>
-              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, visibleRows.length)} of{' '}
-              {visibleRows.length}
-            </p>
-            <div className="approval-page-controls">
-              <label>
-                Rows
-                <select
-                  value={pageSize}
-                  onChange={(event) => setPageSize(Number(event.target.value))}
-                  aria-label="Approval rows per page"
-                >
-                  {[10, 20, 50].map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <span>
-                Page {page} of {pageCount}
-              </span>
-              <button
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                disabled={page === 1}
-                aria-label="Previous approval page"
-              >
-                <ChevronLeft size={17} />
-              </button>
-              <button
-                onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
-                disabled={page === pageCount}
-                aria-label="Next approval page"
-              >
-                <ChevronRight size={17} />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      <ApprovalQueueTable
+        visibleRows={visibleRows}
+        paginatedRows={paginatedRows}
+        view={view}
+        page={page}
+        pageSize={pageSize}
+        pageCount={pageCount}
+        finance={finance}
+        department={department}
+        now={now}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        onOpenRequest={openRequest}
+      />
       {selected && (
         <Modal
           title={`Digital RFP · ${selected.rfp_number}`}
@@ -948,236 +568,48 @@ export function ApprovalsPage() {
             </>
           )}
           {finance && modalMode === 'edit' && (
-            <section className="finance-update-section">
-              <h3 className="finance-section-title">Finance updates</h3>
-              <div className="finance-update-grid">
-                <div className="field">
-                  <label htmlFor="originals-date">Original documents received date</label>
-                  <input
-                    id="originals-date"
-                    className="input"
-                    type="date"
-                    disabled={!requiresOriginals(selected)}
-                    value={originalsDate}
-                    onChange={(event) => setOriginalsDate(event.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="document-verification">Original documents verification</label>
-                  <select
-                    id="document-verification"
-                    className="input"
-                    disabled={!requiresOriginals(selected)}
-                    value={documentVerification}
-                    onChange={(event) => setDocumentVerification(event.target.value)}
-                  >
-                    <option value="">Select status</option>
-                    <option value="Complete">Complete</option>
-                    <option value="Incomplete">Incomplete</option>
-                  </select>
-                </div>
-                <div className="field finance-update-wide">
-                  <label htmlFor="verification-remarks">
-                    Verification remarks / missing documents
-                  </label>
-                  <textarea
-                    id="verification-remarks"
-                    className="input min-h-24"
-                    disabled={!requiresOriginals(selected)}
-                    placeholder={'Required when documents are incomplete'}
-                    value={verificationRemarks}
-                    onChange={(event) => setVerificationRemarks(event.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="target-date">Planned check / release date</label>
-                  <input
-                    id="target-date"
-                    className="input"
-                    type="date"
-                    value={checkDate}
-                    onChange={(event) => setCheckDate(event.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="target-date-reason">Reason for changing target date</label>
-                  <input
-                    id="target-date-reason"
-                    className="input"
-                    placeholder="Required when changing an existing date"
-                    value={reason}
-                    onChange={(event) => setReason(event.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="check-number">Check number</label>
-                  <input
-                    id="check-number"
-                    className="input"
-                    placeholder="If issued"
-                    value={checkNumber}
-                    onChange={(event) => setCheckNumber(event.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="payment-reference">Payment reference</label>
-                  <input
-                    id="payment-reference"
-                    className="input"
-                    placeholder="Bank or payment reference"
-                    value={paymentReference}
-                    onChange={(event) => setPaymentReference(event.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="processing-status">Receipt processing status</label>
-                  <select
-                    id="processing-status"
-                    className="input"
-                    value={processingStatus}
-                    onChange={(event) => setProcessingStatus(event.target.value)}
-                  >
-                    <option value="">Use workflow status</option>
-                    {[
-                      'For Processing',
-                      'Check Preparation',
-                      'Check Approval',
-                      'Check Released',
-                      'Paid',
-                    ].map((status) => (
-                      <option key={status}>{status}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label htmlFor="late-documents">Late documents received</label>
-                  <textarea
-                    id="late-documents"
-                    className="input min-h-24"
-                    placeholder={'One document per line'}
-                    value={lateDocuments}
-                    onChange={(event) => setLateDocuments(event.target.value)}
-                  />
-                </div>
-                <div className="field finance-update-wide">
-                  <label htmlFor="finance-notes">Finance remarks / internal notes</label>
-                  <textarea
-                    id="finance-notes"
-                    className="input min-h-24"
-                    placeholder="Add a note for the Finance team"
-                    value={financeNotes}
-                    onChange={(event) => setFinanceNotes(event.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="finance-update-footer">
-                <p>
-                  Every RFP must record received hard copies and a Complete verification after
-                  Finance Head approval. The 3-day processing clock starts only when a Finance
-                  member approves this hard-copy gate.
-                </p>
-                <Button onClick={() => void saveFinanceUpdates()} disabled={updateBusy}>
-                  {updateBusy ? <Spinner label="Saving" /> : 'Save Finance updates'}
-                </Button>
-              </div>
-            </section>
+            <FinanceUpdateForm
+              request={selected}
+              originalsDate={originalsDate}
+              documentVerification={documentVerification}
+              verificationRemarks={verificationRemarks}
+              checkDate={checkDate}
+              reason={reason}
+              checkNumber={checkNumber}
+              paymentReference={paymentReference}
+              processingStatus={processingStatus}
+              lateDocuments={lateDocuments}
+              financeNotes={financeNotes}
+              busy={updateBusy}
+              onOriginalsDateChange={setOriginalsDate}
+              onDocumentVerificationChange={setDocumentVerification}
+              onVerificationRemarksChange={setVerificationRemarks}
+              onCheckDateChange={setCheckDate}
+              onReasonChange={setReason}
+              onCheckNumberChange={setCheckNumber}
+              onPaymentReferenceChange={setPaymentReference}
+              onProcessingStatusChange={setProcessingStatus}
+              onLateDocumentsChange={setLateDocuments}
+              onFinanceNotesChange={setFinanceNotes}
+              onSave={() => void saveFinanceUpdates()}
+            />
           )}
-          {modalMode === 'edit' && choices.length > 0 && (
-            <div className="mt-6 border-t pt-5">
-              <h3 className="font-semibold">Next workflow action</h3>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <select
-                  className="input sm:col-span-2"
-                  value={action}
-                  onChange={(event) => setAction(event.target.value)}
-                >
-                  <option value="">Select action…</option>
-                  {choices.map((choice) => (
-                    <option key={choice.value} value={choice.value}>
-                      {choice.label}
-                    </option>
-                  ))}
-                </select>
-                <textarea
-                  className="input min-h-24 sm:col-span-2"
-                  placeholder={
-                    departmentAction ? 'Remarks (required when returning to requestor)' : 'Remarks'
-                  }
-                  value={remarks}
-                  onChange={(event) => setRemarks(event.target.value)}
-                />
-              </div>
-              <div className="mt-4 flex justify-end">
-                <Button onClick={() => void save()} disabled={!action || busy}>
-                  {busy ? (
-                    <Spinner label="Saving" />
-                  ) : (
-                    <>
-                      <Check size={17} />
-                      Save action
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-          {modalMode === 'edit' && (finance || department) && !choices.length && (
-            <p className="mt-5 rounded bg-slate-50 p-3 text-sm text-slate-600">
-              No further system action is available for this status.
-            </p>
-          )}
-          {modalMode === 'edit' && !finance && !department && (
-            <p className="mt-5 rounded bg-blue-50 p-3 text-sm text-blue-800">
-              <FileQuestion className="mr-2 inline" size={16} />
-              Department decisions are completed through the secure email review link.
-            </p>
+          {modalMode === 'edit' && (
+            <WorkflowActionPanel
+              choices={choices}
+              action={action}
+              remarks={remarks}
+              departmentAction={departmentAction}
+              busy={busy}
+              finance={finance}
+              department={department}
+              onActionChange={setAction}
+              onRemarksChange={setRemarks}
+              onSave={() => void save()}
+            />
           )}
         </Modal>
       )}
     </div>
-  );
-}
-
-function QueueHealthCard({
-  active,
-  count,
-  detail,
-  icon,
-  label,
-  onClick,
-  tone = 'blue',
-}: {
-  active: boolean;
-  count: number;
-  detail: string;
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-  tone?: 'blue' | 'warning' | 'amber' | 'violet' | 'green';
-}) {
-  return (
-    <button
-      className={`queue-health-card ${active ? 'queue-health-card-active' : ''}`}
-      data-tone={tone}
-      onClick={onClick}
-      aria-pressed={active}
-    >
-      <span className="queue-health-icon">{icon}</span>
-      <span className="min-w-0 flex-1 text-left">
-        <strong>{label}</strong>
-        <small>{detail}</small>
-      </span>
-      <span className="queue-health-count">{count}</span>
-    </button>
-  );
-}
-
-function RequestSla({ request, now }: { request: RfpRequest; now: number }) {
-  const sla = getSlaInfo(request, now);
-  return (
-    <span className="sla-badge" data-tone={sla.tone} title={sla.detail}>
-      <CalendarClock size={13} />
-      {sla.label}
-    </span>
   );
 }

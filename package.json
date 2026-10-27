@@ -19,7 +19,7 @@
     "format": "prettier --write \"{api,scripts,server,src}/**/*.{ts,tsx,css}\" \"*.{js,json,ts}\" \"docs/**/*.md\" \".github/**/*.{yml,yaml}\"",
     "format:check": "prettier --check \"{api,scripts,server,src}/**/*.{ts,tsx,css}\" \"*.{js,json,ts}\" \"docs/**/*.md\" \".github/**/*.{yml,yaml}\"",
     "check": "npm run format:check && npm run typecheck && npm run lint && npm test && npm run build",
-    "test": "node --experimental-strip-types --test server/lib/staff-access.test.ts server/lib/validation.test.ts server/lib/department-review-access.test.ts server/lib/digital-rfp.test.ts server/services/approving-heads.test.ts server/services/audit-trail.test.ts",
+    "test": "node --experimental-strip-types --test server/lib/staff-access.test.ts server/lib/validation.test.ts server/lib/department-review-access.test.ts server/lib/digital-rfp.test.ts server/services/approving-heads.test.ts server/services/audit-trail.test.ts server/domain/access.test.ts scripts/verification/architecture.test.ts",
     "db:setup": "tsx scripts/setup/setup-supabase.ts",
     "db:test": "node --env-file=.env --import tsx scripts/verification/verify-database.ts",
     "migrate:workbook": "tsx scripts/migration/import-workbook.ts",

@@ -1,4 +1,6 @@
 export const administrativeRoles: string[] = ['super_administrator', 'administrator'];
+export const financeRoles: string[] = ['super_administrator', 'finance_reviewer'];
+export const departmentDecisionRoles: string[] = [...administrativeRoles, 'department_approver'];
 
 const legacyProtectedStaffEmails = new Set([
   'gpigemcorqbbackup@gmail.com',
