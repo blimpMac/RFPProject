@@ -1,5 +1,5 @@
 begin;
-select plan(13);
+select plan(20);
 select has_table('public','rfp_requests','rfp_requests exists');
 select has_table('public','form_responses','form_responses exists');
 select has_table('public','migration_source_snapshots','immutable snapshots exist');
@@ -13,5 +13,12 @@ select col_is_unique('public','rfp_requests','rfp_number','human RFP number is u
 select policies_are('public','rfp_requests',array['requests_admin_read','requests_finance_read','requests_department_read'],'request access policies are explicit');
 select policies_are('public','user_roles',array['roles_staff_read','roles_super_admin_write'],'roles cannot be self-granted');
 select results_eq($$select public.next_rfp_number() ~ '^RFP-[0-9]{4,}$'$$,array[true],'RFP format is preserved');
+select is((select delete_rule from information_schema.referential_constraints where constraint_schema='public' and constraint_name='approval_logs_actor_user_id_fkey'),'SET NULL','approval log actors do not block user deletion');
+select is((select delete_rule from information_schema.referential_constraints where constraint_schema='public' and constraint_name='department_approving_heads_created_by_fkey'),'SET NULL','department roster creator history does not block user deletion');
+select is((select delete_rule from information_schema.referential_constraints where constraint_schema='public' and constraint_name='migration_batches_created_by_fkey'),'SET NULL','migration creator history does not block user deletion');
+select is((select delete_rule from information_schema.referential_constraints where constraint_schema='public' and constraint_name='rfp_requests_department_approved_by_fkey'),'SET NULL','department approval history does not block user deletion');
+select is((select delete_rule from information_schema.referential_constraints where constraint_schema='public' and constraint_name='rfp_requests_finance_reviewed_by_fkey'),'SET NULL','finance review history does not block user deletion');
+select is((select delete_rule from information_schema.referential_constraints where constraint_schema='public' and constraint_name='system_settings_updated_by_fkey'),'SET NULL','settings history does not block user deletion');
+select is((select delete_rule from information_schema.referential_constraints where constraint_schema='public' and constraint_name='user_roles_granted_by_fkey'),'SET NULL','role grant history does not block user deletion');
 select * from finish();
 rollback;
