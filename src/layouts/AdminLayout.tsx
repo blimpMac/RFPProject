@@ -221,7 +221,10 @@ export function AdminLayout() {
             </div>
           )}
 
-          <nav className="min-h-0 flex-1 overflow-hidden px-3 pb-3 pt-4" aria-label="Staff navigation">
+          <nav
+            className="min-h-0 flex-1 overflow-hidden px-3 pb-3 pt-4"
+            aria-label="Staff navigation"
+          >
             {(['Workspace', 'Administration'] as const).map((group) => {
               const items = visibleItems.filter((item) => item.group === group);
               if (!items.length) return null;
