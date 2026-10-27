@@ -30,6 +30,12 @@ import { get } from '../lib/api';
 import { manilaDate, php } from '../lib/format';
 import { Button, EmptyState, Spinner, StatusBadge } from '../components/ui';
 import { calculateDashboardStats } from '../features/dashboard/stats';
+import {
+  manilaDay,
+  requestDeadline,
+  requestSlaStatus,
+  type SlaStatus,
+} from '../features/requests/sla';
 
 type RequestRow = {
   id: string;
@@ -50,30 +56,6 @@ type Dashboard = {
   requests: RequestRow[];
   recentActivity: Record<string, unknown>[];
 };
-type SlaStatus = 'pending' | 'dueToday' | 'overdue' | 'completedWithin' | 'completedLate';
-
-const manilaDay = (value: string | number | Date) =>
-  new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date(value));
-
-const requestDeadline = (request: RequestRow) =>
-  request.planned_check_date || request.required_payment_date;
-
-function requestSlaStatus(request: RequestRow, today: string): SlaStatus {
-  const deadline = requestDeadline(request);
-  if (/paid/i.test(request.final_status)) {
-    const completedDay = request.completed_at ? manilaDay(request.completed_at) : today;
-    return completedDay <= deadline ? 'completedWithin' : 'completedLate';
-  }
-  if (deadline < today) return 'overdue';
-  if (deadline === today) return 'dueToday';
-  return 'pending';
-}
-
 export function DashboardPage() {
   const [data, setData] = useState<Dashboard>();
   const [error, setError] = useState('');

@@ -5,6 +5,7 @@ import { manilaDate, php } from '../lib/format';
 import { Button, Spinner, StatusBadge } from '../components/ui';
 import { DigitalRfpReceipt } from '../components/DigitalRfpReceipt';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { displayRequestStatus } from '../features/requests/sla';
 import type { FinanceReceipt } from '../../shared/contracts/digital-rfp';
 
 type Tracking = {
@@ -114,6 +115,7 @@ export function TrackPage() {
       </div>
     );
   const r = data!.request;
+  const displayedStatus = displayRequestStatus(r);
   return (
     <main className="mx-auto min-h-screen max-w-3xl space-y-4 p-4 py-10">
       <section className="card overflow-hidden">
@@ -128,7 +130,7 @@ export function TrackPage() {
         </div>
         <div className="grid gap-4 p-6 sm:grid-cols-2">
           {[
-            ['Status', r.final_status],
+            ['Status', displayedStatus],
             ['Last action', r.last_action],
             ['Company', r.company || 'Not recorded'],
             ['Department', r.department],
