@@ -1,4 +1,11 @@
-import { useEffect, useId, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import clsx from 'clsx';
@@ -36,11 +43,13 @@ export function Modal({
   onClose,
   children,
   size = 'default',
+  initialFocusRef,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
-  size?: 'default' | 'wide';
+  size?: 'compact' | 'default' | 'wide';
+  initialFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -59,7 +68,8 @@ export function Modal({
 
     const frame = window.requestAnimationFrame(() => {
       panelRef.current?.scrollTo({ top: 0 });
-      closeRef.current?.focus({ preventScroll: true });
+      if (initialFocusRef?.current) initialFocusRef.current.focus({ preventScroll: true });
+      else closeRef.current?.focus({ preventScroll: true });
     });
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -96,11 +106,11 @@ export function Modal({
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus({ preventScroll: true });
     };
-  }, []);
+  }, [initialFocusRef]);
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-slate-950/45 p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -109,8 +119,8 @@ export function Modal({
         ref={panelRef}
         tabIndex={-1}
         className={clsx(
-          'modal-panel max-h-[90vh] w-full overflow-auto rounded-xl bg-white shadow-2xl',
-          size === 'wide' ? 'max-w-6xl' : 'max-w-3xl',
+          'modal-panel max-h-[calc(100dvh-2rem)] w-full overflow-auto rounded-xl bg-white shadow-2xl',
+          size === 'wide' ? 'max-w-6xl' : size === 'compact' ? 'max-w-lg' : 'max-w-3xl',
         )}
       >
         <div className="modal-header sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-4">

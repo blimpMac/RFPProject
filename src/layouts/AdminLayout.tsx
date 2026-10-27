@@ -139,7 +139,7 @@ export function AdminLayout() {
         <div>
           <h1 className="text-xl font-semibold">Access not assigned</h1>
           <p className="mt-2 text-slate-500">
-            Your account is signed in but has no RFP role. Ask an administrator to grant access.
+            Your account is signed in but has no RFP role. Ask the Finance Head to grant access.
           </p>
           <button className="btn btn-secondary mt-4" onClick={() => supabase.auth.signOut()}>
             Sign out
@@ -174,9 +174,9 @@ export function AdminLayout() {
         )}
         <aside
           id="staff-sidebar"
-          className={`admin-sidebar fixed inset-y-0 left-0 z-30 flex flex-col transition-all ${collapsed ? 'w-20' : 'w-72'} ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
+          className={`admin-sidebar fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden transition-all ${collapsed ? 'w-20' : 'w-72'} ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
         >
-          <div className="admin-brand flex h-[5.25rem] items-center justify-between px-4">
+          <div className="admin-brand flex h-[5.25rem] shrink-0 items-center justify-between px-4">
             <Link
               to="/admin"
               className={`min-w-0 items-center gap-3 ${collapsed ? 'hidden' : 'flex'}`}
@@ -208,7 +208,7 @@ export function AdminLayout() {
           </div>
 
           {!collapsed && (
-            <div className="px-3 pt-4">
+            <div className="shrink-0 px-3 pt-4">
               <label className="admin-nav-search">
                 <Search size={15} aria-hidden="true" />
                 <span className="sr-only">Find a workspace page</span>
@@ -221,7 +221,10 @@ export function AdminLayout() {
             </div>
           )}
 
-          <nav className="flex-1 overflow-y-auto px-3 pb-3 pt-4" aria-label="Staff navigation">
+          <nav
+            className="min-h-0 flex-1 overflow-hidden px-3 pb-3 pt-4"
+            aria-label="Staff navigation"
+          >
             {(['Workspace', 'Administration'] as const).map((group) => {
               const items = visibleItems.filter((item) => item.group === group);
               if (!items.length) return null;
@@ -264,8 +267,14 @@ export function AdminLayout() {
             )}
           </nav>
 
-          <div className="admin-sidebar-footer p-3">
-            <div className={`admin-profile ${collapsed ? 'justify-center p-2' : ''}`}>
+          <div className="admin-sidebar-footer shrink-0 p-3">
+            <button
+              type="button"
+              className={`admin-profile focus-ring w-full text-left ${collapsed ? 'justify-center p-2' : ''}`}
+              onClick={() => setEditingName(true)}
+              aria-label="Open profile settings"
+              title={collapsed ? 'Profile' : 'Click to edit profile'}
+            >
               <span className="admin-avatar">{initials(identity?.fullName)}</span>
               {!collapsed && (
                 <span className="min-w-0 flex-1">
@@ -277,17 +286,6 @@ export function AdminLayout() {
                   </small>
                 </span>
               )}
-            </div>
-            <button
-              type="button"
-              className={`admin-sidebar-link mt-2 w-full ${collapsed ? 'justify-center' : ''}`}
-              onClick={() => setEditingName(true)}
-              title={collapsed ? 'Edit my name' : undefined}
-            >
-              <span className="admin-nav-icon" aria-hidden="true">
-                ✎
-              </span>
-              {!collapsed && <strong>Edit my name</strong>}
             </button>
             <button
               type="button"

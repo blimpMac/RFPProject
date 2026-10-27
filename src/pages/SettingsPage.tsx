@@ -12,8 +12,9 @@ import { del, post } from '../lib/api';
 type AccessFilter = 'all' | 'approver' | 'staff';
 const PAGE_SIZE = 6;
 export function SettingsPage() {
-  const { roles } = useAuth();
+  const { roles, session } = useAuth();
   const isSuper = roles.includes('super_administrator');
+  const currentUserId = session?.user.id;
   const { users, departments, loading, error, setError, load } = useAccountDirectory(isSuper);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -30,6 +31,7 @@ export function SettingsPage() {
     const query = search.trim().toLowerCase();
     return users
       .filter((user) => {
+        if (user.id === currentUserId) return false;
         const statusMatches =
           statusFilter === 'all' || (statusFilter === 'active' ? user.active : !user.active);
         const accessMatches =
@@ -48,7 +50,7 @@ export function SettingsPage() {
         return statusMatches && accessMatches && searchMatches;
       })
       .sort((a, b) => (a.fullName || a.email).localeCompare(b.fullName || b.email));
-  }, [accessFilter, search, statusFilter, users]);
+  }, [accessFilter, currentUserId, search, statusFilter, users]);
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const firstVisible = (currentPage - 1) * PAGE_SIZE;
@@ -93,9 +95,8 @@ export function SettingsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Account Management</h1>
           <p className="mt-1 max-w-3xl text-sm text-slate-500">
-            The Finance Head is the Super Admin. Create and delete managed users, change their login
-            email, reset passwords, or transfer a Department Head to another available non-Finance
-            department.
+            Manage Finance Members and Department Heads. Your currently signed-in Super Admin
+            profile is managed from the profile card in the sidebar and is not listed here.
           </p>
         </div>
         <Button onClick={() => setAccount('new')}>
@@ -187,7 +188,7 @@ export function SettingsPage() {
       {account && (
         <AccountForm
           value={account}
-          users={users}
+          users={users.filter((user) => user.id !== currentUserId)}
           departments={departments}
           onClose={() => setAccount(undefined)}
           onSaved={async () => {
