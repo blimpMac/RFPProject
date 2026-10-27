@@ -7,8 +7,9 @@ test('Finance authority excludes the legacy administrator role', () => {
   assert.equal(financeRoles.includes('administrator'), false);
 });
 
-test('department decisions keep administrator compatibility without granting Finance authority', () => {
-  assert.equal(administrativeRoles.includes('administrator'), true);
-  assert.equal(departmentDecisionRoles.includes('department_approver'), true);
-  assert.equal(departmentDecisionRoles.includes('administrator'), true);
+test('legacy administrator has no application authority', () => {
+  assert.deepEqual(administrativeRoles, ['super_administrator']);
+  assert.deepEqual(departmentDecisionRoles, ['super_administrator', 'department_approver']);
+  assert.equal(administrativeRoles.includes('administrator'), false);
+  assert.equal(departmentDecisionRoles.includes('administrator'), false);
 });
