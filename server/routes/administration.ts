@@ -110,7 +110,10 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
     });
     if (authUpdate.error) throw new HttpError(409, authUpdate.error.message);
 
-    const profileUpdate = await db.from('profiles').update({ email: nextEmail }).eq('id', input.userId);
+    const profileUpdate = await db
+      .from('profiles')
+      .update({ email: nextEmail })
+      .eq('id', input.userId);
     if (profileUpdate.error) {
       await db.auth.admin.updateUserById(input.userId, {
         email: currentEmail,
@@ -120,7 +123,9 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
     }
 
     try {
-      const isDepartmentHead = targetRoles.data?.some((row) => row.role === 'department_approver');
+      const isDepartmentHead = targetRoles.data?.some(
+        (row) => row.role === 'department_approver',
+      );
       if (isDepartmentHead && profile.data?.active && profile.data.department) {
         const departmentKey = normalizeDepartment(profile.data.department);
         const legacy = await db
