@@ -18,7 +18,8 @@ export const handleProfileRoutes: RouteHandler = async ({ event, route, db }) =>
     .eq('id', staff.user.id)
     .select('department')
     .single();
-  if (profile.error || !profile.data) throw profile.error || new HttpError(404, 'Profile not found.');
+  if (profile.error || !profile.data)
+    throw profile.error || new HttpError(404, 'Profile not found.');
 
   const authUpdate = await db.auth.admin.updateUserById(staff.user.id, {
     user_metadata: { ...staff.user.user_metadata, full_name: fullName, name: fullName },

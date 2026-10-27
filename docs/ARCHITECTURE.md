@@ -43,3 +43,11 @@ Prefer small, behavior-preserving extractions before feature changes. Run `npm r
 - `server/routes/staff.ts` is intentionally only a dispatcher plus the signed-in staff identity endpoint.
 
 Architecture regression tests enforce these boundaries and keep the largest dispatcher/page files below agreed size limits.
+
+## Active access model
+
+- `gpigemcorqbbackup@gmail.com` is the sole Super Administrator / Finance Head identity.
+- Finance Members use `finance_reviewer` and can monitor and operate Finance workflow stages.
+- Department Heads use `department_approver`.
+- The legacy `administrator` role is not part of the application access model and must not be granted.
+- Every signed-in staff user can edit their own display name without changing roles, email, or department.

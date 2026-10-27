@@ -26,16 +26,12 @@ export function AccountRow({
   onReset: () => void;
   onRemove: () => void;
 }) {
-  const isAdministrator = user.roles.some((role) =>
-    ['super_administrator', 'administrator'].includes(role),
-  );
+  const isSuperAdministrator = user.roles.includes('super_administrator');
   const accessLabel = user.roles.includes('super_administrator')
     ? 'Finance Head (Super Admin)'
-    : user.roles.includes('administrator')
-      ? 'Administrator'
-      : user.accessLevel === 'approver'
-        ? 'Department Head'
-        : 'Finance Member';
+    : user.accessLevel === 'approver'
+      ? 'Department Head'
+      : 'Finance Member';
   return (
     <article className="flex flex-col gap-3 p-4 xl:flex-row xl:items-center">
       <div className="min-w-0 flex-1">
@@ -59,13 +55,13 @@ export function AccountRow({
           <KeyRound size={16} />
           Reset password
         </Button>
-        {!isAdministrator && !user.protected && user.accessLevel && (
+        {!isSuperAdministrator && !user.protected && user.accessLevel && (
           <Button variant="secondary" disabled={busy} onClick={onEmail}>
             <Mail size={16} />
             Change email
           </Button>
         )}
-        {!isAdministrator && !user.protected && user.accessLevel && (
+        {!isSuperAdministrator && !user.protected && user.accessLevel && (
           <Button variant="secondary" disabled={busy} onClick={onEdit}>
             {user.accessLevel === 'approver' ? 'Edit / Transfer' : 'Edit'}
           </Button>

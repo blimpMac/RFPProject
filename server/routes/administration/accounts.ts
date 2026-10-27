@@ -78,9 +78,7 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
     if (profile.data?.protected_account ?? isLegacyProtectedStaffEmail(target.data.user.email)) {
       throw new HttpError(409, 'This protected operational account email cannot be changed here.');
     }
-    if (
-      targetRoles.data?.some((row) => ['super_administrator', 'administrator'].includes(row.role))
-    ) {
+    if (targetRoles.data?.some((row) => row.role === 'super_administrator')) {
       throw new HttpError(409, 'Administrative account emails cannot be changed here.');
     }
 
@@ -274,12 +272,10 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
       ]);
       if (existing.error) throw existing.error;
       if (target.error || !target.data.user?.email) throw new HttpError(404, 'Account not found.');
-      if (
-        existing.data?.some((row) => ['super_administrator', 'administrator'].includes(row.role))
-      ) {
+      if (existing.data?.some((row) => row.role === 'super_administrator')) {
         throw new HttpError(
           403,
-          'Administrative accounts cannot be converted or transferred here.',
+          'The Super Administrator account cannot be converted or transferred here.',
         );
       }
       const department =

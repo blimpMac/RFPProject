@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { administrativeRoles } from '../../domain/access.js';
+import { administrativeRoles, financeRoles } from '../../domain/access.js';
 import { requireStaff } from '../../lib/auth.js';
 import { ensureMethod, HttpError, json } from '../../lib/http.js';
 import { isDepartmentOnly } from '../../lib/staff-access.js';
@@ -15,14 +15,14 @@ const tableMap: Record<string, { table: string; order: string; roles?: string[] 
   documents: {
     table: 'request_attachments',
     order: 'created_at',
-    roles: [...administrativeRoles, 'finance_reviewer'],
+    roles: financeRoles,
   },
 };
 
 export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db }) => {
   if (route === 'audit-trail') {
     ensureMethod(event, 'GET');
-    await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    await requireStaff(event, financeRoles);
     const input = z
       .object({
         page: z.coerce.number().int().min(1).default(1),
@@ -110,7 +110,7 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
 
   if (route === 'documents') {
     ensureMethod(event, 'GET');
-    await requireStaff(event, [...administrativeRoles, 'finance_reviewer']);
+    await requireStaff(event, financeRoles);
     const attachments = await db
       .from('request_attachments')
       .select('id,request_id,original_filename,mime_type,size_bytes,status,created_at')
