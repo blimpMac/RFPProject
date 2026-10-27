@@ -5,10 +5,12 @@ import { handleDashboardRoute } from './staff/dashboard.js';
 import { handleDepartmentRoutes } from './staff/department.js';
 import { handleFinanceRoutes } from './staff/finance.js';
 import { handleMonitoringRoutes } from './staff/monitoring.js';
+import { handleProfileRoutes } from './staff/profile.js';
 import type { RouteHandler } from './context.js';
 
 const staffRouteHandlers: RouteHandler[] = [
   handleDashboardRoute,
+  handleProfileRoutes,
   handleAttachmentRoutes,
   handleMonitoringRoutes,
   handleFinanceRoutes,
