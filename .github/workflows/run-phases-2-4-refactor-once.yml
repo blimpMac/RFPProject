@@ -21,6 +21,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: python scripts/setup/refactor-phases-2-4-once.py
+      - run: python scripts/setup/refactor-phases-2-4-fix.py
       - run: npx prettier --write src/features/approvals/*.ts src/features/approvals/*.tsx src/pages/ApprovalsPage.tsx server/domain/access.ts server/domain/access.test.ts server/routes/staff.ts server/routes/staff/*.ts scripts/verification/architecture.test.ts docs/ARCHITECTURE.md package.json
       - run: npm run check
       - run: git config user.name "github-actions[bot]"
