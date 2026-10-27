@@ -32,3 +32,14 @@ A route should not duplicate approval or permission rules already available from
 ## Refactoring rule
 
 Prefer small, behavior-preserving extractions before feature changes. Run `npm run check` after every structural change. Avoid mixing a large workflow rewrite with a visual redesign in the same commit.
+
+## Current feature boundaries
+
+- `src/features/approvals/` owns Finance queue filtering, table presentation, SLA presentation, Finance receipt editing, and workflow-action UI.
+- `server/routes/staff/finance.ts` owns Finance action/update HTTP endpoints and uses the central `financeRoles` policy.
+- `server/routes/staff/monitoring.ts` owns monitoring, audit-trail, and document-registry reads.
+- `server/routes/staff/department.ts` owns Department Head decisions.
+- `server/routes/staff/attachments.ts` owns Digital RFP retrieval and attachment signing/preview endpoints.
+- `server/routes/staff.ts` is intentionally only a dispatcher plus the signed-in staff identity endpoint.
+
+Architecture regression tests enforce these boundaries and keep the largest dispatcher/page files below agreed size limits.
