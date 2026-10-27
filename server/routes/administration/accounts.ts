@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { StaffUser } from '../../../shared/contracts/accounts.js';
 import { isLegacyProtectedStaffEmail } from '../../domain/access.js';
 import { flushEmailQueueForRequest } from '../../email/service.js';
+import { inviteStaffUser } from '../../email/staff-invitation.js';
 import { requireStaff } from '../../lib/auth.js';
 import { ensureMethod, HttpError, json, readJson } from '../../lib/http.js';
 import { accessRole, normalizeDepartment } from '../../lib/staff-access.js';
@@ -197,26 +198,27 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
         input.accessLevel === 'approver'
           ? await resolveDepartmentHeadTarget(db, input.department)
           : FINANCE_DEPARTMENT;
-      const invited = await db.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${config.SITE_URL}/admin/reset-password`,
-        data: { full_name: input.fullName, department, access_level: input.accessLevel },
+      const invitedUser = await inviteStaffUser(db, {
+        email,
+        fullName: input.fullName,
+        department,
+        accessLevel: input.accessLevel,
       });
-      if (invited.error) throw new HttpError(409, invited.error.message);
       const profile = await db
         .from('profiles')
         .upsert(
-          { id: invited.data.user.id, email, full_name: input.fullName, department, active: true },
+          { id: invitedUser.id, email, full_name: input.fullName, department, active: true },
           { onConflict: 'id' },
         );
       if (profile.error) {
-        await db.auth.admin.deleteUser(invited.data.user.id);
+        await db.auth.admin.deleteUser(invitedUser.id);
         throw profile.error;
       }
       const assigned = await db
         .from('user_roles')
-        .insert({ user_id: invited.data.user.id, role, granted_by: staff.user.id });
+        .insert({ user_id: invitedUser.id, role, granted_by: staff.user.id });
       if (assigned.error) {
-        await db.auth.admin.deleteUser(invited.data.user.id);
+        await db.auth.admin.deleteUser(invitedUser.id);
         throw assigned.error;
       }
       try {
@@ -224,7 +226,7 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
           const departments = await assignDepartmentHead(
             db,
             staff.user.id,
-            invited.data.user.id,
+            invitedUser.id,
             input.fullName,
             email,
             department,
@@ -234,14 +236,14 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
           );
         }
       } catch (cause) {
-        await db.auth.admin.deleteUser(invited.data.user.id);
+        await db.auth.admin.deleteUser(invitedUser.id);
         throw cause;
       }
       return json(201, {
         ok: true,
         user: {
-          id: invited.data.user.id,
-          email: invited.data.user.email,
+          id: invitedUser.id,
+          email: invitedUser.email,
           roles: [role],
           fullName: input.fullName,
           department,
