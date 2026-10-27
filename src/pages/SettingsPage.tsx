@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { KeyRound, Search, Trash2, UserPlus } from 'lucide-react';
+import { KeyRound, Mail, Search, Trash2, UserPlus } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import type { AccessLevel, StaffUser } from '../../shared/contracts/accounts';
 import { useAuth } from '../components/AuthProvider';
@@ -28,6 +28,7 @@ export function SettingsPage() {
   const [busyId, setBusyId] = useState('');
   const [notice, setNotice] = useState('');
   const [account, setAccount] = useState<StaffUser | 'new'>();
+  const [emailAccount, setEmailAccount] = useState<StaffUser>();
 
   useEffect(() => setPage(1), [accessFilter, search, statusFilter]);
 
@@ -100,9 +101,9 @@ export function SettingsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Account Management</h1>
           <p className="mt-1 max-w-3xl text-sm text-slate-500">
-            The Finance Head is the Super Admin. Create Finance Members for Finance, or one
-            Department Head for each non-Finance department. Edit a Department Head to transfer that
-            account to another available department.
+            The Finance Head is the Super Admin. Create and delete managed users, change their login
+            email, reset passwords, or transfer a Department Head to another available non-Finance
+            department.
           </p>
         </div>
         <Button onClick={() => setAccount('new')}>
@@ -173,6 +174,7 @@ export function SettingsPage() {
               user={user}
               busy={busyId === user.id}
               onEdit={() => setAccount(user)}
+              onEmail={() => setEmailAccount(user)}
               onReset={() => void sendReset(user)}
               onRemove={() => void removeUser(user)}
             />
@@ -205,6 +207,17 @@ export function SettingsPage() {
           }}
         />
       )}
+      {emailAccount && (
+        <EmailForm
+          user={emailAccount}
+          onClose={() => setEmailAccount(undefined)}
+          onSaved={async () => {
+            setEmailAccount(undefined);
+            setNotice('Login email updated. The user must sign in with the new email address.');
+            await load();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -213,12 +226,14 @@ function AccountRow({
   user,
   busy,
   onEdit,
+  onEmail,
   onReset,
   onRemove,
 }: {
   user: StaffUser;
   busy: boolean;
   onEdit: () => void;
+  onEmail: () => void;
   onReset: () => void;
   onRemove: () => void;
 }) {
@@ -256,6 +271,12 @@ function AccountRow({
           Reset password
         </Button>
         {!isAdministrator && !user.protected && user.accessLevel && (
+          <Button variant="secondary" disabled={busy} onClick={onEmail}>
+            <Mail size={16} />
+            Change email
+          </Button>
+        )}
+        {!isAdministrator && !user.protected && user.accessLevel && (
           <Button variant="secondary" disabled={busy} onClick={onEdit}>
             {user.accessLevel === 'approver' ? 'Edit / Transfer' : 'Edit'}
           </Button>
@@ -268,6 +289,71 @@ function AccountRow({
         )}
       </div>
     </article>
+  );
+}
+
+function EmailForm({
+  user,
+  onClose,
+  onSaved,
+}: {
+  user: StaffUser;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [email, setEmail] = useState(user.email);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const changed = email.trim().toLowerCase() !== user.email.toLowerCase();
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextEmail = email.trim().toLowerCase();
+    if (!changed) return;
+    if (
+      !window.confirm(
+        `Change the login email for ${user.fullName || 'this account'} from ${user.email} to ${nextEmail}?`,
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await patch('staff-users/email', { userId: user.id, email: nextEmail });
+      onSaved();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not change the login email.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title="Change login email" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-4">
+        <div className="rounded border bg-slate-50 p-3 text-sm text-slate-700">
+          Changing this address changes the user's sign-in email immediately. Their password and
+          account history remain unchanged.
+        </div>
+        <Text label="Current email" type="email" value={user.email} onChange={() => {}} disabled />
+        <Text label="New work email" type="email" value={email} onChange={setEmail} />
+        {user.accessLevel === 'approver' && (
+          <p className="text-xs text-slate-500">
+            Pending Department Head approval links will be revoked and reissued to the new email.
+          </p>
+        )}
+        {error && <p className="error">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button disabled={busy || !changed || !email.trim()}>
+            {busy ? <Spinner /> : 'Update email'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
