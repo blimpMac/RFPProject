@@ -9,7 +9,7 @@ import { flushEmailQueueForRequest, sendEmailPreview } from '../email/service.js
 import { emailTemplateKeys, renderEmailPreview } from '../email/templates.js';
 import { requireStaff } from '../lib/auth.js';
 import { ensureMethod, HttpError, json, readJson } from '../lib/http.js';
-import { accessRole } from '../lib/staff-access.js';
+import { accessRole, normalizeDepartment } from '../lib/staff-access.js';
 import { getApprovingHeadOverview } from '../services/approving-heads.js';
 import {
   assignDepartmentHead,
@@ -66,6 +66,90 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
     });
     if (reset.error) throw new HttpError(409, reset.error.message);
     return json(200, { ok: true });
+  }
+
+  if (route === 'staff-users/email') {
+    ensureMethod(event, 'PATCH');
+    const staff = await requireStaff(event, ['super_administrator']);
+    const input = z.object({ userId: z.uuid(), email: z.email() }).parse(readJson(event));
+    if (input.userId === staff.user.id) {
+      throw new HttpError(
+        409,
+        'Use the protected administrator recovery process to change your own email.',
+      );
+    }
+
+    const [target, profile, targetRoles] = await Promise.all([
+      db.auth.admin.getUserById(input.userId),
+      db
+        .from('profiles')
+        .select('id,email,full_name,department,active,protected_account')
+        .eq('id', input.userId)
+        .maybeSingle(),
+      db.from('user_roles').select('role').eq('user_id', input.userId),
+    ]);
+    if (target.error || !target.data.user?.email) throw new HttpError(404, 'Account not found.');
+    if (profile.error) throw profile.error;
+    if (targetRoles.error) throw targetRoles.error;
+    if (profile.data?.protected_account ?? isLegacyProtectedStaffEmail(target.data.user.email)) {
+      throw new HttpError(409, 'This protected operational account email cannot be changed here.');
+    }
+    if (
+      targetRoles.data?.some((row) => ['super_administrator', 'administrator'].includes(row.role))
+    ) {
+      throw new HttpError(409, 'Administrative account emails cannot be changed here.');
+    }
+
+    const currentEmail = target.data.user.email.toLowerCase();
+    const nextEmail = input.email.trim().toLowerCase();
+    if (currentEmail === nextEmail) return json(200, { ok: true, email: currentEmail });
+
+    const authUpdate = await db.auth.admin.updateUserById(input.userId, {
+      email: nextEmail,
+      email_confirm: true,
+    });
+    if (authUpdate.error) throw new HttpError(409, authUpdate.error.message);
+
+    const profileUpdate = await db.from('profiles').update({ email: nextEmail }).eq('id', input.userId);
+    if (profileUpdate.error) {
+      await db.auth.admin.updateUserById(input.userId, {
+        email: currentEmail,
+        email_confirm: true,
+      });
+      throw profileUpdate.error;
+    }
+
+    try {
+      const isDepartmentHead = targetRoles.data?.some((row) => row.role === 'department_approver');
+      if (isDepartmentHead && profile.data?.active && profile.data.department) {
+        const departmentKey = normalizeDepartment(profile.data.department);
+        const legacy = await db
+          .from('approvers')
+          .update({ approver_email: nextEmail, updated_at: new Date().toISOString() })
+          .eq('normalized_department', departmentKey)
+          .eq('active', true);
+        if (legacy.error) throw legacy.error;
+        await refreshDepartmentReviewers(
+          await refreshPendingDepartmentReviews(db, [departmentKey], config.REVIEW_TOKEN_HOURS),
+        );
+      }
+    } catch (cause) {
+      await db.from('profiles').update({ email: currentEmail }).eq('id', input.userId);
+      await db.auth.admin.updateUserById(input.userId, {
+        email: currentEmail,
+        email_confirm: true,
+      });
+      if (profile.data?.department) {
+        await db
+          .from('approvers')
+          .update({ approver_email: currentEmail, updated_at: new Date().toISOString() })
+          .eq('normalized_department', normalizeDepartment(profile.data.department))
+          .eq('active', true);
+      }
+      throw cause;
+    }
+
+    return json(200, { ok: true, email: nextEmail });
   }
 
   if (route === 'staff-users') {
