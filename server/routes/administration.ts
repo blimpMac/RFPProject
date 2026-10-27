@@ -123,9 +123,7 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
     }
 
     try {
-      const isDepartmentHead = targetRoles.data?.some(
-        (row) => row.role === 'department_approver',
-      );
+      const isDepartmentHead = targetRoles.data?.some((row) => row.role === 'department_approver');
       if (isDepartmentHead && profile.data?.active && profile.data.department) {
         const departmentKey = normalizeDepartment(profile.data.department);
         const legacy = await db
