@@ -28,3 +28,5 @@ jobs:
       - run: git add src server docs
       - run: git commit -m "Remove legacy administrator access and add profile name editing"
       - run: git push
+
+# retry after access-policy test update
