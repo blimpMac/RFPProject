@@ -1,0 +1,324 @@
+name: Add account email management once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/add-account-email-management-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Add Super Admin email management
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          admin = Path('server/routes/administration.ts')
+          text = admin.read_text()
+          text = text.replace(
+              "import { accessRole } from '../lib/staff-access.js';",
+              "import { accessRole, normalizeDepartment } from '../lib/staff-access.js';",
+          )
+          anchor = """  if (route === 'staff-users') {\n"""
+          block = """  if (route === 'staff-users/email') {
+    ensureMethod(event, 'PATCH');
+    const staff = await requireStaff(event, ['super_administrator']);
+    const input = z.object({ userId: z.uuid(), email: z.email() }).parse(readJson(event));
+    if (input.userId === staff.user.id) {
+      throw new HttpError(409, 'Use the protected administrator recovery process to change your own email.');
+    }
+
+    const [target, profile, targetRoles] = await Promise.all([
+      db.auth.admin.getUserById(input.userId),
+      db
+        .from('profiles')
+        .select('id,email,full_name,department,active,protected_account')
+        .eq('id', input.userId)
+        .maybeSingle(),
+      db.from('user_roles').select('role').eq('user_id', input.userId),
+    ]);
+    if (target.error || !target.data.user?.email) throw new HttpError(404, 'Account not found.');
+    if (profile.error) throw profile.error;
+    if (targetRoles.error) throw targetRoles.error;
+    if (profile.data?.protected_account ?? isLegacyProtectedStaffEmail(target.data.user.email)) {
+      throw new HttpError(409, 'This protected operational account email cannot be changed here.');
+    }
+    if (
+      targetRoles.data?.some((row) => ['super_administrator', 'administrator'].includes(row.role))
+    ) {
+      throw new HttpError(409, 'Administrative account emails cannot be changed here.');
+    }
+
+    const currentEmail = target.data.user.email.toLowerCase();
+    const nextEmail = input.email.trim().toLowerCase();
+    if (currentEmail === nextEmail) return json(200, { ok: true, email: currentEmail });
+
+    const authUpdate = await db.auth.admin.updateUserById(input.userId, {
+      email: nextEmail,
+      email_confirm: true,
+    });
+    if (authUpdate.error) throw new HttpError(409, authUpdate.error.message);
+
+    const profileUpdate = await db
+      .from('profiles')
+      .update({ email: nextEmail })
+      .eq('id', input.userId);
+    if (profileUpdate.error) {
+      await db.auth.admin.updateUserById(input.userId, {
+        email: currentEmail,
+        email_confirm: true,
+      });
+      throw profileUpdate.error;
+    }
+
+    try {
+      const isDepartmentHead = targetRoles.data?.some((row) => row.role === 'department_approver');
+      if (isDepartmentHead && profile.data?.active && profile.data.department) {
+        const departmentKey = normalizeDepartment(profile.data.department);
+        const legacy = await db
+          .from('approvers')
+          .update({
+            approver_email: nextEmail,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('normalized_department', departmentKey)
+          .eq('active', true);
+        if (legacy.error) throw legacy.error;
+        await refreshDepartmentReviewers(
+          await refreshPendingDepartmentReviews(
+            db,
+            [departmentKey],
+            config.REVIEW_TOKEN_HOURS,
+          ),
+        );
+      }
+    } catch (cause) {
+      await db.from('profiles').update({ email: currentEmail }).eq('id', input.userId);
+      await db.auth.admin.updateUserById(input.userId, {
+        email: currentEmail,
+        email_confirm: true,
+      });
+      if (profile.data?.department) {
+        await db
+          .from('approvers')
+          .update({ approver_email: currentEmail, updated_at: new Date().toISOString() })
+          .eq('normalized_department', normalizeDepartment(profile.data.department))
+          .eq('active', true);
+      }
+      throw cause;
+    }
+
+    return json(200, { ok: true, email: nextEmail });
+  }
+
+  if (route === 'staff-users') {
+"""
+          if anchor not in text:
+              raise SystemExit('administration route anchor not found')
+          text = text.replace(anchor, block, 1)
+          admin.write_text(text)
+
+          settings = Path('src/pages/SettingsPage.tsx')
+          text = settings.read_text()
+          replacements = [
+              ("import { KeyRound, Search, Trash2, UserPlus } from 'lucide-react';",
+               "import { KeyRound, Mail, Search, Trash2, UserPlus } from 'lucide-react';"),
+              ("  const [account, setAccount] = useState<StaffUser | 'new'>();\n",
+               "  const [account, setAccount] = useState<StaffUser | 'new'>();\n  const [emailAccount, setEmailAccount] = useState<StaffUser>();\n"),
+              ("""            The Finance Head is the Super Admin. Create Finance Members for Finance, or one
+            Department Head for each non-Finance department. Edit a Department Head to transfer that
+            account to another available department.
+""",
+               """            The Finance Head is the Super Admin. Create and delete managed users, change their
+            login email, reset passwords, or transfer a Department Head to another available
+            non-Finance department.
+"""),
+              ("""              onEdit={() => setAccount(user)}
+              onReset={() => void sendReset(user)}
+""",
+               """              onEdit={() => setAccount(user)}
+              onEmail={() => setEmailAccount(user)}
+              onReset={() => void sendReset(user)}
+"""),
+              ("""      {account && (
+        <AccountForm
+          value={account}
+          users={users}
+          departments={departments}
+          onClose={() => setAccount(undefined)}
+          onSaved={async () => {
+            const added = account === 'new';
+            setAccount(undefined);
+            setNotice(added ? 'Account invitation sent.' : 'Account updated.');
+            await load();
+          }}
+        />
+      )}
+""",
+               """      {account && (
+        <AccountForm
+          value={account}
+          users={users}
+          departments={departments}
+          onClose={() => setAccount(undefined)}
+          onSaved={async () => {
+            const added = account === 'new';
+            setAccount(undefined);
+            setNotice(added ? 'Account invitation sent.' : 'Account updated.');
+            await load();
+          }}
+        />
+      )}
+      {emailAccount && (
+        <EmailForm
+          user={emailAccount}
+          onClose={() => setEmailAccount(undefined)}
+          onSaved={async () => {
+            setEmailAccount(undefined);
+            setNotice('Login email updated. The user must sign in with the new email address.');
+            await load();
+          }}
+        />
+      )}
+"""),
+              ("""  onEdit,
+  onReset,
+  onRemove,
+}: {
+  user: StaffUser;
+  busy: boolean;
+  onEdit: () => void;
+  onReset: () => void;
+  onRemove: () => void;
+}) {
+""",
+               """  onEdit,
+  onEmail,
+  onReset,
+  onRemove,
+}: {
+  user: StaffUser;
+  busy: boolean;
+  onEdit: () => void;
+  onEmail: () => void;
+  onReset: () => void;
+  onRemove: () => void;
+}) {
+"""),
+              ("""        {!isAdministrator && !user.protected && user.accessLevel && (
+          <Button variant=\"secondary\" disabled={busy} onClick={onEdit}>
+            {user.accessLevel === 'approver' ? 'Edit / Transfer' : 'Edit'}
+          </Button>
+        )}
+""",
+               """        {!isAdministrator && !user.protected && user.accessLevel && (
+          <Button variant=\"secondary\" disabled={busy} onClick={onEmail}>
+            <Mail size={16} />
+            Change email
+          </Button>
+        )}
+        {!isAdministrator && !user.protected && user.accessLevel && (
+          <Button variant=\"secondary\" disabled={busy} onClick={onEdit}>
+            {user.accessLevel === 'approver' ? 'Edit / Transfer' : 'Edit'}
+          </Button>
+        )}
+"""),
+              ("""function AccountForm({
+""",
+               """function EmailForm({
+  user,
+  onClose,
+  onSaved,
+}: {
+  user: StaffUser;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [email, setEmail] = useState(user.email);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const changed = email.trim().toLowerCase() !== user.email.toLowerCase();
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextEmail = email.trim().toLowerCase();
+    if (!changed) return;
+    if (
+      !window.confirm(
+        `Change the login email for ${user.fullName || 'this account'} from ${user.email} to ${nextEmail}?`,
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await patch('staff-users/email', { userId: user.id, email: nextEmail });
+      onSaved();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not change the login email.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title=\"Change login email\" onClose={onClose}>
+      <form onSubmit={submit} className=\"space-y-4\">
+        <div className=\"rounded border bg-slate-50 p-3 text-sm text-slate-700\">
+          Changing this address changes the user's sign-in email immediately. Their password and
+          account history remain unchanged.
+        </div>
+        <Text label=\"Current email\" type=\"email\" value={user.email} onChange={() => {}} disabled />
+        <Text label=\"New work email\" type=\"email\" value={email} onChange={setEmail} />
+        {user.accessLevel === 'approver' && (
+          <p className=\"text-xs text-slate-500\">
+            Pending Department Head approval links will be revoked and reissued to the new email.
+          </p>
+        )}
+        {error && <p className=\"error\">{error}</p>}
+        <div className=\"flex justify-end gap-2\">
+          <Button type=\"button\" variant=\"secondary\" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button disabled={busy || !changed || !email.trim()}>
+            {busy ? <Spinner /> : 'Update email'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function AccountForm({
+"""),
+          ]
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f'SettingsPage anchor not found: {old[:80]!r}')
+              text = text.replace(old, new, 1)
+          settings.write_text(text)
+          PY
+      - name: Format changes
+        run: npx prettier --write server/routes/administration.ts src/pages/SettingsPage.tsx
+      - name: Validate application
+        run: npm run check
+      - name: Commit validated account email management
+        run: |
+          rm .github/workflows/add-account-email-management-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/routes/administration.ts src/pages/SettingsPage.tsx .github/workflows/add-account-email-management-once.yml
+          git commit -m "Add Super Admin account email management"
+          git push
