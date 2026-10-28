@@ -106,8 +106,8 @@ export function DigitalRfpReceipt({
     );
   const processingOverdue = Boolean(
     workflow.processing_due_at &&
-      new Date(workflow.processing_due_at).getTime() < Date.now() &&
-      !/paid|completed/i.test(request.final_status),
+    new Date(workflow.processing_due_at).getTime() < Date.now() &&
+    !/paid|completed/i.test(request.final_status),
   );
   const processStatus = processingOverdue
     ? 'Overdue'
@@ -178,7 +178,8 @@ export function DigitalRfpReceipt({
             )}
           </div>
           <div className="digital-rfp-document-note">
-            {availableAttachments.length} uploaded file{availableAttachments.length === 1 ? '' : 's'}
+            {availableAttachments.length} uploaded file
+            {availableAttachments.length === 1 ? '' : 's'}
             {receipt.lateDocuments.length
               ? ` · ${receipt.lateDocuments.length} late document${receipt.lateDocuments.length === 1 ? '' : 's'}`
               : ''}
@@ -266,12 +267,14 @@ export function DigitalRfpReceipt({
           </div>
         </div>
         <div className="digital-rfp-current-state">
-          Current system status: <strong className={statusClass(processStatus)}>{processStatus}</strong>
+          Current system status:{' '}
+          <strong className={statusClass(processStatus)}>{processStatus}</strong>
         </div>
       </ReceiptSection>
 
       <footer className="digital-rfp-footer">
-        System-generated record · {brand.name} · Printed {manilaDate(new Date().toISOString(), true)}
+        System-generated record · {brand.name} · Printed{' '}
+        {manilaDate(new Date().toISOString(), true)}
       </footer>
     </article>
   );
