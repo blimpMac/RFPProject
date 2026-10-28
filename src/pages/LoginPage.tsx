@@ -48,10 +48,10 @@ export function LoginPage() {
         <ThemeToggle compact />
       </header>
 
-      <section className="grid flex-1 place-items-center px-4 py-8 sm:py-12">
+      <section className="staff-login-stage grid flex-1 place-items-center px-4 py-6 sm:py-8">
         <form
           onSubmit={submit}
-          className="card page-enter w-full max-w-sm p-6 shadow-lg sm:p-8"
+          className="staff-login-card card page-enter w-full max-w-sm shadow-lg"
           aria-labelledby="staff-login-title"
         >
           <h1 id="staff-login-title" className="text-2xl font-semibold tracking-tight">
@@ -69,7 +69,7 @@ export function LoginPage() {
               Frontend environment variables are not configured.
             </p>
           )}
-          <div className="mt-7 space-y-5">
+          <div className="mt-6 space-y-4">
             <div className="field">
               <label htmlFor="email">Work email</label>
               <input
@@ -137,13 +137,13 @@ export function LoginPage() {
             </p>
           )}
 
-          <Button className="mt-6 w-full" disabled={busy}>
+          <Button className="mt-5 w-full" disabled={busy}>
             {busy ? <Spinner label="Signing in" /> : 'Sign in'}
           </Button>
         </form>
       </section>
 
-      <footer className="px-4 pb-6 text-center sm:pb-8">
+      <footer className="px-4 pb-5 text-center sm:pb-6">
         <Link
           to="/"
           className="focus-ring inline-flex items-center gap-2 rounded-md text-sm font-semibold text-slate-600 hover:text-slate-900"
