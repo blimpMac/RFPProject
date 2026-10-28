@@ -9,8 +9,7 @@ body,
 .admin-shell,
 .admin-content,
 #main-content,
-.page-enter,
-.card {
+.page-enter {
   min-width: 0;
   max-width: 100%;
 }
@@ -165,6 +164,32 @@ main .overflow-x-auto {
   padding: 0.3rem 0.45rem;
 }
 
+/* Staff authentication stays intentionally compact and centered. */
+.staff-login-stage {
+  width: 100%;
+}
+
+.staff-login-card {
+  width: min(100%, 30rem) !important;
+  max-width: 30rem !important;
+  border-radius: 0.9rem;
+  padding: 1.4rem !important;
+}
+
+.staff-login-card h1 {
+  font-size: 1.5rem;
+}
+
+.staff-login-card .input {
+  min-height: 2.6rem;
+}
+
+@media (min-width: 640px) {
+  .staff-login-card {
+    padding: 1.65rem !important;
+  }
+}
+
 @media (max-width: 1279px) {
   .approval-filter-panel {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -176,6 +201,7 @@ main .overflow-x-auto {
 }
 
 @media (max-width: 900px) {
+  .metric-grid,
   .queue-health-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -194,6 +220,7 @@ main .overflow-x-auto {
 }
 
 @media (max-width: 560px) {
+  .metric-grid,
   .queue-health-grid,
   .approval-filter-panel {
     grid-template-columns: 1fr;
@@ -207,5 +234,10 @@ main .overflow-x-auto {
   .card.p-5,
   .card.p-6 {
     padding: 0.75rem !important;
+  }
+
+  .staff-login-card {
+    width: 100% !important;
+    padding: 1.15rem !important;
   }
 }
