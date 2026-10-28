@@ -29,6 +29,13 @@ type DocumentRow = {
   request_date: string;
 };
 
+type DocumentFilterOptions = {
+  companies: string[];
+  departments: string[];
+  statuses: string[];
+  requestors: Array<{ value: string; label: string }>;
+};
+
 type RequestDocuments = {
   requestId: string;
   rfpNumber: string;
@@ -73,14 +80,25 @@ export function DocumentsPage() {
   const [search, setSearch] = useState('');
   const [requestorFilter, setRequestorFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [documentStatusFilter, setDocumentStatusFilter] = useState('all');
+  const [filterOptions, setFilterOptions] = useState<DocumentFilterOptions>({
+    companies: [],
+    departments: [],
+    statuses: [],
+    requestors: [],
+  });
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    get<{ rows: DocumentRow[] }>('documents')
-      .then((result) => setRows(result.rows))
+    get<{ rows: DocumentRow[]; filters?: DocumentFilterOptions }>('documents')
+      .then((result) => {
+        setRows(result.rows);
+        if (result.filters) setFilterOptions(result.filters);
+      })
       .catch((cause) => setError(cause.message))
       .finally(() => setLoading(false));
   }, []);
@@ -113,22 +131,39 @@ export function DocumentsPage() {
 
   const requestors = useMemo(
     () =>
-      [
-        ...new Map(
-          groups
-            .filter((group) => group.requestorEmail)
-            .map((group) => [group.requestorEmail.toLowerCase(), group.requestorName]),
-        ).entries(),
-      ].sort((a, b) => a[1].localeCompare(b[1])),
-    [groups],
+      filterOptions.requestors.length
+        ? filterOptions.requestors
+        : [
+            ...new Map(
+              groups
+                .filter((group) => group.requestorEmail)
+                .map((group) => [group.requestorEmail.toLowerCase(), group.requestorName]),
+            ).entries(),
+          ]
+            .map(([value, label]) => ({ value, label }))
+            .sort((a, b) => a.label.localeCompare(b.label)),
+    [filterOptions.requestors, groups],
   );
   const companies = useMemo(
-    () => [...new Set(groups.flatMap((group) => (group.company ? [group.company] : [])))].sort(),
-    [groups],
+    () =>
+      filterOptions.companies.length
+        ? filterOptions.companies
+        : [...new Set(groups.flatMap((group) => (group.company ? [group.company] : [])))].sort(),
+    [filterOptions.companies, groups],
+  );
+  const departments = useMemo(
+    () =>
+      filterOptions.departments.length
+        ? filterOptions.departments
+        : [...new Set(groups.map((group) => group.department).filter(Boolean))].sort(),
+    [filterOptions.departments, groups],
   );
   const statuses = useMemo(
-    () => [...new Set(groups.map((group) => group.finalStatus).filter(Boolean))].sort(),
-    [groups],
+    () =>
+      filterOptions.statuses.length
+        ? filterOptions.statuses
+        : [...new Set(groups.map((group) => group.finalStatus).filter(Boolean))].sort(),
+    [filterOptions.statuses, groups],
   );
   const invalidDateRange = Boolean(fromDate && toDate && fromDate > toDate);
   const filteredGroups = useMemo(() => {
@@ -155,13 +190,21 @@ export function DocumentsPage() {
         matchesSearch &&
         (requestorFilter === 'all' || group.requestorEmail.toLowerCase() === requestorFilter) &&
         (companyFilter === 'all' || group.company === companyFilter) &&
+        (departmentFilter === 'all' || group.department === departmentFilter) &&
         (statusFilter === 'all' || group.finalStatus === statusFilter) &&
+        (documentStatusFilter === 'all' ||
+          (documentStatusFilter === 'available' &&
+            group.documents.some((document) => document.status === 'available')) ||
+          (documentStatusFilter === 'attention' &&
+            group.documents.some((document) => document.status !== 'available'))) &&
         (!fromDate || requestDate >= fromDate) &&
         (!toDate || requestDate <= toDate)
       );
     });
   }, [
     companyFilter,
+    departmentFilter,
+    documentStatusFilter,
     fromDate,
     groups,
     invalidDateRange,
@@ -177,7 +220,9 @@ export function DocumentsPage() {
     search ||
     requestorFilter !== 'all' ||
     companyFilter !== 'all' ||
+    departmentFilter !== 'all' ||
     statusFilter !== 'all' ||
+    documentStatusFilter !== 'all' ||
     fromDate ||
     toDate,
   );
@@ -192,7 +237,9 @@ export function DocumentsPage() {
     setSearch('');
     setRequestorFilter('all');
     setCompanyFilter('all');
+    setDepartmentFilter('all');
     setStatusFilter('all');
+    setDocumentStatusFilter('all');
     setFromDate('');
     setToDate('');
   };
@@ -277,12 +324,31 @@ export function DocumentsPage() {
             options={companies}
           />
           <FilterSelect
+            id="document-department-filter"
+            label="Department"
+            value={departmentFilter}
+            onChange={setDepartmentFilter}
+            allLabel="All departments"
+            options={departments}
+          />
+          <FilterSelect
             id="document-status-filter"
             label="Workflow status"
             value={statusFilter}
             onChange={setStatusFilter}
-            allLabel="All statuses"
+            allLabel="All workflow statuses"
             options={statuses}
+          />
+          <FilterSelect
+            id="document-document-status-filter"
+            label="Document status"
+            value={documentStatusFilter}
+            onChange={setDocumentStatusFilter}
+            allLabel="All document statuses"
+            options={[
+              { value: 'available', label: 'Ready to preview' },
+              { value: 'attention', label: 'Needs attention' },
+            ]}
           />
           <FilterSelect
             id="document-requestor-filter"
@@ -290,7 +356,7 @@ export function DocumentsPage() {
             value={requestorFilter}
             onChange={setRequestorFilter}
             allLabel="All requestors"
-            options={requestors.map(([email, name]) => ({ value: email, label: name }))}
+            options={requestors}
           />
           <div className="field">
             <label htmlFor="document-date-from">Submitted from</label>
@@ -429,7 +495,7 @@ export function DocumentsPage() {
           <div className="card">
             <EmptyState
               title="No matching documents"
-              body="Change the company, workflow status, requestor, search, or date filters."
+              body="Change the company, department, workflow status, document status, requestor, search, or date filters."
             />
           </div>
         )}

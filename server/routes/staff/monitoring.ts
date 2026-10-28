@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { administrativeRoles, financeRoles } from '../../domain/access.js';
 import { requireStaff } from '../../lib/auth.js';
 import { ensureMethod, HttpError, json } from '../../lib/http.js';
-import { isDepartmentOnly } from '../../lib/staff-access.js';
+import { isDepartmentOnly, normalizeDepartment } from '../../lib/staff-access.js';
 import { getAssignedDepartments } from '../../services/approving-heads.js';
 import { auditTrailRow } from '../../services/audit-trail.js';
 import type { RouteHandler } from '../context.js';
@@ -111,24 +111,26 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
   if (route === 'documents') {
     ensureMethod(event, 'GET');
     await requireStaff(event, financeRoles);
-    const attachments = await db
-      .from('request_attachments')
-      .select('id,request_id,original_filename,mime_type,size_bytes,status,created_at')
-      .order('created_at', { ascending: false })
-      .limit(2000);
+    const [attachments, requests, submissionOptions] = await Promise.all([
+      db
+        .from('request_attachments')
+        .select('id,request_id,original_filename,mime_type,size_bytes,status,created_at')
+        .order('created_at', { ascending: false })
+        .limit(2000),
+      db
+        .from('rfp_requests')
+        .select(
+          'id,rfp_number,requestor_name,requestor_email,company,department,supplier_payee,amount,required_payment_date,final_status,last_action,submitted_at',
+        )
+        .not('submitted_at', 'is', null)
+        .order('submitted_at', { ascending: false })
+        .limit(5000),
+      db.from('system_settings').select('value').eq('key', 'submission_options').maybeSingle(),
+    ]);
     if (attachments.error) throw attachments.error;
-    const requestIds = [
-      ...new Set((attachments.data || []).map((attachment) => attachment.request_id)),
-    ];
-    const requests = requestIds.length
-      ? await db
-          .from('rfp_requests')
-          .select(
-            'id,rfp_number,requestor_name,requestor_email,company,department,supplier_payee,amount,required_payment_date,final_status,last_action,submitted_at',
-          )
-          .in('id', requestIds)
-      : { data: [], error: null };
     if (requests.error) throw requests.error;
+    if (submissionOptions.error) throw submissionOptions.error;
+
     const requestMap = new Map((requests.data || []).map((request) => [request.id, request]));
     const rows = (attachments.data || []).map((attachment) => {
       const request = requestMap.get(attachment.request_id);
@@ -147,7 +149,59 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
         request_date: request?.submitted_at || attachment.created_at,
       };
     });
-    return json(200, { ok: true, rows });
+
+    const configuredDepartments = Array.isArray(
+      (submissionOptions.data?.value as { departments?: unknown } | null)?.departments,
+    )
+      ? (submissionOptions.data?.value as { departments: unknown[] }).departments.filter(
+          (department): department is string =>
+            typeof department === 'string' && Boolean(department.trim()),
+        )
+      : [];
+    const departmentLabels = new Map<string, string>();
+    for (const department of [
+      ...configuredDepartments,
+      ...(requests.data || []).map((request) => request.department),
+    ]) {
+      const label = String(department || '').trim();
+      if (!label) continue;
+      departmentLabels.set(normalizeDepartment(label), label);
+    }
+    const requestors = new Map<string, string>();
+    for (const request of requests.data || []) {
+      const email = String(request.requestor_email || '')
+        .trim()
+        .toLowerCase();
+      if (!email) continue;
+      requestors.set(email, String(request.requestor_name || email).trim() || email);
+    }
+    const companies = [
+      ...new Set(
+        (requests.data || [])
+          .map((request) => String(request.company || '').trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+    const statuses = [
+      ...new Set(
+        (requests.data || [])
+          .map((request) => String(request.final_status || '').trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+
+    return json(200, {
+      ok: true,
+      rows,
+      filters: {
+        companies,
+        departments: [...departmentLabels.values()].sort((a, b) => a.localeCompare(b)),
+        statuses,
+        requestors: [...requestors.entries()]
+          .map(([value, label]) => ({ value, label }))
+          .sort((a, b) => a.label.localeCompare(b.label)),
+      },
+    });
   }
 
   return undefined;
