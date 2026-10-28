@@ -1,0 +1,192 @@
+name: Fix Documents filters once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-documents-filters-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Patch Documents filter options
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          backend = Path('server/routes/staff/monitoring.ts')
+          text = backend.read_text()
+          text = text.replace(
+              "import { isDepartmentOnly } from '../../lib/staff-access.js';",
+              "import { isDepartmentOnly, normalizeDepartment } from '../../lib/staff-access.js';",
+          )
+          start = text.index("  if (route === 'documents') {")
+          end = text.index("\n\n  return undefined;", start)
+          replacement = r'''  if (route === 'documents') {
+    ensureMethod(event, 'GET');
+    await requireStaff(event, financeRoles);
+    const [attachments, requests, submissionOptions] = await Promise.all([
+      db
+        .from('request_attachments')
+        .select('id,request_id,original_filename,mime_type,size_bytes,status,created_at')
+        .order('created_at', { ascending: false })
+        .limit(2000),
+      db
+        .from('rfp_requests')
+        .select(
+          'id,rfp_number,requestor_name,requestor_email,company,department,supplier_payee,amount,required_payment_date,final_status,last_action,submitted_at',
+        )
+        .not('submitted_at', 'is', null)
+        .order('submitted_at', { ascending: false })
+        .limit(5000),
+      db.from('system_settings').select('value').eq('key', 'submission_options').maybeSingle(),
+    ]);
+    if (attachments.error) throw attachments.error;
+    if (requests.error) throw requests.error;
+    if (submissionOptions.error) throw submissionOptions.error;
+
+    const requestMap = new Map((requests.data || []).map((request) => [request.id, request]));
+    const rows = (attachments.data || []).map((attachment) => {
+      const request = requestMap.get(attachment.request_id);
+      return {
+        ...attachment,
+        rfp_number: request?.rfp_number || 'Unknown RFP',
+        requestor_name: request?.requestor_name || 'Unknown requestor',
+        requestor_email: request?.requestor_email || '',
+        company: request?.company || '',
+        department: request?.department || '',
+        supplier_payee: request?.supplier_payee || '',
+        amount: request?.amount || 0,
+        required_payment_date: request?.required_payment_date || null,
+        final_status: request?.final_status || 'Unknown',
+        last_action: request?.last_action || '',
+        request_date: request?.submitted_at || attachment.created_at,
+      };
+    });
+
+    const configuredDepartments = Array.isArray(
+      (submissionOptions.data?.value as { departments?: unknown } | null)?.departments,
+    )
+      ? (submissionOptions.data?.value as { departments: unknown[] }).departments.filter(
+          (department): department is string =>
+            typeof department === 'string' && Boolean(department.trim()),
+        )
+      : [];
+    const departmentLabels = new Map<string, string>();
+    for (const department of [
+      ...configuredDepartments,
+      ...(requests.data || []).map((request) => request.department),
+    ]) {
+      const label = String(department || '').trim();
+      if (!label) continue;
+      departmentLabels.set(normalizeDepartment(label), label);
+    }
+    const requestors = new Map<string, string>();
+    for (const request of requests.data || []) {
+      const email = String(request.requestor_email || '').trim().toLowerCase();
+      if (!email) continue;
+      requestors.set(email, String(request.requestor_name || email).trim() || email);
+    }
+    const companies = [
+      ...new Set(
+        (requests.data || [])
+          .map((request) => String(request.company || '').trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+    const statuses = [
+      ...new Set(
+        (requests.data || [])
+          .map((request) => String(request.final_status || '').trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+
+    return json(200, {
+      ok: true,
+      rows,
+      filters: {
+        companies,
+        departments: [...departmentLabels.values()].sort((a, b) => a.localeCompare(b)),
+        statuses,
+        requestors: [...requestors.entries()]
+          .map(([value, label]) => ({ value, label }))
+          .sort((a, b) => a.label.localeCompare(b.label)),
+      },
+    });
+  }'''
+          backend.write_text(text[:start] + replacement + text[end:])
+
+          frontend = Path('src/pages/DocumentsPage.tsx')
+          text = frontend.read_text()
+          marker = "type RequestDocuments = {"
+          insert = """type DocumentFilterOptions = {\n  companies: string[];\n  departments: string[];\n  statuses: string[];\n  requestors: Array<{ value: string; label: string }>;\n};\n\n"""
+          if insert not in text:
+              text = text.replace(marker, insert + marker)
+
+          text = text.replace(
+              "  const [companyFilter, setCompanyFilter] = useState('all');\n  const [statusFilter, setStatusFilter] = useState('all');",
+              "  const [companyFilter, setCompanyFilter] = useState('all');\n  const [departmentFilter, setDepartmentFilter] = useState('all');\n  const [statusFilter, setStatusFilter] = useState('all');\n  const [documentStatusFilter, setDocumentStatusFilter] = useState('all');\n  const [filterOptions, setFilterOptions] = useState<DocumentFilterOptions>({\n    companies: [],\n    departments: [],\n    statuses: [],\n    requestors: [],\n  });",
+          )
+
+          old = """    get<{ rows: DocumentRow[] }>('documents')\n      .then((result) => setRows(result.rows))\n      .catch((cause) => setError(cause.message))\n      .finally(() => setLoading(false));"""
+          new = """    get<{ rows: DocumentRow[]; filters?: DocumentFilterOptions }>('documents')\n      .then((result) => {\n        setRows(result.rows);\n        if (result.filters) setFilterOptions(result.filters);\n      })\n      .catch((cause) => setError(cause.message))\n      .finally(() => setLoading(false));"""
+          if old not in text:
+              raise SystemExit('load marker not found')
+          text = text.replace(old, new)
+
+          old = """  const requestors = useMemo(\n    () =>\n      [\n        ...new Map(\n          groups\n            .filter((group) => group.requestorEmail)\n            .map((group) => [group.requestorEmail.toLowerCase(), group.requestorName]),\n        ).entries(),\n      ].sort((a, b) => a[1].localeCompare(b[1])),\n    [groups],\n  );\n  const companies = useMemo(\n    () => [...new Set(groups.flatMap((group) => (group.company ? [group.company] : [])))].sort(),\n    [groups],\n  );\n  const statuses = useMemo(\n    () => [...new Set(groups.map((group) => group.finalStatus).filter(Boolean))].sort(),\n    [groups],\n  );"""
+          new = """  const requestors = useMemo(\n    () =>\n      filterOptions.requestors.length\n        ? filterOptions.requestors\n        : [\n            ...new Map(\n              groups\n                .filter((group) => group.requestorEmail)\n                .map((group) => [group.requestorEmail.toLowerCase(), group.requestorName]),\n            ).entries(),\n          ]\n            .map(([value, label]) => ({ value, label }))\n            .sort((a, b) => a.label.localeCompare(b.label)),\n    [filterOptions.requestors, groups],\n  );\n  const companies = useMemo(\n    () =>\n      filterOptions.companies.length\n        ? filterOptions.companies\n        : [...new Set(groups.flatMap((group) => (group.company ? [group.company] : [])))].sort(),\n    [filterOptions.companies, groups],\n  );\n  const departments = useMemo(\n    () =>\n      filterOptions.departments.length\n        ? filterOptions.departments\n        : [...new Set(groups.map((group) => group.department).filter(Boolean))].sort(),\n    [filterOptions.departments, groups],\n  );\n  const statuses = useMemo(\n    () =>\n      filterOptions.statuses.length\n        ? filterOptions.statuses\n        : [...new Set(groups.map((group) => group.finalStatus).filter(Boolean))].sort(),\n    [filterOptions.statuses, groups],\n  );"""
+          if old not in text:
+              raise SystemExit('option marker not found')
+          text = text.replace(old, new)
+
+          old = """        (companyFilter === 'all' || group.company === companyFilter) &&\n        (statusFilter === 'all' || group.finalStatus === statusFilter) &&\n        (!fromDate || requestDate >= fromDate) &&"""
+          new = """        (companyFilter === 'all' || group.company === companyFilter) &&\n        (departmentFilter === 'all' || group.department === departmentFilter) &&\n        (statusFilter === 'all' || group.finalStatus === statusFilter) &&\n        (documentStatusFilter === 'all' ||\n          (documentStatusFilter === 'available' &&\n            group.documents.some((document) => document.status === 'available')) ||\n          (documentStatusFilter === 'attention' &&\n            group.documents.some((document) => document.status !== 'available'))) &&\n        (!fromDate || requestDate >= fromDate) &&"""
+          if old not in text:
+              raise SystemExit('filter condition marker not found')
+          text = text.replace(old, new)
+
+          text = text.replace(
+              "    companyFilter,\n    fromDate,",
+              "    companyFilter,\n    departmentFilter,\n    documentStatusFilter,\n    fromDate,",
+          )
+          text = text.replace(
+              "    companyFilter !== 'all' ||\n    statusFilter !== 'all' ||",
+              "    companyFilter !== 'all' ||\n    departmentFilter !== 'all' ||\n    statusFilter !== 'all' ||\n    documentStatusFilter !== 'all' ||",
+          )
+          text = text.replace(
+              "    setCompanyFilter('all');\n    setStatusFilter('all');",
+              "    setCompanyFilter('all');\n    setDepartmentFilter('all');\n    setStatusFilter('all');\n    setDocumentStatusFilter('all');",
+          )
+
+          old = """          <FilterSelect\n            id=\"document-status-filter\"\n            label=\"Workflow status\"\n            value={statusFilter}\n            onChange={setStatusFilter}\n            allLabel=\"All statuses\"\n            options={statuses}\n          />\n          <FilterSelect\n            id=\"document-requestor-filter\"\n            label=\"Requestor\"\n            value={requestorFilter}\n            onChange={setRequestorFilter}\n            allLabel=\"All requestors\"\n            options={requestors.map(([email, name]) => ({ value: email, label: name }))}\n          />"""
+          new = """          <FilterSelect\n            id=\"document-department-filter\"\n            label=\"Department\"\n            value={departmentFilter}\n            onChange={setDepartmentFilter}\n            allLabel=\"All departments\"\n            options={departments}\n          />\n          <FilterSelect\n            id=\"document-status-filter\"\n            label=\"Workflow status\"\n            value={statusFilter}\n            onChange={setStatusFilter}\n            allLabel=\"All workflow statuses\"\n            options={statuses}\n          />\n          <FilterSelect\n            id=\"document-document-status-filter\"\n            label=\"Document status\"\n            value={documentStatusFilter}\n            onChange={setDocumentStatusFilter}\n            allLabel=\"All document statuses\"\n            options={[\n              { value: 'available', label: 'Ready to preview' },\n              { value: 'attention', label: 'Needs attention' },\n            ]}\n          />\n          <FilterSelect\n            id=\"document-requestor-filter\"\n            label=\"Requestor\"\n            value={requestorFilter}\n            onChange={setRequestorFilter}\n            allLabel=\"All requestors\"\n            options={requestors}\n          />"""
+          if old not in text:
+              raise SystemExit('filter controls marker not found')
+          text = text.replace(old, new)
+
+          text = text.replace(
+              'body="Change the company, workflow status, requestor, search, or date filters."',
+              'body="Change the company, department, workflow status, document status, requestor, search, or date filters."',
+          )
+          frontend.write_text(text)
+          PY
+      - run: npx prettier --write server/routes/staff/monitoring.ts src/pages/DocumentsPage.tsx
+      - run: npm run check
+      - name: Commit Documents filter fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/routes/staff/monitoring.ts src/pages/DocumentsPage.tsx
+          git commit -m "Fix Documents dashboard filters"
+          git push
