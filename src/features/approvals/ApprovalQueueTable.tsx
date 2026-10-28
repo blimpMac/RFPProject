@@ -48,7 +48,8 @@ export function ApprovalQueueTable({
               <th>Request</th>
               <th>Requestor / Department</th>
               <th>Amount</th>
-              <th>Status / SLA</th>
+              <th>Status</th>
+              <th>SLA</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -81,6 +82,8 @@ export function ApprovalQueueTable({
                 <td className="finance-amount">{php.format(request.amount)}</td>
                 <td>
                   <StatusBadge>{displayStatus(request, now)}</StatusBadge>
+                </td>
+                <td>
                   <RequestSla request={request} now={now} />
                 </td>
                 <td>
