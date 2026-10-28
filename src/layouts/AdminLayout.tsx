@@ -78,7 +78,7 @@ const navigationItems: NavigationItem[] = [
 ];
 
 const roleLabels: Record<Role, string> = {
-  super_administrator: 'Finance Head (Super Admin)',
+  super_administrator: 'Finance Head',
   department_approver: 'Department Head',
   finance_reviewer: 'Finance Member',
 };
