@@ -199,3 +199,120 @@
     border-bottom: 1px solid #d7dee5;
   }
 }
+
+/* Printing must override the tablet reflow rules above. The original print
+   stylesheet used a square 210 mm page and a fixed 198 mm-tall receipt, which
+   clipped the bottom of the RFP. Keep the receipt at full printable A4 width,
+   restore its compact multi-column layout, and allow its full natural height. */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 6mm;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body {
+    margin: 0 !important;
+  }
+
+  .digital-rfp-print-page {
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .digital-rfp-sheet {
+    box-sizing: border-box;
+    width: 198mm !important;
+    max-width: 198mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  .digital-rfp-view-badge {
+    display: none !important;
+  }
+
+  .digital-rfp-header {
+    grid-template-columns: 1fr 1.35fr 0.92fr !important;
+    text-align: initial !important;
+  }
+
+  .digital-rfp-brand img {
+    margin: 0 !important;
+  }
+
+  .digital-rfp-number-block {
+    grid-template-columns: minmax(30mm, 1fr) !important;
+    gap: 0 !important;
+    justify-self: end !important;
+  }
+
+  .digital-rfp-reference-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .digital-rfp-middle-grid {
+    grid-template-columns: minmax(0, 0.96fr) minmax(0, 1.04fr) !important;
+  }
+
+  .digital-rfp-hardcopy-grid {
+    grid-template-columns: 1.2fr 0.8fr !important;
+  }
+
+  .digital-rfp-finance-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .digital-rfp-processing-row {
+    grid-template-columns: 52mm minmax(0, 1fr) !important;
+  }
+
+  .digital-rfp-approval-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .digital-rfp-reference-row,
+  .digital-rfp-finance-grid .digital-rfp-reference-row {
+    grid-template-columns: 28mm minmax(0, 1fr) !important;
+  }
+
+  .digital-rfp-reference-grid > div:first-child,
+  .digital-rfp-hardcopy-column:first-child,
+  .digital-rfp-finance-grid .digital-rfp-reference-row,
+  .digital-rfp-processing-row > .digital-rfp-reference-row {
+    border-right: 1px solid #d7dee5 !important;
+  }
+
+  .digital-rfp-finance-grid .digital-rfp-reference-row:last-child {
+    border-right: 0 !important;
+  }
+
+  .digital-rfp-approval-card {
+    border-right: 1px solid #d7dee5 !important;
+    border-bottom: 0 !important;
+  }
+
+  .digital-rfp-approval-card:last-child {
+    border-right: 0 !important;
+  }
+}
