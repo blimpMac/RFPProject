@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { ArrowLeft, Eye, EyeOff, LockKeyhole } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../components/AuthProvider';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Button, Spinner } from '../components/ui';
@@ -34,24 +34,15 @@ export function LoginPage() {
 
   return (
     <main className="flex min-h-screen flex-col bg-slate-100">
-      <header className="flex items-center justify-between px-4 py-4 sm:px-8">
-        <Link
-          to="/"
-          className="focus-ring inline-flex items-center gap-2 rounded-lg font-semibold text-[#173f6b]"
-          aria-label="RFP Monitoring request form"
-        >
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#173f6b] text-white">
-            <LockKeyhole size={18} aria-hidden="true" />
-          </span>
-          <span>RFP Monitoring</span>
-        </Link>
+      <header className="flex items-center justify-end px-4 py-4 sm:px-8">
         <ThemeToggle compact />
       </header>
 
       <section className="staff-login-stage grid flex-1 place-items-center px-4 py-6 sm:py-8">
         <form
           onSubmit={submit}
-          className="staff-login-card card page-enter w-full max-w-sm shadow-lg"
+          className="staff-login-card card page-enter w-full p-6 shadow-lg sm:p-7"
+          style={{ maxWidth: '28rem' }}
           aria-labelledby="staff-login-title"
         >
           <h1 id="staff-login-title" className="text-2xl font-semibold tracking-tight">
