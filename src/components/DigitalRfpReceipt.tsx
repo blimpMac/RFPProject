@@ -63,6 +63,25 @@ export type DigitalRfpAttachment = {
 
 const value = (input: string | null | undefined, fallback = '—') => input?.trim() || fallback;
 
+const financeStages = [
+  { label: 'For Processing', statuses: ['Processing', 'Payment Processing'] },
+  { label: 'Check Preparation', statuses: ['Check Preparation'] },
+  { label: 'Check Approval', statuses: ['Check Approval', 'Awaiting Signatory'] },
+  { label: 'Check Released', statuses: ['Check Released'] },
+  { label: 'Paid', statuses: ['Paid', 'Payment Released'] },
+];
+
+function stageIndex(status: string) {
+  return financeStages.findIndex((stage) => stage.statuses.includes(status));
+}
+
+function statusClass(status?: string | null) {
+  const text = String(status || '').toLowerCase();
+  if (/approved|submitted|paid|released|complete/.test(text)) return 'is-approved';
+  if (/returned|rejected|declined|incomplete|overdue/.test(text)) return 'is-returned';
+  return 'is-pending';
+}
+
 export function DigitalRfpReceipt({
   request,
   attachments,
@@ -87,8 +106,8 @@ export function DigitalRfpReceipt({
     );
   const processingOverdue = Boolean(
     workflow.processing_due_at &&
-    new Date(workflow.processing_due_at).getTime() < Date.now() &&
-    !/paid|completed/i.test(request.final_status),
+      new Date(workflow.processing_due_at).getTime() < Date.now() &&
+      !/paid|completed/i.test(request.final_status),
   );
   const processStatus = processingOverdue
     ? 'Overdue'
@@ -96,221 +115,239 @@ export function DigitalRfpReceipt({
   const availableAttachments = attachments.filter((attachment) => attachment.status !== 'deleted');
   const requirements = documentRequirementsFor(request.rfp_type);
   const selected = new Set(submissionChecklist.map((item) => item.toLowerCase()));
+  const documentItems = requirements.flatMap((group) => group.items).slice(0, 6);
   const typeOfRequest = request.request_type || request.raw_record?.request_type || 'Not recorded';
   const paymentMethod = request.raw_record?.payment_method || 'Not recorded';
+  const currentFinanceStage = stageIndex(request.final_status);
 
   return (
     <article className="digital-rfp-sheet" aria-label={`Digital RFP ${request.rfp_number}`}>
       <header className="digital-rfp-header">
         <div className="digital-rfp-brand">
           <img src={brand.logo} alt={`${brand.name} logo`} />
-          <span>{request.company || brand.name}</span>
         </div>
         <div className="digital-rfp-title">
-          <h1>REQUEST FOR PAYMENT</h1>
-          <p>Digital RFP · System Generated</p>
+          <h1>REQUEST FOR PAYMENT (RFP)</h1>
+          <p>Digital RFP – System Generated</p>
         </div>
-        <div className="digital-rfp-number">
-          <span>RFP NUMBER</span>
-          <strong>{request.rfp_number}</strong>
-          <small>{value(request.final_status)}</small>
+        <div className="digital-rfp-number-block">
+          <div className="digital-rfp-number">
+            <span>RFP No.</span>
+            <strong>{request.rfp_number}</strong>
+          </div>
+          <div className="digital-rfp-view-badge">
+            <strong>VIEW</strong>
+            <span>IN SYSTEM</span>
+          </div>
         </div>
       </header>
 
       <ReceiptSection title="1. Request details">
-        <div className="digital-rfp-detail-grid">
-          <Detail label="Requestor" value={request.requestor_name} />
-          <Detail label="Department" value={request.department} />
-          <Detail label="Date filed" value={manilaDate(request.submitted_at, true)} />
-          <Detail label="Company" value={request.company || brand.name} />
-          <Detail label="Type" value={request.rfp_type} />
-          <Detail label="Type of request" value={typeOfRequest} />
-          <Detail label="Payee / supplier" value={request.supplier_payee} />
-          <Detail label="Payment method" value={paymentMethod} />
-          <Detail label="Amount" value={php.format(request.amount)} strong />
-          <Detail
-            label="Requested payment date"
-            value={manilaDate(request.required_payment_date)}
-          />
-          <Detail label="Project / cost center" value={request.project_class} />
-          <Detail label="Purpose" value={request.purpose_description} wide />
+        <div className="digital-rfp-reference-grid">
+          <div>
+            <ReferenceRow label="Requesting Department" value={request.department} />
+            <ReferenceRow label="Requestor" value={request.requestor_name} />
+            <ReferenceRow label="Payee / Supplier" value={request.supplier_payee} />
+            <ReferenceRow label="Purpose" value={request.purpose_description} />
+            <ReferenceRow label="Project / Cost Center" value={request.project_class} />
+            <ReferenceRow label="Company" value={request.company || brand.name} />
+          </div>
+          <div>
+            <ReferenceRow label="Date Filed" value={manilaDate(request.submitted_at, true)} />
+            <ReferenceRow label="Type" value={request.rfp_type} />
+            <ReferenceRow label="Type of Request" value={typeOfRequest} />
+            <ReferenceRow label="Payment Method" value={paymentMethod} />
+            <ReferenceRow label="Amount" value={php.format(request.amount)} strong />
+            <ReferenceRow
+              label="Requested Payment Date"
+              value={manilaDate(request.required_payment_date)}
+            />
+          </div>
         </div>
       </ReceiptSection>
 
-      <ReceiptSection title="2. Required and received documents">
-        <div className="digital-rfp-document-columns">
-          <DocumentGroup title="Required checklist">
-            {requirements.length ? (
-              requirements.flatMap((group) =>
-                group.items.map((item) => (
-                  <li key={`${group.label}-${item}`}>
-                    <span>{selected.has(item.toLowerCase()) ? '✓' : '□'}</span>
-                    <div>
-                      <strong>{item}</strong>
-                      <small>{group.label}</small>
-                    </div>
-                  </li>
-                )),
-              )
-            ) : (
-              <li>No static checklist is configured for this request type.</li>
-            )}
-          </DocumentGroup>
-          <DocumentGroup title="Uploaded soft copies">
-            {availableAttachments.length ? (
-              availableAttachments.map((attachment) => (
-                <li key={attachment.id}>
-                  <span>✓</span>
-                  <strong>{attachment.original_filename}</strong>
-                </li>
+      <div className="digital-rfp-middle-grid">
+        <ReceiptSection title="2. Attached documents (soft copy)" compact>
+          <div className="digital-rfp-checklist">
+            {documentItems.length ? (
+              documentItems.map((item) => (
+                <CheckItem key={item} label={item} checked={selected.has(item.toLowerCase())} />
               ))
             ) : (
-              <li>No soft-copy attachment was submitted.</li>
+              <CheckItem label="Supporting document" checked={availableAttachments.length > 0} />
             )}
-          </DocumentGroup>
-          <DocumentGroup title="Late documents received">
-            {receipt.lateDocuments.length ? (
-              receipt.lateDocuments.map((document) => (
-                <li key={document}>
-                  <span>+</span>
-                  <strong>{document}</strong>
-                </li>
-              ))
-            ) : (
-              <li>No late documents recorded.</li>
-            )}
-          </DocumentGroup>
-        </div>
-        <div className="digital-rfp-document-status">
-          <strong>Finance document status</strong>
-          <span>{receipt.hardCopy.status || 'Pending verification'}</span>
-          <p>{receipt.hardCopy.remarks || 'No verification remarks recorded.'}</p>
+          </div>
+          <div className="digital-rfp-document-note">
+            {availableAttachments.length} uploaded file{availableAttachments.length === 1 ? '' : 's'}
+            {receipt.lateDocuments.length
+              ? ` · ${receipt.lateDocuments.length} late document${receipt.lateDocuments.length === 1 ? '' : 's'}`
+              : ''}
+          </div>
+        </ReceiptSection>
+
+        <ReceiptSection title="3. Approval status" compact>
+          <div className="digital-rfp-approval-strip">
+            <ApprovalCard
+              stage="Requestor"
+              actor={request.requestor_name}
+              date={request.submitted_at}
+              status="Submitted"
+            />
+            <ApprovalCard
+              stage="Department Head"
+              actor={request.approving_head}
+              date={request.department_approval_at}
+              status={request.department_approval}
+            />
+            <ApprovalCard
+              stage="Finance Member"
+              actor={workflow.member_reviewed_by}
+              date={workflow.member_reviewed_at || request.finance_review_at}
+              status={workflow.member_status || request.finance_review}
+            />
+            <ApprovalCard
+              stage="Finance Head"
+              actor={workflow.head_reviewed_by}
+              date={workflow.head_reviewed_at}
+              status={workflow.head_status || 'Pending'}
+            />
+          </div>
+        </ReceiptSection>
+      </div>
+
+      <ReceiptSection title="4. Finance – hard-copy document verification (for Finance use only)">
+        <div className="digital-rfp-hardcopy-grid">
+          <div className="digital-rfp-hardcopy-column">
+            <LineField label="Date Received" value={manilaDate(receipt.hardCopy.receivedDate)} />
+            <div className="digital-rfp-status-line">
+              <span>Document Status</span>
+              <CheckItem label="Complete" checked={receipt.hardCopy.status === 'Complete'} />
+              <CheckItem label="Incomplete" checked={receipt.hardCopy.status === 'Incomplete'} />
+            </div>
+            <LineField label="Remarks (if any)" value={value(receipt.hardCopy.remarks, '')} />
+          </div>
+          <div className="digital-rfp-hardcopy-column digital-rfp-hardcopy-signoff">
+            <LineField label="Verified By" value={value(receipt.hardCopy.verifiedBy, '')} />
+            <LineField label="Date" value={manilaDate(receipt.hardCopy.verifiedAt, true)} />
+          </div>
         </div>
       </ReceiptSection>
 
-      <ReceiptSection title="3. Approval path">
-        <div className="digital-rfp-approval-table" role="table" aria-label="Approval path">
-          <ApprovalRow
-            stage="Requestor"
-            actor={`${request.requestor_name}${request.requestor_email ? ` · ${request.requestor_email}` : ''}`}
-            status="Submitted"
-            date={request.submitted_at}
-            remarks="Request filed"
+      <ReceiptSection title="5. Finance approval and processing (for Finance use only)">
+        <div className="digital-rfp-finance-grid">
+          <ReferenceRow label="Finance Approver" value={value(receipt.processing.approvedBy)} />
+          <ReferenceRow
+            label="Approval Date"
+            value={manilaDate(receipt.processing.approvedAt, true)}
           />
-          <ApprovalRow
-            stage="Department Head"
-            actor={request.approving_head}
-            status={request.department_approval}
-            date={request.department_approval_at}
-            remarks={request.department_approval_remarks}
-          />
-          <ApprovalRow
-            stage="Finance Member"
-            actor={workflow.member_reviewed_by}
-            status={workflow.member_status || request.finance_review}
-            date={workflow.member_reviewed_at || request.finance_review_at}
-            remarks={request.finance_remarks}
-          />
-          <ApprovalRow
-            stage="Finance Head"
-            actor={workflow.head_reviewed_by}
-            status={workflow.head_status || 'Pending'}
-            date={workflow.head_reviewed_at}
-            remarks={request.finance_remarks}
+          <ReferenceRow
+            label="Target Release Date"
+            value={manilaDate(receipt.processing.targetReleaseDate)}
           />
         </div>
-      </ReceiptSection>
-
-      <ReceiptSection title="4. Finance hard-copy verification">
-        <div className="digital-rfp-detail-grid">
-          <Detail label="Date received" value={manilaDate(receipt.hardCopy.receivedDate)} />
-          <Detail label="Document status" value={receipt.hardCopy.status || 'Pending'} strong />
-          <Detail label="Verified by" value={value(receipt.hardCopy.verifiedBy)} />
-          <Detail label="Verified date" value={manilaDate(receipt.hardCopy.verifiedAt, true)} />
-          <Detail label="Remarks" value={value(receipt.hardCopy.remarks)} wide />
-        </div>
-      </ReceiptSection>
-
-      <ReceiptSection title="5. Finance approval and processing">
-        <div className="digital-rfp-processing-grid">
-          <Detail label="Finance approver" value={value(receipt.processing.approvedBy)} />
-          <Detail label="Approval date" value={manilaDate(receipt.processing.approvedAt, true)} />
-          <Detail
-            label="Processing started"
-            value={manilaDate(workflow.processing_started_at, true)}
+        <div className="digital-rfp-processing-row">
+          <ReferenceRow
+            label="Check No. / Payment Ref."
+            value={
+              [receipt.processing.checkNumber, receipt.processing.paymentReference]
+                .filter(Boolean)
+                .join(' / ') || '—'
+            }
           />
-          <Detail label="3-day deadline" value={manilaDate(workflow.processing_due_at, true)} />
-          <Detail label="Target release" value={manilaDate(receipt.processing.targetReleaseDate)} />
-          <Detail label="Current status" value={processStatus} strong />
-          <Detail label="Check number" value={value(receipt.processing.checkNumber)} />
-          <Detail label="Payment reference" value={value(receipt.processing.paymentReference)} />
+          <div className="digital-rfp-processing-status">
+            <span className="digital-rfp-processing-label">Status</span>
+            {financeStages.map((stage, index) => (
+              <CheckItem
+                key={stage.label}
+                label={stage.label}
+                checked={currentFinanceStage >= 0 && index <= currentFinanceStage}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="digital-rfp-current-state">
+          Current system status: <strong className={statusClass(processStatus)}>{processStatus}</strong>
         </div>
       </ReceiptSection>
 
       <footer className="digital-rfp-footer">
-        System-generated record · Printed {manilaDate(new Date().toISOString(), true)} · Asia/Manila
+        System-generated record · {brand.name} · Printed {manilaDate(new Date().toISOString(), true)}
       </footer>
     </article>
   );
 }
 
-function ReceiptSection({ title, children }: { title: string; children: React.ReactNode }) {
+function ReceiptSection({
+  title,
+  children,
+  compact = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  compact?: boolean;
+}) {
   return (
-    <section className="digital-rfp-section">
+    <section className={`digital-rfp-section${compact ? ' digital-rfp-section-compact' : ''}`}>
       <h2>{title}</h2>
       {children}
     </section>
   );
 }
 
-function Detail({
+function ReferenceRow({
   label,
   value: detailValue,
   strong = false,
-  wide = false,
 }: {
   label: string;
   value: string;
   strong?: boolean;
-  wide?: boolean;
 }) {
   return (
-    <div className={`digital-rfp-detail${wide ? ' digital-rfp-detail-wide' : ''}`}>
+    <div className="digital-rfp-reference-row">
       <span>{label}</span>
       {strong ? <strong>{detailValue}</strong> : <p>{detailValue}</p>}
     </div>
   );
 }
 
-function DocumentGroup({ title, children }: { title: string; children: React.ReactNode }) {
+function CheckItem({ label, checked }: { label: string; checked: boolean }) {
   return (
-    <div className="digital-rfp-document-group">
-      <h3>{title}</h3>
-      <ul>{children}</ul>
+    <span className="digital-rfp-check-item">
+      <span className={`digital-rfp-box${checked ? ' is-checked' : ''}`} aria-hidden="true">
+        {checked ? '✓' : ''}
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function ApprovalCard({
+  stage,
+  actor,
+  date,
+  status,
+}: {
+  stage: string;
+  actor?: string | null;
+  date?: string | null;
+  status?: string | null;
+}) {
+  return (
+    <div className="digital-rfp-approval-card">
+      <span>{stage}</span>
+      <strong>{value(actor, 'Pending')}</strong>
+      <small>{manilaDate(date, true)}</small>
+      <em className={statusClass(status)}>{value(status, 'Pending').toUpperCase()}</em>
     </div>
   );
 }
 
-function ApprovalRow({
-  stage,
-  actor,
-  status,
-  date,
-  remarks,
-}: {
-  stage: string;
-  actor?: string | null;
-  status?: string | null;
-  date?: string | null;
-  remarks?: string | null;
-}) {
+function LineField({ label, value: detailValue }: { label: string; value: string }) {
   return (
-    <div className="digital-rfp-approval-row" role="row">
-      <strong role="cell">{stage}</strong>
-      <span role="cell">{value(actor, 'Not yet assigned')}</span>
-      <span role="cell">{value(status, 'Pending')}</span>
-      <span role="cell">{manilaDate(date, true)}</span>
-      <span role="cell">{value(remarks)}</span>
+    <div className="digital-rfp-line-field">
+      <span>{label}</span>
+      <strong>{detailValue || ' '}</strong>
     </div>
   );
 }
