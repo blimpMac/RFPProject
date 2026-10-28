@@ -8,7 +8,6 @@ import {
   History,
   LogOut,
   Menu,
-  Search,
   Table2,
   Users,
   X,
@@ -102,20 +101,12 @@ export function AdminLayout() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [navigationSearch, setNavigationSearch] = useState('');
   const [editingName, setEditingName] = useState(false);
 
   const availableItems = useMemo(
     () => navigationItems.filter((item) => canViewNavigationItem(item, roles)),
     [roles],
   );
-  const visibleItems = useMemo(() => {
-    const query = navigationSearch.trim().toLowerCase();
-    if (!query) return availableItems;
-    return availableItems.filter((item) =>
-      `${item.label} ${item.description}`.toLowerCase().includes(query),
-    );
-  }, [availableItems, navigationSearch]);
   const currentItem =
     [...availableItems]
       .sort((a, b) => b.to.length - a.to.length)
@@ -207,26 +198,12 @@ export function AdminLayout() {
             </button>
           </div>
 
-          {!collapsed && (
-            <div className="shrink-0 px-3 pt-4">
-              <label className="admin-nav-search">
-                <Search size={15} aria-hidden="true" />
-                <span className="sr-only">Find a workspace page</span>
-                <input
-                  value={navigationSearch}
-                  onChange={(event) => setNavigationSearch(event.target.value)}
-                  placeholder="Find a page"
-                />
-              </label>
-            </div>
-          )}
-
           <nav
             className="min-h-0 flex-1 overflow-hidden px-3 pb-3 pt-4"
             aria-label="Staff navigation"
           >
             {(['Workspace', 'Administration'] as const).map((group) => {
-              const items = visibleItems.filter((item) => item.group === group);
+              const items = availableItems.filter((item) => item.group === group);
               if (!items.length) return null;
               return (
                 <div className="mb-5" key={group}>
@@ -262,9 +239,6 @@ export function AdminLayout() {
                 </div>
               );
             })}
-            {!visibleItems.length && !collapsed && (
-              <p className="px-3 py-6 text-center text-xs text-slate-400">No matching pages</p>
-            )}
           </nav>
 
           <div className="admin-sidebar-footer shrink-0 p-3">
