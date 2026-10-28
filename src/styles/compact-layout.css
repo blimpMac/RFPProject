@@ -1,0 +1,211 @@
+/* Global compact layout: smaller dashboard cards and safe horizontal containment. */
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.admin-shell,
+.admin-content,
+#main-content,
+.page-enter,
+.card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Keep card density consistent across Overview, Documents, Accounts, Audit, and Finance pages. */
+.card.p-4 {
+  padding: 0.8rem !important;
+}
+
+.card.p-5 {
+  padding: 0.95rem !important;
+}
+
+.card.p-6 {
+  padding: 1rem !important;
+}
+
+.metric-grid {
+  gap: 0.65rem;
+}
+
+.metric-card {
+  padding: 0.78rem;
+  border-radius: 0.8rem;
+}
+
+.metric-icon {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.metric-value {
+  font-size: clamp(1.15rem, 1.5vw, 1.45rem);
+}
+
+/* Approval summary cards: same compact density, with smaller vertical footprint. */
+.queue-health-grid {
+  gap: 0.55rem;
+}
+
+.queue-health-card {
+  min-height: 4.8rem;
+  gap: 0.5rem;
+  padding: 0.65rem 0.7rem;
+  border-radius: 0.8rem;
+}
+
+.queue-health-card strong {
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.queue-health-card small {
+  font-size: 0.6rem;
+  line-height: 1.25;
+}
+
+.queue-health-icon {
+  width: 2rem;
+  height: 2rem;
+}
+
+.queue-health-count {
+  min-width: 1.7rem;
+  height: 1.7rem;
+  padding: 0 0.35rem;
+}
+
+/* Approval filters should wrap inside the content area instead of widening the page. */
+.approval-filter-panel {
+  min-width: 0;
+  gap: 0.6rem;
+  grid-template-columns: minmax(9rem, 1.1fr) minmax(11rem, 1.45fr) repeat(4, minmax(7rem, 1fr)) auto;
+}
+
+.approval-filter-panel > * {
+  min-width: 0;
+}
+
+/* Keep wide data inside its own scroll region; never push the application shell wider. */
+.finance-table-wrap,
+.table-scroll,
+main .overflow-x-auto {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.finance-request-table {
+  width: 100%;
+  min-width: 56rem;
+  table-layout: fixed;
+}
+
+.finance-request-table th,
+.finance-request-table td {
+  padding-left: 0.7rem;
+  padding-right: 0.7rem;
+}
+
+.finance-request-table th:nth-child(1),
+.finance-request-table td:nth-child(1) {
+  width: 14%;
+}
+
+.finance-request-table th:nth-child(2),
+.finance-request-table td:nth-child(2) {
+  width: 20%;
+}
+
+.finance-request-table th:nth-child(3),
+.finance-request-table td:nth-child(3) {
+  width: 10%;
+}
+
+.finance-request-table th:nth-child(4),
+.finance-request-table td:nth-child(4) {
+  width: 18%;
+}
+
+.finance-request-table th:nth-child(5),
+.finance-request-table td:nth-child(5) {
+  width: 15%;
+}
+
+.finance-request-table th:nth-child(6),
+.finance-request-table td:nth-child(6),
+.finance-request-table th:last-child,
+.finance-request-table td:last-child {
+  width: 23%;
+}
+
+.finance-request-table .status {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+
+.finance-request-table .sla-badge {
+  max-width: 100%;
+  margin-top: 0;
+  white-space: normal;
+}
+
+.finance-row-actions {
+  flex-wrap: wrap;
+  row-gap: 0.3rem;
+}
+
+.finance-row-actions button {
+  padding: 0.3rem 0.45rem;
+}
+
+@media (max-width: 1279px) {
+  .approval-filter-panel {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .approval-search {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 900px) {
+  .queue-health-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .approval-filter-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .approval-search {
+    grid-column: 1 / -1;
+  }
+
+  .finance-request-table {
+    min-width: 52rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .queue-health-grid,
+  .approval-filter-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .approval-search {
+    grid-column: auto;
+  }
+
+  .card.p-4,
+  .card.p-5,
+  .card.p-6 {
+    padding: 0.75rem !important;
+  }
+}
