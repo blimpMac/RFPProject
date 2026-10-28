@@ -1,0 +1,201 @@
+/* Final responsive guardrails for phones, tablets, and iPad-sized viewports. */
+
+/* Keep the public request form single-column through tablet widths so no field,
+   checklist, or upload section is squeezed or clipped. */
+@media (max-width: 1100px) {
+  main.page-enter.max-w-5xl > form.card > .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  main.page-enter.max-w-5xl > form.card > .grid > * {
+    min-width: 0 !important;
+    grid-column: 1 / -1 !important;
+  }
+
+  main.page-enter.max-w-5xl > form.card section > .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  main.page-enter.max-w-5xl form .field,
+  main.page-enter.max-w-5xl form section,
+  main.page-enter.max-w-5xl form input,
+  main.page-enter.max-w-5xl form select,
+  main.page-enter.max-w-5xl form textarea {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Finance request popup: use one readable column on tablets and one scroll
+     container instead of a nested receipt scroller. */
+  .finance-detail-grid,
+  .finance-update-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .finance-detail-grid > *,
+  .finance-update-grid > * {
+    min-width: 0;
+  }
+
+  .finance-detail-wide,
+  .finance-update-wide {
+    grid-column: auto !important;
+  }
+
+  .finance-update-footer,
+  .finance-modal-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .finance-modal-summary p {
+    text-align: left;
+  }
+
+  .finance-receipt-preview {
+    max-height: none;
+    overflow: visible;
+    padding: 0.5rem;
+  }
+
+  /* The Digital RFP receipt also needs to reflow before an iPad reaches phone
+     width. This keeps every section visible inside the Finance modal. */
+  .digital-rfp-header {
+    grid-template-columns: minmax(0, 1fr) !important;
+    text-align: center;
+  }
+
+  .digital-rfp-brand img {
+    margin: 0 auto;
+  }
+
+  .digital-rfp-number-block {
+    max-width: 100%;
+    justify-self: center;
+  }
+
+  .digital-rfp-reference-grid,
+  .digital-rfp-middle-grid,
+  .digital-rfp-hardcopy-grid,
+  .digital-rfp-finance-grid,
+  .digital-rfp-processing-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .digital-rfp-reference-grid > div:first-child,
+  .digital-rfp-hardcopy-column:first-child,
+  .digital-rfp-finance-grid .digital-rfp-reference-row,
+  .digital-rfp-processing-row > .digital-rfp-reference-row {
+    border-right: 0;
+  }
+
+  .digital-rfp-approval-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .digital-rfp-approval-card:nth-child(2) {
+    border-right: 0;
+  }
+
+  .digital-rfp-approval-card:nth-child(-n + 2) {
+    border-bottom: 1px solid #d7dee5;
+  }
+
+  /* Wide dialogs should use almost the entire viewport, while preserving one
+     internal vertical scroll area and a sticky close/header row. */
+  .modal-panel {
+    width: 100%;
+    max-width: calc(100vw - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+  }
+
+  .modal-panel > .p-5 {
+    padding: 1rem !important;
+  }
+
+  .modal-header {
+    gap: 0.75rem;
+    padding: 0.8rem 1rem !important;
+  }
+
+  .modal-header h2 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .modal-close-button {
+    flex: 0 0 auto;
+  }
+}
+
+/* Tailwind's lg breakpoint starts at 1024px. That is still tablet/iPad width,
+   so keep the navigation as an overlay until xl (1280px) and let content use
+   the full viewport. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .admin-content,
+  .admin-shell-collapsed .admin-content {
+    margin-left: 0 !important;
+  }
+
+  .admin-mobile-menu {
+    display: grid !important;
+  }
+
+  .admin-shell > button[aria-label='Close navigation menu'] {
+    display: block !important;
+  }
+
+  .admin-sidebar {
+    width: 18rem !important;
+  }
+
+  .admin-sidebar.-translate-x-full {
+    transform: translateX(-100%) !important;
+  }
+
+  .admin-sidebar.translate-x-0 {
+    transform: translateX(0) !important;
+  }
+
+  .admin-collapse {
+    display: none !important;
+  }
+
+  .admin-topbar {
+    padding-left: 4.75rem !important;
+    padding-right: 1.5rem !important;
+  }
+
+  #main-content {
+    padding: 1.5rem !important;
+  }
+}
+
+@media (max-width: 640px) {
+  main.page-enter.max-w-5xl {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  main.page-enter.max-w-5xl > form.card {
+    padding: 0.85rem !important;
+  }
+
+  .finance-update-footer .btn,
+  main.page-enter.max-w-5xl > form.card > .mt-6 .btn {
+    width: 100%;
+  }
+
+  .digital-rfp-approval-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .digital-rfp-approval-card,
+  .digital-rfp-approval-card:nth-child(2) {
+    border-right: 0;
+  }
+
+  .digital-rfp-approval-card:not(:last-child) {
+    border-bottom: 1px solid #d7dee5;
+  }
+}

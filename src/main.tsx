@@ -6,6 +6,7 @@ import './styles/finance-refinement.css';
 import './styles/digital-rfp.css';
 import './styles/ux-refinement.css';
 import './styles/compact-layout.css';
+import './styles/responsive-fix.css';
 
 const themeStorageKey = 'rfp-theme';
 const savedTheme = localStorage.getItem(themeStorageKey);
