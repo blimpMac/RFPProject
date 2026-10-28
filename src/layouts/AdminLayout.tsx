@@ -147,7 +147,7 @@ export function AdminLayout() {
       <div className={`admin-shell min-h-screen ${collapsed ? 'admin-shell-collapsed' : ''}`}>
         <button
           type="button"
-          className="admin-mobile-menu fixed left-3 top-3 z-40 p-2 lg:hidden"
+          className="admin-mobile-menu fixed left-4 top-[2.625rem] z-40 grid -translate-y-1/2 place-items-center p-2 lg:hidden"
           onClick={() => setOpen(!open)}
           aria-label={open ? 'Close navigation' : 'Open navigation'}
           aria-expanded={open}
@@ -276,16 +276,16 @@ export function AdminLayout() {
         </aside>
 
         <div className="admin-content transition-all">
-          <header className="admin-topbar flex min-h-[5.25rem] items-center gap-4 px-4 pl-16 lg:px-8">
-            <div className="min-w-0">
-              <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-slate-400">
+          <header className="admin-topbar flex min-h-[5.25rem] items-center gap-3 px-4 pl-[4.75rem] sm:gap-4 sm:pl-20 lg:px-8">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[0.68rem] font-bold uppercase tracking-[0.18em] text-slate-400">
                 Operations workspace
               </p>
               <h1 className="truncate text-lg font-semibold tracking-tight">
                 {currentItem?.label || 'RFP workspace'}
               </h1>
             </div>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
               <ThemeToggle compact />
             </div>
           </header>
