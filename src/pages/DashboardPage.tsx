@@ -53,6 +53,7 @@ type RequestRow = {
 };
 type Dashboard = {
   metrics: Record<string, number>;
+  departments?: string[];
   requests: RequestRow[];
   recentActivity: Record<string, unknown>[];
 };
@@ -247,7 +248,11 @@ export function DashboardPage() {
     { name: 'Returned', value: stats.rejected, color: '#e45d59' },
     { name: 'In progress', value: stats.pending, color: '#f0a43c' },
   ];
-  const departments = [...new Set(data!.requests.map((request) => request.department))];
+  const departments = data!.departments?.length
+    ? data!.departments
+    : [...new Set(data!.requests.map((request) => request.department))].sort((a, b) =>
+        a.localeCompare(b),
+      );
   const companies = [
     ...new Set(data!.requests.flatMap((request) => (request.company ? [request.company] : []))),
   ];
