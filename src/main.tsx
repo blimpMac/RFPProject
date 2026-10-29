@@ -7,6 +7,7 @@ import './styles/digital-rfp.css';
 import './styles/ux-refinement.css';
 import './styles/compact-layout.css';
 import './styles/responsive-fix.css';
+import './styles/overflow-polish.css';
 
 const themeStorageKey = 'rfp-theme';
 const savedTheme = localStorage.getItem(themeStorageKey);
