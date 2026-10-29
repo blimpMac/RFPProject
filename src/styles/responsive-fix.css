@@ -1,5 +1,27 @@
 /* Final responsive guardrails for phones, tablets, and iPad-sized viewports. */
 
+/* Keep all application containers shrinkable. A flex/grid child with an implicit
+   min-content width can otherwise widen the whole admin shell even when the
+   outer page clips horizontal overflow. */
+.admin-shell,
+.admin-content,
+#main-content,
+#main-content > *,
+.modal-panel,
+.modal-panel > *,
+.card,
+.card > * {
+  min-width: 0;
+}
+
+img,
+video,
+iframe,
+canvas,
+svg {
+  max-width: 100%;
+}
+
 /* Keep the public request form single-column through tablet widths so no field,
    checklist, or upload section is squeezed or clipped. */
 @media (max-width: 1100px) {
@@ -48,11 +70,22 @@
     flex-direction: column;
   }
 
+  .finance-modal-summary,
+  .finance-modal-summary > div,
+  .finance-update-footer,
+  .finance-update-footer > * {
+    width: 100%;
+    min-width: 0;
+  }
+
   .finance-modal-summary p {
+    max-width: 100%;
     text-align: left;
+    overflow-wrap: anywhere;
   }
 
   .finance-receipt-preview {
+    max-width: 100%;
     max-height: none;
     overflow: visible;
     padding: 0.5rem;
@@ -60,6 +93,18 @@
 
   /* The Digital RFP receipt also needs to reflow before an iPad reaches phone
      width. This keeps every section visible inside the Finance modal. */
+  .digital-rfp-sheet,
+  .digital-rfp-header,
+  .digital-rfp-section,
+  .digital-rfp-middle-grid,
+  .digital-rfp-reference-grid,
+  .digital-rfp-hardcopy-grid,
+  .digital-rfp-finance-grid,
+  .digital-rfp-processing-row {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .digital-rfp-header {
     grid-template-columns: minmax(0, 1fr) !important;
     text-align: center;
@@ -70,8 +115,15 @@
   }
 
   .digital-rfp-number-block {
+    width: min(100%, 20rem);
     max-width: 100%;
+    min-width: 0;
     justify-self: center;
+  }
+
+  .digital-rfp-number,
+  .digital-rfp-view-badge {
+    min-width: 0;
   }
 
   .digital-rfp-reference-grid,
@@ -101,6 +153,17 @@
     border-bottom: 1px solid #d7dee5;
   }
 
+  .digital-rfp-reference-row p,
+  .digital-rfp-reference-row strong,
+  .digital-rfp-line-field strong,
+  .digital-rfp-check-item > span:last-child,
+  .digital-rfp-approval-card strong,
+  .finance-detail-grid strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
   /* Wide dialogs should use almost the entire viewport, while preserving one
      internal vertical scroll area and a sticky close/header row. */
   .modal-panel {
@@ -126,6 +189,152 @@
   .modal-close-button {
     flex: 0 0 auto;
   }
+
+  .modal-panel input,
+  .modal-panel select,
+  .modal-panel textarea,
+  .modal-panel .input {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+/* Finance's desktop table was deliberately 52–56rem wide. That is useful on a
+   desktop but produces sideways-scrolling content on phones and iPads. Below
+   900px, turn each row into a readable stacked card while retaining the same
+   buttons and row-click behavior. */
+@media (max-width: 900px) {
+  .finance-table-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .finance-table-heading > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .finance-table-heading span {
+    white-space: normal;
+  }
+
+  .finance-table-wrap {
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  .finance-request-table {
+    display: block;
+    width: 100%;
+    min-width: 0 !important;
+    table-layout: auto;
+  }
+
+  .finance-request-table thead {
+    display: none;
+  }
+
+  .finance-request-table tbody {
+    display: grid;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem;
+  }
+
+  .finance-request-table tbody tr {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid #dce5e9;
+    border-radius: 0.8rem;
+    background: #fff;
+  }
+
+  .finance-request-table tbody tr:hover {
+    background: #f7fbfb;
+  }
+
+  .finance-request-table td,
+  .finance-request-table th:last-child,
+  .finance-request-table td:last-child {
+    display: grid;
+    grid-template-columns: minmax(7.75rem, 0.72fr) minmax(0, 1.28fr);
+    align-items: start;
+    gap: 0.75rem;
+    width: auto !important;
+    min-width: 0;
+    max-width: 100%;
+    border: 0;
+    border-bottom: 1px solid #edf1f3;
+    padding: 0.68rem 0.8rem;
+    text-align: left !important;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .finance-request-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .finance-request-table td::before {
+    color: #71838c;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  .finance-request-table td:nth-child(1)::before {
+    content: 'Request';
+  }
+
+  .finance-request-table td:nth-child(2)::before {
+    content: 'Requestor / Department';
+  }
+
+  .finance-request-table td:nth-child(3)::before {
+    content: 'Amount';
+  }
+
+  .finance-request-table td:nth-child(4)::before {
+    content: 'Status';
+  }
+
+  .finance-request-table td:nth-child(5)::before {
+    content: 'SLA';
+  }
+
+  .finance-request-table td:nth-child(6)::before {
+    content: 'Actions';
+  }
+
+  .finance-request-table td > *,
+  .finance-request-table td strong,
+  .finance-request-table td small {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .finance-request-table .status,
+  .finance-request-table .sla-badge {
+    width: fit-content;
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .finance-row-actions {
+    min-width: 0;
+    justify-content: flex-start;
+  }
+
+  .table-toolbar > *,
+  .table-footer > * {
+    min-width: 0;
+    max-width: 100%;
+  }
 }
 
 /* Tailwind's lg breakpoint starts at 1024px. That is still tablet/iPad width,
@@ -146,7 +355,8 @@
   }
 
   .admin-sidebar {
-    width: 18rem !important;
+    width: min(18rem, calc(100vw - 2rem)) !important;
+    max-width: calc(100vw - 2rem);
   }
 
   .admin-sidebar.-translate-x-full {
@@ -172,6 +382,11 @@
 }
 
 @media (max-width: 640px) {
+  #main-content {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
   main.page-enter.max-w-5xl {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
@@ -181,9 +396,116 @@
     padding: 0.85rem !important;
   }
 
+  .finance-refresh-group {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .finance-refresh-group .btn,
+  .finance-refresh-group .live-refresh-indicator,
   .finance-update-footer .btn,
   main.page-enter.max-w-5xl > form.card > .mt-6 .btn {
     width: 100%;
+    min-width: 0;
+  }
+
+  .approval-filter-panel,
+  .approval-filter-panel > * {
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .approval-view-toggle {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .approval-view-toggle button {
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .finance-request-table tbody {
+    padding: 0.6rem;
+  }
+
+  .finance-request-table td,
+  .finance-request-table th:last-child,
+  .finance-request-table td:last-child {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+  }
+
+  .finance-row-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .finance-row-actions button {
+    min-width: 0;
+    width: 100%;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+    white-space: normal;
+  }
+
+  .table-toolbar {
+    width: 100%;
+  }
+
+  .table-toolbar .btn {
+    width: 100%;
+    min-width: 0;
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+    white-space: normal;
+  }
+
+  .table-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .table-footer > div {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .card .field.min-w-52 {
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .modal-panel form > .flex.justify-end {
+    flex-wrap: wrap;
+  }
+
+  .modal-panel form > .flex.justify-end .btn {
+    flex: 1 1 8rem;
+    min-width: 0;
+  }
+
+  .digital-rfp-number-block {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .digital-rfp-status-line {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .digital-rfp-status-line > span:first-child {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .digital-rfp-processing-status,
+  .digital-rfp-checklist {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .digital-rfp-approval-strip {
@@ -197,6 +519,24 @@
 
   .digital-rfp-approval-card:not(:last-child) {
     border-bottom: 1px solid #d7dee5;
+  }
+}
+
+@media (max-width: 420px) {
+  .finance-row-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .approval-view-toggle {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .digital-rfp-number-block {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .digital-rfp-view-badge {
+    min-height: 2.5rem;
   }
 }
 
