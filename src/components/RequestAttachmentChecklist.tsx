@@ -9,7 +9,7 @@ export function RequestAttachmentChecklist({
   onChange: (items: string[]) => void;
 }) {
   const groups = documentRequirementsFor(rfpType);
-  if (!groups) return null;
+  if (!rfpType || groups.length === 0) return null;
 
   return (
     <section className="md:col-span-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
@@ -35,6 +35,9 @@ export function RequestAttachmentChecklist({
               {group.label}
             </p>
             <ul className="mt-2 space-y-2 text-sm text-slate-700 dark:text-slate-200">
+              {group.items.length === 0 && (
+                <li className="text-slate-500 dark:text-slate-400">No separate external documents listed in the source worksheet.</li>
+              )}
               {group.items.map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <span
@@ -55,8 +58,9 @@ export function RequestAttachmentChecklist({
       >
         <Info className="mt-0.5 shrink-0" size={17} aria-hidden="true" />
         <p className="font-medium leading-6">
-          Prepare the documents listed above before submitting your request. Missing documents can
-          still be submitted later for Finance verification.
+          Prepare the applicable internal and external documents for your request. Items marked
+          "if any" or "if needed" apply conditionally; additional documents may be requested during
+          Finance verification.
         </p>
       </div>
     </section>
