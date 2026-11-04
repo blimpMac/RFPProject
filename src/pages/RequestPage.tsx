@@ -78,13 +78,18 @@ export function RequestPage() {
     [approvers, form.department],
   );
   useEffect(() => {
-    if (selectedApprover) setForm((f) => ({ ...f, approvingHead: selectedApprover.approver_name }));
+    setForm((f) => ({ ...f, approvingHead: selectedApprover?.approver_name || '' }));
   }, [selectedApprover]);
   const update = (key: keyof FormState, value: string) => setForm((f) => ({ ...f, [key]: value }));
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusy(true);
     setError('');
+    const missing = Object.values(form).some((value) => !value.trim());
+    if (missing || !selectedApprover) {
+      setError('Complete every required field and choose a department with an active Approving Head.');
+      return;
+    }
+    setBusy(true);
     try {
       const started = await post<StartResult>('submissions/start', {
         request: {
@@ -248,7 +253,7 @@ export function RequestPage() {
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">New RFP request</h1>
           <p className="mt-2 max-w-2xl text-base text-slate-600">
-            Complete the request details and review the document checklist for the selected type.
+            All fields are required. Complete the request details and review the internal and external document requirements for the selected type.
           </p>
         </div>
         <form onSubmit={submit} className="card p-5 shadow-sm sm:p-7">
@@ -286,7 +291,7 @@ export function RequestPage() {
             <FormSection
               number="2"
               title="Payment details"
-              description="Classify the request, identify the payee, and provide the amount and required payment date."
+              description="Classify the request, identify the payee, and provide the amount and date needed."
             />
             <Field
               label="Project / Class"
@@ -323,7 +328,7 @@ export function RequestPage() {
               onChange={(v) => update('amount', v)}
             />
             <Field
-              label="Required Payment Date"
+              label="Date Needed"
               type="date"
               value={form.requiredPaymentDate}
               onChange={(v) => update('requiredPaymentDate', v)}
@@ -336,7 +341,7 @@ export function RequestPage() {
               placeholder="Selected from active department approver"
             />
             <div className="field md:col-span-2">
-              <label htmlFor="purpose-description">Purpose / Description</label>
+              <label htmlFor="purpose-description">Purpose / Description <span aria-hidden="true" className="text-red-600">*</span></label>
               <textarea
                 id="purpose-description"
                 className="input min-h-28"
@@ -349,7 +354,7 @@ export function RequestPage() {
             <FormSection
               number="3"
               title="Supporting documents"
-              description="Review the requirements for the selected Type and attach any files already available. Attachments remain optional at submission."
+              description="Check the internal and external requirements for the selected Type. Attach the supporting documents available; conditional items apply only when relevant."
             />
             <RequestAttachmentChecklist
               rfpType={form.rfpType}
@@ -376,6 +381,11 @@ export function RequestPage() {
           {error && (
             <p className="mt-5 rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
               {error}
+            </p>
+          )}
+          {form.department && !selectedApprover && (
+            <p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+              This department does not yet have an active Approving Head. Ask an administrator to configure its approval routing before submitting.
             </p>
           )}
           <div className="mt-6 flex justify-end">
@@ -455,7 +465,7 @@ function Field({
   const id = props.id || label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   return (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{label} <span aria-hidden="true" className="text-red-600">*</span></label>
       <input
         id={id}
         className="input"

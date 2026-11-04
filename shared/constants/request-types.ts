@@ -1,11 +1,11 @@
 export const rfpRequestTypes = [
-  'Trade Supplier',
-  'Exclusive Supplier',
-  'Subcon Request',
-  'TTC Request',
-  'Open payment - Agency',
+  'Trade Suppliers',
+  'Kaliwaan Suppliers',
+  'Subcon Payment Request',
+  'TPC Request',
+  'Manpower Agency Payments',
   'Reimbursement',
-  'Open - non PO transactions',
+  'Opex - non PO transactions',
   'Cash Advance Request',
-  'CA / EF Liquidation',
+  'CA / RF Liquidation',
 ] as const;
