@@ -225,12 +225,7 @@ export function AccountForm({
             <option value="approver">Department Head</option>
           </select>
         </div>
-        {accessLevel === 'staff' ? (
-          <div className="rounded border bg-slate-50 p-3 text-sm text-slate-700">
-            Department: <strong>Finance</strong>. Finance Head approval belongs only to the Super
-            Admin account.
-          </div>
-        ) : (
+        {accessLevel !== 'staff' && (
           <div className="field">
             <label htmlFor="account-department">Department</label>
             <select
