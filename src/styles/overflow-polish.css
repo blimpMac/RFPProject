@@ -387,7 +387,8 @@
   flex: none;
   place-items: center;
   justify-self: end;
-  align-self: start;
+  /* Align the counter with the text block rather than the card's top edge. */
+  align-self: center;
   width: 1.85rem;
   height: 1.85rem;
   min-width: 1.85rem;
