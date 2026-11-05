@@ -8,6 +8,7 @@ import { get, post } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import type { PublicOptions } from '../types';
 import { companies } from '../../shared/constants/companies';
+import { isAfterManilaCutoff, manilaReceiptSchedule } from '../../shared/utils/processing-sla';
 
 type FormState = {
   requestorName: string;
@@ -55,6 +56,13 @@ export function RequestPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<{ rfpNumber: string; trackingToken: string }>();
   const [copied, setCopied] = useState(false);
+  const [clock, setClock] = useState(() => Date.now());
+  const afterCutoff = isAfterManilaCutoff(clock);
+  const slaSchedule = manilaReceiptSchedule(clock);
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
   useEffect(() => {
     get<{
       options: PublicOptions;
@@ -87,6 +95,10 @@ export function RequestPage() {
     const missing = Object.values(form).some((value) => !value.trim());
     if (missing || !selectedApprover) {
       setError('Complete every required field and choose a department with an active Approving Head.');
+      return;
+    }
+    if (form.requestorName.trim().split(/\s+/u).length < 2) {
+      setError('Enter the requestor’s full first and last name for check verification.');
       return;
     }
     setBusy(true);
@@ -256,6 +268,13 @@ export function RequestPage() {
             All fields are required. Complete the request details and review the internal and external document requirements for the selected type.
           </p>
         </div>
+        <div className={`mb-5 rounded-xl border px-4 py-3 text-sm ${afterCutoff ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-blue-200 bg-blue-50 text-blue-900'}`} role="status">
+          <strong>{afterCutoff ? 'After 3:00 PM cutoff (Philippine time).' : '3:00 PM processing cutoff (Philippine time).'}</strong>{' '}
+          You can submit your request at any time, but requests received
+          {afterCutoff ? ' at or after 3:00 PM begin Day 1 tomorrow.' : ' before 3:00 PM begin Day 1 today.'}{' '}
+          Three-day processing schedule: Day 1 <strong>{slaSchedule.day1}</strong>,
+          Day 3 <strong>{slaSchedule.day3}</strong>. Processing begins after the required approvals and hard-copy receipt.
+        </div>
         <form onSubmit={submit} className="card p-5 shadow-sm sm:p-7">
           <div className="grid gap-5 md:grid-cols-2">
             <FormSection
@@ -264,7 +283,8 @@ export function RequestPage() {
               description="Tell us who is requesting payment and which company and department own the request."
             />
             <Field
-              label="Requestor Name"
+              label="Requestor Full Name (First and Last)"
+              placeholder="First name and last name"
               autoComplete="name"
               value={form.requestorName}
               onChange={(v) => update('requestorName', v)}
