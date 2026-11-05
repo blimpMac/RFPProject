@@ -7,6 +7,8 @@ export function ApprovalQueueFilters({
   fromDate,
   toDate,
   company,
+  requestTypeFilter,
+  finance,
   statusOptions,
   companyOptions,
   hasFilters,
@@ -16,6 +18,7 @@ export function ApprovalQueueFilters({
   onFromDateChange,
   onToDateChange,
   onCompanyChange,
+  onRequestTypeChange,
   onClear,
 }: {
   view: 'pending' | 'completed';
@@ -24,6 +27,8 @@ export function ApprovalQueueFilters({
   fromDate: string;
   toDate: string;
   company: string;
+  requestTypeFilter: string;
+  finance: boolean;
   statusOptions: string[];
   companyOptions: string[];
   hasFilters: boolean;
@@ -33,6 +38,7 @@ export function ApprovalQueueFilters({
   onFromDateChange: (value: string) => void;
   onToDateChange: (value: string) => void;
   onCompanyChange: (value: string) => void;
+  onRequestTypeChange: (value: string) => void;
   onClear: () => void;
 }) {
   return (
@@ -75,7 +81,7 @@ export function ApprovalQueueFilters({
         )}
       </label>
       </div>
-      <div className={`approval-filter-fields${hasFilters ? ' has-clear' : ''}`}>
+      <div className={`approval-filter-fields${hasFilters ? ' has-clear' : ''}${finance ? ' has-request-type' : ''}`}>
       <select
         className="input"
         aria-label="Status"
@@ -114,6 +120,18 @@ export function ApprovalQueueFilters({
           <option key={item}>{item}</option>
         ))}
       </select>
+      {finance && (
+        <select
+          className="input"
+          aria-label="Type of request"
+          value={requestTypeFilter}
+          onChange={(event) => onRequestTypeChange(event.target.value)}
+        >
+          <option value="">Regular / Emergency</option>
+          <option value="Regular">Regular</option>
+          <option value="Emergency">Emergency</option>
+        </select>
+      )}
       {hasFilters && (
         <button type="button" className="approval-clear" onClick={onClear}>
           Clear filters
