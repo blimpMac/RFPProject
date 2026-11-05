@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { financeUpdateSchema, requestSchema } from './validation.ts';
+import { financeSchema, financeUpdateSchema, requestSchema } from './validation.ts';
 
 const validRequest = {
   requestorName: 'Demo Requestor',
@@ -56,4 +56,17 @@ test('rejects unsupported document verification states', () => {
     }).success,
     false,
   );
+});
+
+test('requires the requestor first and last name for check purposes', () => {
+  assert.equal(requestSchema.safeParse({ ...validRequest, requestorName: 'Juan' }).success, false);
+  assert.equal(requestSchema.safeParse({ ...validRequest, requestorName: 'Juan Dela Cruz' }).success, true);
+});
+
+test('allows review and return of submitted liquidation but not obsolete For Processing', () => {
+  const requestId = 'fe835b06-227f-4e9e-b4db-101833657814';
+  for (const action of ['liquidation_approve', 'liquidation_return']) {
+    assert.equal(financeSchema.safeParse({ requestId, action }).success, true);
+  }
+  assert.equal(financeUpdateSchema.safeParse({ requestId, processingStatus: 'For Processing' }).success, false);
 });
