@@ -1,7 +1,10 @@
 import { manilaDate } from '../../lib/format';
 import type { RfpRequest } from '../../types';
 import { manilaDay } from '../requests/sla';
-import { manilaReceiptSchedule, manilaCalendarDaysBetween } from '../../../shared/utils/processing-sla';
+import {
+  manilaReceiptSchedule,
+  manilaCalendarDaysBetween,
+} from '../../../shared/utils/processing-sla';
 
 export type Action = { value: string; label: string };
 export type QueueFocus = 'all' | 'member' | 'head' | 'hardcopy' | 'processing';
@@ -49,7 +52,8 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
   const status = request.final_status;
   const processingDue = financeWorkflow(request).processing_due_at;
   if (processingDue && !/paid|returned to requestor|liquidation/i.test(status)) {
-    const processingStart = financeWorkflow(request).processing_started_at || request.submitted_at || now;
+    const processingStart =
+      financeWorkflow(request).processing_started_at || request.submitted_at || now;
     const schedule = manilaReceiptSchedule(processingStart);
     const today = manilaDay(now);
     const overdue = manilaCalendarDaysBetween(schedule.day3, today);
@@ -62,7 +66,10 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
     }
     const currentDay = Math.max(0, manilaCalendarDaysBetween(schedule.day1, today) + 1);
     return {
-      label: currentDay === 0 ? 'Processing · Day 1 tomorrow' : `Processing · Day ${Math.min(3, currentDay)} of 3`,
+      label:
+        currentDay === 0
+          ? 'Processing · Day 1 tomorrow'
+          : `Processing · Day ${Math.min(3, currentDay)} of 3`,
       detail: `Day 1: ${schedule.day1} · Day 3 deadline: ${schedule.day3} (Philippine time)`,
       tone: currentDay >= 3 ? 'warning' : 'good',
     };
@@ -71,19 +78,32 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
     const schedule = manilaReceiptSchedule(request.submitted_at || now);
     const days = manilaCalendarDaysBetween(schedule.day1, manilaDay(now));
     return {
-      label: days < 0 ? 'Department review · Day 1 tomorrow' : `Department review · Day ${days + 1}`,
+      label:
+        days < 0 ? 'Department review · Day 1 tomorrow' : `Department review · Day ${days + 1}`,
       detail: `Received ${schedule.afterCutoff ? 'at/after' : 'before'} 3 PM · Day 1: ${schedule.day1}`,
       tone: days > 1 ? 'warning' : 'neutral',
     };
   }
   if (status === 'Pending Liquidation') {
-    return { label: 'Expense liquidation due', detail: 'Awaiting an itemized expense report from the requestor', tone: 'warning' };
+    return {
+      label: 'Expense liquidation due',
+      detail: 'Awaiting an itemized expense report from the requestor',
+      tone: 'warning',
+    };
   }
   if (status === 'Liquidation Submitted') {
-    return { label: 'Review liquidation', detail: 'Finance must verify the submitted expense summary', tone: 'warning' };
+    return {
+      label: 'Review liquidation',
+      detail: 'Finance must verify the submitted expense summary',
+      tone: 'warning',
+    };
   }
   if (status === 'Liquidation Complete') {
-    return { label: 'Liquidation completed', detail: 'Finance approved the submitted expense summary', tone: 'good' };
+    return {
+      label: 'Liquidation completed',
+      detail: 'Finance approved the submitted expense summary',
+      tone: 'good',
+    };
   }
   if (status === 'Pending Finance Head Review') {
     return {

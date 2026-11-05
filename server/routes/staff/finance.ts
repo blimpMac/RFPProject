@@ -63,16 +63,28 @@ export const handleFinanceRoutes: RouteHandler = async ({ event, route, db }) =>
     // Receipt processing status must agree with the actual guarded workflow.
     // Never let a dropdown silently display Paid before the release stage.
     const transitions: Record<string, { previous: string[]; action: string }> = {
-      'Check Preparation': { previous: ['Processing', 'Payment Processing'], action: 'check_preparation' },
-      'Check Approval': { previous: ['Check Preparation', 'Awaiting Signatory'], action: 'awaiting_signatory' },
-      'Check Released': { previous: ['Check Approval', 'Awaiting Signatory'], action: 'check_released' },
+      'Check Preparation': {
+        previous: ['Processing', 'Payment Processing'],
+        action: 'check_preparation',
+      },
+      'Check Approval': {
+        previous: ['Check Preparation', 'Awaiting Signatory'],
+        action: 'awaiting_signatory',
+      },
+      'Check Released': {
+        previous: ['Check Approval', 'Awaiting Signatory'],
+        action: 'check_released',
+      },
       Paid: { previous: ['Check Released', 'Payment Released'], action: 'payment_released' },
     };
     const requestedStatus = input.processingStatus || null;
     if (requestedStatus && current.data.final_status !== requestedStatus) {
       const transition = transitions[requestedStatus];
       if (!transition?.previous.includes(current.data.final_status)) {
-        throw new HttpError(409, `Cannot mark receipt as ${requestedStatus} until the preceding workflow stage is completed.`);
+        throw new HttpError(
+          409,
+          `Cannot mark receipt as ${requestedStatus} until the preceding workflow stage is completed.`,
+        );
       }
       const result = await db.rpc('finance_workflow_action', {
         p_request_id: input.requestId,
@@ -85,7 +97,8 @@ export const handleFinanceRoutes: RouteHandler = async ({ event, route, db }) =>
       });
       if (result.error) throw new HttpError(409, result.error.message);
       current = await db.from('rfp_requests').select('*').eq('id', input.requestId).single();
-      if (current.error || !current.data) throw new HttpError(409, 'Please refresh before saving Finance updates.');
+      if (current.error || !current.data)
+        throw new HttpError(409, 'Please refresh before saving Finance updates.');
     }
 
     const request = current.data as Record<string, unknown>;

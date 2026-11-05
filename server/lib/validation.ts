@@ -10,10 +10,15 @@ export const allowedMimes = [
   'image/gif',
 ] as const;
 export const requestSchema = z.object({
-  requestorName: z.string().trim().min(3).max(120).refine(
-    (name) => name.split(/\s+/u).filter(Boolean).length >= 2,
-    'Enter the complete first and last name of the requestor.',
-  ),
+  requestorName: z
+    .string()
+    .trim()
+    .min(3)
+    .max(120)
+    .refine(
+      (name) => name.split(/\s+/u).filter(Boolean).length >= 2,
+      'Enter the complete first and last name of the requestor.',
+    ),
   requestorEmail: z.string().trim().toLowerCase().email().max(160),
   company: z.enum(companies),
   department: z.string().trim().min(1).max(100),
@@ -26,11 +31,16 @@ export const requestSchema = z.object({
   requiredPaymentDate: z.iso.date(),
   approvingHead: z.string().trim().min(2).max(160),
   attachmentChecklist: z.array(z.string().trim().min(1).max(180)).max(40).default([]),
-  liquidationExpenses: z.array(z.object({
-    date: z.iso.date(),
-    description: z.string().trim().min(2).max(280),
-    amount: z.coerce.number().positive().max(999999999.99),
-  })).max(100).default([]),
+  liquidationExpenses: z
+    .array(
+      z.object({
+        date: z.iso.date(),
+        description: z.string().trim().min(2).max(280),
+        amount: z.coerce.number().positive().max(999999999.99),
+      }),
+    )
+    .max(100)
+    .default([]),
 });
 export const attachmentSchema = z.object({
   name: z.string().min(1).max(180),
@@ -94,23 +104,30 @@ export const resubmitSchema = z.object({
   requestId: z.uuid(),
   trackingToken: z.string().min(20),
   correctionNote: z.string().trim().min(2).max(1500),
-  corrections: z.object({
-    projectClass: z.string().trim().min(1).max(160),
-    supplierPayee: z.string().trim().min(1).max(180),
-    purposeDescription: z.string().trim().min(5).max(3000),
-    amount: z.coerce.number().positive().max(999999999999.99),
-    requiredPaymentDate: z.iso.date(),
-    requestType: z.enum(['Regular', 'Emergency']),
-  }).optional(),
+  corrections: z
+    .object({
+      projectClass: z.string().trim().min(1).max(160),
+      supplierPayee: z.string().trim().min(1).max(180),
+      purposeDescription: z.string().trim().min(5).max(3000),
+      amount: z.coerce.number().positive().max(999999999999.99),
+      requiredPaymentDate: z.iso.date(),
+      requestType: z.enum(['Regular', 'Emergency']),
+    })
+    .optional(),
 });
 export const liquidationSubmissionSchema = z.object({
   requestId: z.uuid(),
   trackingToken: z.string().min(20),
-  expenses: z.array(z.object({
-    date: z.iso.date(),
-    description: z.string().trim().min(2).max(280),
-    amount: z.coerce.number().positive().max(999999999.99),
-  })).min(1).max(100),
+  expenses: z
+    .array(
+      z.object({
+        date: z.iso.date(),
+        description: z.string().trim().min(2).max(280),
+        amount: z.coerce.number().positive().max(999999999.99),
+      }),
+    )
+    .min(1)
+    .max(100),
 });
 export const departmentRereviewSchema = z.object({
   requestId: z.uuid(),

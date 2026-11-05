@@ -22,6 +22,9 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ ok: liquidations !== null, liquidations, results });
   } catch (error) {
     console.error(error);
-    return Response.json({ ok: false, liquidations, error: 'Email queue processing failed.' }, { status: 500 });
+    return Response.json(
+      { ok: false, liquidations, error: 'Email queue processing failed.' },
+      { status: 500 },
+    );
   }
 }

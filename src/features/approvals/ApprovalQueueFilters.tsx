@@ -45,98 +45,100 @@ export function ApprovalQueueFilters({
     <section className="approval-filter-panel" aria-label="Approval queue filters">
       <div className="approval-filter-primary">
         <div className="approval-view-toggle" role="group" aria-label="Request view">
-        <button
-          type="button"
-          className={view === 'pending' ? 'active' : ''}
-          onClick={() => onViewChange('pending')}
-          aria-pressed={view === 'pending'}
-        >
-          Active
-        </button>
-        <button
-          type="button"
-          className={view === 'completed' ? 'active' : ''}
-          onClick={() => onViewChange('completed')}
-          aria-pressed={view === 'completed'}
-        >
-          Completed / returned
-        </button>
-      </div>
-      <label className="approval-search">
-        <Search size={16} aria-hidden="true" />
-        <span className="sr-only">Search approval queue</span>
-        <input
-          value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search RFP, payee, or requestor"
-        />
-        {search && (
           <button
             type="button"
-            onClick={() => onSearchChange('')}
-            aria-label="Clear approval search"
+            className={view === 'pending' ? 'active' : ''}
+            onClick={() => onViewChange('pending')}
+            aria-pressed={view === 'pending'}
           >
-            <X size={15} />
+            Active
           </button>
-        )}
-      </label>
+          <button
+            type="button"
+            className={view === 'completed' ? 'active' : ''}
+            onClick={() => onViewChange('completed')}
+            aria-pressed={view === 'completed'}
+          >
+            Completed / returned
+          </button>
+        </div>
+        <label className="approval-search">
+          <Search size={16} aria-hidden="true" />
+          <span className="sr-only">Search approval queue</span>
+          <input
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="Search RFP, payee, or requestor"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => onSearchChange('')}
+              aria-label="Clear approval search"
+            >
+              <X size={15} />
+            </button>
+          )}
+        </label>
       </div>
-      <div className={`approval-filter-fields${hasFilters ? ' has-clear' : ''}${finance ? ' has-request-type' : ''}`}>
-      <select
-        className="input"
-        aria-label="Status"
-        value={statusFilter}
-        onChange={(event) => onStatusChange(event.target.value)}
+      <div
+        className={`approval-filter-fields${hasFilters ? ' has-clear' : ''}${finance ? ' has-request-type' : ''}`}
       >
-        <option value="">All statuses</option>
-        {statusOptions.map((item) => (
-          <option key={item}>{item}</option>
-        ))}
-      </select>
-      <input
-        className="input"
-        aria-label="Submitted from date"
-        title="Submitted from"
-        type="date"
-        value={fromDate}
-        onChange={(event) => onFromDateChange(event.target.value)}
-      />
-      <input
-        className="input"
-        aria-label="Submitted to date"
-        title="Submitted to"
-        type="date"
-        value={toDate}
-        onChange={(event) => onToDateChange(event.target.value)}
-      />
-      <select
-        className="input"
-        aria-label="Company"
-        value={company}
-        onChange={(event) => onCompanyChange(event.target.value)}
-      >
-        <option value="">All companies</option>
-        {companyOptions.map((item) => (
-          <option key={item}>{item}</option>
-        ))}
-      </select>
-      {finance && (
         <select
           className="input"
-          aria-label="Type of request"
-          value={requestTypeFilter}
-          onChange={(event) => onRequestTypeChange(event.target.value)}
+          aria-label="Status"
+          value={statusFilter}
+          onChange={(event) => onStatusChange(event.target.value)}
         >
-          <option value="">Regular / Emergency</option>
-          <option value="Regular">Regular</option>
-          <option value="Emergency">Emergency</option>
+          <option value="">All statuses</option>
+          {statusOptions.map((item) => (
+            <option key={item}>{item}</option>
+          ))}
         </select>
-      )}
-      {hasFilters && (
-        <button type="button" className="approval-clear" onClick={onClear}>
-          Clear filters
-        </button>
-      )}
+        <input
+          className="input"
+          aria-label="Submitted from date"
+          title="Submitted from"
+          type="date"
+          value={fromDate}
+          onChange={(event) => onFromDateChange(event.target.value)}
+        />
+        <input
+          className="input"
+          aria-label="Submitted to date"
+          title="Submitted to"
+          type="date"
+          value={toDate}
+          onChange={(event) => onToDateChange(event.target.value)}
+        />
+        <select
+          className="input"
+          aria-label="Company"
+          value={company}
+          onChange={(event) => onCompanyChange(event.target.value)}
+        >
+          <option value="">All companies</option>
+          {companyOptions.map((item) => (
+            <option key={item}>{item}</option>
+          ))}
+        </select>
+        {finance && (
+          <select
+            className="input"
+            aria-label="Type of request"
+            value={requestTypeFilter}
+            onChange={(event) => onRequestTypeChange(event.target.value)}
+          >
+            <option value="">Regular / Emergency</option>
+            <option value="Regular">Regular</option>
+            <option value="Emergency">Emergency</option>
+          </select>
+        )}
+        {hasFilters && (
+          <button type="button" className="approval-clear" onClick={onClear}>
+            Clear filters
+          </button>
+        )}
       </div>
     </section>
   );

@@ -22,43 +22,43 @@ export function FinanceQueueHealth({
   return (
     <div className="queue-health-container">
       <section className="queue-health-grid" aria-label="Finance queue health">
-      <QueueHealthCard
-        active={queueFocus === 'member'}
-        count={counts.member}
-        icon={<WalletCards size={18} />}
-        label="Finance member review"
-        detail="At least one member approval"
-        onClick={() => onFocus('member')}
-      />
-      <QueueHealthCard
-        active={queueFocus === 'head'}
-        count={counts.head}
-        icon={<ShieldCheck size={18} />}
-        label="Finance Head review"
-        detail="Super Administrator decision"
-        tone="violet"
-        onClick={() => onFocus('head')}
-      />
-      <QueueHealthCard
-        active={queueFocus === 'hardcopy'}
-        count={counts.hardcopy}
-        icon={<FileCheck2 size={18} />}
-        label="Hard-copy verification"
-        detail="Required before processing"
-        tone="warning"
-        onClick={() => onFocus('hardcopy')}
-      />
-      <QueueHealthCard
-        active={queueFocus === 'processing'}
-        count={counts.processing}
-        icon={<CalendarClock size={18} />}
-        label="3-day processing"
-        detail={
-          counts.overdue ? `${counts.overdue} overdue · 3-day window` : '3-day monitoring window'
-        }
-        tone="green"
-        onClick={() => onFocus('processing')}
-      />
+        <QueueHealthCard
+          active={queueFocus === 'member'}
+          count={counts.member}
+          icon={<WalletCards size={18} />}
+          label="Finance member review"
+          detail="At least one member approval"
+          onClick={() => onFocus('member')}
+        />
+        <QueueHealthCard
+          active={queueFocus === 'head'}
+          count={counts.head}
+          icon={<ShieldCheck size={18} />}
+          label="Finance Head review"
+          detail="Super Administrator decision"
+          tone="violet"
+          onClick={() => onFocus('head')}
+        />
+        <QueueHealthCard
+          active={queueFocus === 'hardcopy'}
+          count={counts.hardcopy}
+          icon={<FileCheck2 size={18} />}
+          label="Hard-copy verification"
+          detail="Required before processing"
+          tone="warning"
+          onClick={() => onFocus('hardcopy')}
+        />
+        <QueueHealthCard
+          active={queueFocus === 'processing'}
+          count={counts.processing}
+          icon={<CalendarClock size={18} />}
+          label="3-day processing"
+          detail={
+            counts.overdue ? `${counts.overdue} overdue · 3-day window` : '3-day monitoring window'
+          }
+          tone="green"
+          onClick={() => onFocus('processing')}
+        />
       </section>
     </div>
   );

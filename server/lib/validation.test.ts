@@ -60,7 +60,10 @@ test('rejects unsupported document verification states', () => {
 
 test('requires the requestor first and last name for check purposes', () => {
   assert.equal(requestSchema.safeParse({ ...validRequest, requestorName: 'Juan' }).success, false);
-  assert.equal(requestSchema.safeParse({ ...validRequest, requestorName: 'Juan Dela Cruz' }).success, true);
+  assert.equal(
+    requestSchema.safeParse({ ...validRequest, requestorName: 'Juan Dela Cruz' }).success,
+    true,
+  );
 });
 
 test('allows review and return of submitted liquidation but not obsolete For Processing', () => {
@@ -68,5 +71,8 @@ test('allows review and return of submitted liquidation but not obsolete For Pro
   for (const action of ['liquidation_approve', 'liquidation_return']) {
     assert.equal(financeSchema.safeParse({ requestId, action }).success, true);
   }
-  assert.equal(financeUpdateSchema.safeParse({ requestId, processingStatus: 'For Processing' }).success, false);
+  assert.equal(
+    financeUpdateSchema.safeParse({ requestId, processingStatus: 'For Processing' }).success,
+    false,
+  );
 });

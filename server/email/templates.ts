@@ -170,8 +170,10 @@ export function renderEmail(
       ),
     };
   if (template === 'liquidation_required') {
-    const trackingUrl = typeof payload.trackingToken === 'string'
-      ? `${siteUrl}/track/${encodeURIComponent(payload.trackingToken)}` : '';
+    const trackingUrl =
+      typeof payload.trackingToken === 'string'
+        ? `${siteUrl}/track/${encodeURIComponent(payload.trackingToken)}`
+        : '';
     return {
       subject: `Expense liquidation required: ${request.rfp_number}`,
       html: shell(
@@ -191,12 +193,18 @@ export function renderEmail(
   if (template === 'liquidation_approved')
     return {
       subject: `Expense liquidation completed: ${request.rfp_number}`,
-      html: shell(`Expense liquidation completed — ${rfp}`, `<p>Finance has reviewed and approved the submitted expense details.</p>${summary(request)}`),
+      html: shell(
+        `Expense liquidation completed — ${rfp}`,
+        `<p>Finance has reviewed and approved the submitted expense details.</p>${summary(request)}`,
+      ),
     };
   if (template === 'liquidation_returned')
     return {
       subject: `Expense liquidation requires corrections: ${request.rfp_number}`,
-      html: shell(`Expense liquidation returned — ${rfp}`, `<p>Finance returned your liquidation for corrections. Open your private monitoring link and resubmit the expense list.</p>${summary(request)}${remarks}`),
+      html: shell(
+        `Expense liquidation returned — ${rfp}`,
+        `<p>Finance returned your liquidation for corrections. Open your private monitoring link and resubmit the expense list.</p>${summary(request)}${remarks}`,
+      ),
     };
   if (template === 'payment_completed')
     return {

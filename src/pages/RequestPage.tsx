@@ -48,7 +48,9 @@ export function RequestPage() {
   const [form, setForm] = useState(initial);
   const [files, setFiles] = useState<File[]>([]);
   const [attachmentChecklist, setAttachmentChecklist] = useState<string[]>([]);
-  const [liquidationExpenses, setLiquidationExpenses] = useState<{ date: string; description: string; amount: string }[]>([]);
+  const [liquidationExpenses, setLiquidationExpenses] = useState<
+    { date: string; description: string; amount: string }[]
+  >([]);
   const [options, setOptions] = useState<PublicOptions>({ departments: [], requestTypes: [] });
   const [approvers, setApprovers] = useState<{ department: string; approver_name: string }[]>([]);
   const [limits, setLimits] = useState({ maxFiles: 10, maxSizeMb: 10 });
@@ -95,17 +97,22 @@ export function RequestPage() {
     setError('');
     const missing = Object.values(form).some((value) => !value.trim());
     if (missing || !selectedApprover) {
-      setError('Complete every required field and choose a department with an active Approving Head.');
+      setError(
+        'Complete every required field and choose a department with an active Approving Head.',
+      );
       return;
     }
     if (form.requestorName.trim().split(/\s+/u).length < 2) {
       setError('Enter the requestor’s full first and last name for check verification.');
       return;
     }
-    if (/^(CA|RF) Liquidation$/i.test(form.rfpType) && (
-      liquidationExpenses.length === 0 ||
-      liquidationExpenses.some((item) => !item.date || item.description.trim().length < 2 || !(Number(item.amount) > 0))
-    )) {
+    if (
+      /^(CA|RF) Liquidation$/i.test(form.rfpType) &&
+      (liquidationExpenses.length === 0 ||
+        liquidationExpenses.some(
+          (item) => !item.date || item.description.trim().length < 2 || !(Number(item.amount) > 0),
+        ))
+    ) {
       setError('Add the expense date, description, and amount for each liquidation item.');
       return;
     }
@@ -117,7 +124,11 @@ export function RequestPage() {
           amount: Number(form.amount),
           attachmentChecklist,
           liquidationExpenses: /^(CA|RF) Liquidation$/i.test(form.rfpType)
-            ? liquidationExpenses.map((item) => ({ date: item.date, description: item.description.trim(), amount: Number(item.amount) }))
+            ? liquidationExpenses.map((item) => ({
+                date: item.date,
+                description: item.description.trim(),
+                amount: Number(item.amount),
+              }))
             : [],
         },
         attachments: files.map((f) => ({ name: f.name, type: f.type, size: f.size })),
@@ -277,15 +288,26 @@ export function RequestPage() {
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">New RFP request</h1>
           <p className="mt-2 max-w-2xl text-base text-slate-600">
-            All fields are required. Complete the request details and review the internal and external document requirements for the selected type.
+            All fields are required. Complete the request details and review the internal and
+            external document requirements for the selected type.
           </p>
         </div>
-        <div className={`mb-5 rounded-xl border px-4 py-3 text-sm ${afterCutoff ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-blue-200 bg-blue-50 text-blue-900'}`} role="status">
-          <strong>{afterCutoff ? 'After 3:00 PM cutoff (Philippine time).' : '3:00 PM processing cutoff (Philippine time).'}</strong>{' '}
+        <div
+          className={`mb-5 rounded-xl border px-4 py-3 text-sm ${afterCutoff ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-blue-200 bg-blue-50 text-blue-900'}`}
+          role="status"
+        >
+          <strong>
+            {afterCutoff
+              ? 'After 3:00 PM cutoff (Philippine time).'
+              : '3:00 PM processing cutoff (Philippine time).'}
+          </strong>{' '}
           You can submit your request at any time, but requests received
-          {afterCutoff ? ' at or after 3:00 PM begin Day 1 tomorrow.' : ' before 3:00 PM begin Day 1 today.'}{' '}
-          Three-day processing schedule: Day 1 <strong>{slaSchedule.day1}</strong>,
-          Day 3 <strong>{slaSchedule.day3}</strong>. Processing begins after the required approvals and hard-copy receipt.
+          {afterCutoff
+            ? ' at or after 3:00 PM begin Day 1 tomorrow.'
+            : ' before 3:00 PM begin Day 1 today.'}{' '}
+          Three-day processing schedule: Day 1 <strong>{slaSchedule.day1}</strong>, Day 3{' '}
+          <strong>{slaSchedule.day3}</strong>. Processing begins after the required approvals and
+          hard-copy receipt.
         </div>
         <form onSubmit={submit} className="card p-5 shadow-sm sm:p-7">
           <div className="grid gap-5 md:grid-cols-2">
@@ -373,7 +395,12 @@ export function RequestPage() {
               placeholder="Selected from active department approver"
             />
             <div className="field md:col-span-2">
-              <label htmlFor="purpose-description">Purpose / Description <span aria-hidden="true" className="text-red-600">*</span></label>
+              <label htmlFor="purpose-description">
+                Purpose / Description{' '}
+                <span aria-hidden="true" className="text-red-600">
+                  *
+                </span>
+              </label>
               <textarea
                 id="purpose-description"
                 className="input min-h-28"
@@ -386,24 +413,91 @@ export function RequestPage() {
             {/^(CA|RF) Liquidation$/i.test(form.rfpType) && (
               <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4">
                 <h3 className="font-semibold text-amber-950">Itemized {form.rfpType} expenses</h3>
-                <p className="mt-1 text-sm text-amber-900">Enter each expense date, description, and peso amount. These lines will appear in the expense summary after payment.</p>
+                <p className="mt-1 text-sm text-amber-900">
+                  Enter each expense date, description, and peso amount. These lines will appear in
+                  the expense summary after payment.
+                </p>
                 <div className="mt-4 space-y-3">
                   {liquidationExpenses.map((expense, index) => (
-                    <div className="grid gap-2 rounded-lg border bg-white p-3 sm:grid-cols-[1fr_2fr_1fr_auto]" key={index}>
-                      <label className="text-xs font-medium">Expense date
-                        <input required type="date" className="input mt-1 w-full" value={expense.date} onChange={(e) => setLiquidationExpenses((rows) => rows.map((row, i) => i === index ? { ...row, date: e.target.value } : row))} />
+                    <div
+                      className="grid gap-2 rounded-lg border bg-white p-3 sm:grid-cols-[1fr_2fr_1fr_auto]"
+                      key={index}
+                    >
+                      <label className="text-xs font-medium">
+                        Expense date
+                        <input
+                          required
+                          type="date"
+                          className="input mt-1 w-full"
+                          value={expense.date}
+                          onChange={(e) =>
+                            setLiquidationExpenses((rows) =>
+                              rows.map((row, i) =>
+                                i === index ? { ...row, date: e.target.value } : row,
+                              ),
+                            )
+                          }
+                        />
                       </label>
-                      <label className="text-xs font-medium">Description
-                        <input required className="input mt-1 w-full" maxLength={280} placeholder="Purpose of expense" value={expense.description} onChange={(e) => setLiquidationExpenses((rows) => rows.map((row, i) => i === index ? { ...row, description: e.target.value } : row))} />
+                      <label className="text-xs font-medium">
+                        Description
+                        <input
+                          required
+                          className="input mt-1 w-full"
+                          maxLength={280}
+                          placeholder="Purpose of expense"
+                          value={expense.description}
+                          onChange={(e) =>
+                            setLiquidationExpenses((rows) =>
+                              rows.map((row, i) =>
+                                i === index ? { ...row, description: e.target.value } : row,
+                              ),
+                            )
+                          }
+                        />
                       </label>
-                      <label className="text-xs font-medium">Amount (PHP)
-                        <input required type="number" className="input mt-1 w-full" min="0.01" step="0.01" value={expense.amount} onChange={(e) => setLiquidationExpenses((rows) => rows.map((row, i) => i === index ? { ...row, amount: e.target.value } : row))} />
+                      <label className="text-xs font-medium">
+                        Amount (PHP)
+                        <input
+                          required
+                          type="number"
+                          className="input mt-1 w-full"
+                          min="0.01"
+                          step="0.01"
+                          value={expense.amount}
+                          onChange={(e) =>
+                            setLiquidationExpenses((rows) =>
+                              rows.map((row, i) =>
+                                i === index ? { ...row, amount: e.target.value } : row,
+                              ),
+                            )
+                          }
+                        />
                       </label>
-                      <button type="button" className="self-end rounded-md border px-3 py-2 text-xs font-semibold" onClick={() => setLiquidationExpenses((rows) => rows.filter((_, i) => i !== index))}>Remove</button>
+                      <button
+                        type="button"
+                        className="self-end rounded-md border px-3 py-2 text-xs font-semibold"
+                        onClick={() =>
+                          setLiquidationExpenses((rows) => rows.filter((_, i) => i !== index))
+                        }
+                      >
+                        Remove
+                      </button>
                     </div>
                   ))}
                 </div>
-                <button type="button" className="mt-3 rounded-lg bg-[#173f6b] px-4 py-2 text-sm font-semibold text-white" onClick={() => setLiquidationExpenses((rows) => [...rows, { date: '', description: '', amount: '' }])}>+ Add expense</button>
+                <button
+                  type="button"
+                  className="mt-3 rounded-lg bg-[#173f6b] px-4 py-2 text-sm font-semibold text-white"
+                  onClick={() =>
+                    setLiquidationExpenses((rows) => [
+                      ...rows,
+                      { date: '', description: '', amount: '' },
+                    ])
+                  }
+                >
+                  + Add expense
+                </button>
               </div>
             )}
             <FormSection
@@ -439,8 +533,12 @@ export function RequestPage() {
             </p>
           )}
           {form.department && !selectedApprover && (
-            <p className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
-              This department does not yet have an active Approving Head. Ask an administrator to configure its approval routing before submitting.
+            <p
+              className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+              role="alert"
+            >
+              This department does not yet have an active Approving Head. Ask an administrator to
+              configure its approval routing before submitting.
             </p>
           )}
           <div className="mt-6 flex justify-end">
@@ -520,7 +618,12 @@ function Field({
   const id = props.id || label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   return (
     <div className="field">
-      <label htmlFor={id}>{label} <span aria-hidden="true" className="text-red-600">*</span></label>
+      <label htmlFor={id}>
+        {label}{' '}
+        <span aria-hidden="true" className="text-red-600">
+          *
+        </span>
+      </label>
       <input
         id={id}
         className="input"

@@ -36,7 +36,9 @@ export function RequestAttachmentChecklist({
             </p>
             <ul className="mt-2 space-y-2 text-sm text-slate-700 dark:text-slate-200">
               {group.items.length === 0 && (
-                <li className="text-slate-500 dark:text-slate-400">No separate external documents listed in the source worksheet.</li>
+                <li className="text-slate-500 dark:text-slate-400">
+                  No separate external documents listed in the source worksheet.
+                </li>
               )}
               {group.items.map((item) => (
                 <li key={item} className="flex items-start gap-2">
@@ -58,8 +60,8 @@ export function RequestAttachmentChecklist({
       >
         <Info className="mt-0.5 shrink-0" size={17} aria-hidden="true" />
         <p className="font-medium leading-6">
-          Prepare the applicable internal and external documents for your request. Items marked
-          "if any" or "if needed" apply conditionally; additional documents may be requested during
+          Prepare the applicable internal and external documents for your request. Items marked "if
+          any" or "if needed" apply conditionally; additional documents may be requested during
           Finance verification.
         </p>
       </div>

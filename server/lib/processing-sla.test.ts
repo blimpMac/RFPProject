@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { manilaReceiptSchedule, isAfterManilaCutoff, manilaCalendarDaysBetween } from '../../shared/utils/processing-sla.ts';
+import {
+  manilaReceiptSchedule,
+  isAfterManilaCutoff,
+  manilaCalendarDaysBetween,
+} from '../../shared/utils/processing-sla.ts';
 
 test('2:59 PM Philippine time starts processing Day 1 today', () => {
   const at = '2026-11-05T14:59:59+08:00';

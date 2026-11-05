@@ -157,7 +157,6 @@
   }
 }
 
-
 /* Uniform workflow status badges inside Monitoring and Finance tables.
    Scope this to table cells: short account badges and detail-dialog badges
    intentionally keep their compact inline sizing. */
@@ -210,7 +209,6 @@
     width: min(10rem, 100%);
   }
 }
-
 
 /* Finance filter layout must respond to the CONTENT width, not assume the sidebar
    leaves enough space for seven controls on a single row. */
@@ -338,7 +336,6 @@
   }
 }
 
-
 /* Size Finance summary cards by their actual content width (sidebar accounted
    for), and keep each count anchored in the same grid column and top position. */
 .queue-health-container {
@@ -411,7 +408,6 @@
   }
 }
 
-
 /* Finance includes one additional request urgency filter. Keep every control
    in an equal-width column and reflow at content breakpoints. */
 .approval-filter-fields.has-request-type {
@@ -438,7 +434,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-
 
 /* CA / RF expense detail is shown in the digital preview and begins a separate
    print page once the original request has reached the payment/liquidation stage. */

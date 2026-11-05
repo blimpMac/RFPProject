@@ -68,8 +68,12 @@ type Tracking = {
 };
 
 const emptyCorrections: Corrections = {
-  projectClass: '', supplierPayee: '', purposeDescription: '',
-  amount: '', requiredPaymentDate: '', requestType: 'Regular',
+  projectClass: '',
+  supplierPayee: '',
+  purposeDescription: '',
+  amount: '',
+  requiredPaymentDate: '',
+  requestType: 'Regular',
 };
 
 export function TrackPage() {
@@ -91,7 +95,9 @@ export function TrackPage() {
         .catch((e) => setError(e instanceof Error ? e.message : 'Unable to load tracking.')),
     [token],
   );
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
   useAutoRefresh(load);
 
   // Initialize editable fields when opening a different RFP. Auto-refresh must
@@ -107,12 +113,15 @@ export function TrackPage() {
       requiredPaymentDate: r.required_payment_date,
       requestType: r.request_type === 'Emergency' ? 'Emergency' : 'Regular',
     });
-    setExpenses((data?.liquidationExpenses || []).map((expense) => ({
-      ...expense, amount: String(expense.amount),
-    })));
+    setExpenses(
+      (data?.liquidationExpenses || []).map((expense) => ({
+        ...expense,
+        amount: String(expense.amount),
+      })),
+    );
   }, [data?.request.id]); // only the request identity, not each background refresh
 
-  const updateCorrections = <K extends keyof Corrections,>(key: K, value: Corrections[K]) =>
+  const updateCorrections = <K extends keyof Corrections>(key: K, value: Corrections[K]) =>
     setCorrections((current) => ({ ...current, [key]: value }));
 
   const resubmit = async () => {
@@ -120,9 +129,13 @@ export function TrackPage() {
       setError('Describe what you corrected before resubmitting.');
       return;
     }
-    if (!corrections.projectClass.trim() || !corrections.supplierPayee.trim() ||
-      corrections.purposeDescription.trim().length < 5 || !(Number(corrections.amount) > 0) ||
-      !corrections.requiredPaymentDate) {
+    if (
+      !corrections.projectClass.trim() ||
+      !corrections.supplierPayee.trim() ||
+      corrections.purposeDescription.trim().length < 5 ||
+      !(Number(corrections.amount) > 0) ||
+      !corrections.requiredPaymentDate
+    ) {
       setError('Complete all corrected payment details before resubmitting.');
       return;
     }
@@ -146,8 +159,13 @@ export function TrackPage() {
     }
   };
   const submitExpenses = async () => {
-    if (!data || !expenses.length || expenses.some((row) =>
-      !row.date || row.description.trim().length < 2 || !(Number(row.amount) > 0))) {
+    if (
+      !data ||
+      !expenses.length ||
+      expenses.some(
+        (row) => !row.date || row.description.trim().length < 2 || !(Number(row.amount) > 0),
+      )
+    ) {
       setError('Add at least one expense with date, description, and a positive amount.');
       return;
     }
@@ -159,7 +177,9 @@ export function TrackPage() {
         requestId: data.request.id,
         trackingToken: token,
         expenses: expenses.map((row) => ({
-          date: row.date, description: row.description.trim(), amount: Number(row.amount),
+          date: row.date,
+          description: row.description.trim(),
+          amount: Number(row.amount),
         })),
       });
       setNotice('Expense summary submitted to Finance under the same reference number.');
@@ -172,7 +192,11 @@ export function TrackPage() {
   };
 
   if (!data && !error)
-    return <div className="grid min-h-screen place-items-center"><Spinner /></div>;
+    return (
+      <div className="grid min-h-screen place-items-center">
+        <Spinner />
+      </div>
+    );
   if (error && !data)
     return (
       <div className="grid min-h-screen place-items-center p-4">
@@ -221,39 +245,103 @@ export function TrackPage() {
         </div>
       </section>
 
-      {notice && <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">{notice}</p>}
-      {error && <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="alert">{error}</p>}
+      {notice && (
+        <p
+          className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
+          role="status"
+        >
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p
+          className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+          role="alert"
+        >
+          {error}
+        </p>
+      )}
 
       {r.final_status === 'Pending Liquidation' && (
         <section className="card p-5">
           <h2 className="text-lg font-semibold">Expense liquidation required</h2>
           <p className="mt-2 text-sm text-slate-600">
             The payment was released more than three days ago. Only the requestor with this private
-            tracking link may submit the itemized expense report. The reference number remains {r.rfp_number}.
+            tracking link may submit the itemized expense report. The reference number remains{' '}
+            {r.rfp_number}.
           </p>
           <div className="mt-4 space-y-3">
             {expenses.map((expense, index) => (
-              <div className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_2fr_1fr_auto]" key={index}>
-                <label className="text-xs font-semibold">Date
-                  <input className="input mt-1 w-full" type="date" value={expense.date}
-                    onChange={(e) => setExpenses((rows) => rows.map((row, i) => i === index ? {...row, date:e.target.value} : row))} />
+              <div
+                className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_2fr_1fr_auto]"
+                key={index}
+              >
+                <label className="text-xs font-semibold">
+                  Date
+                  <input
+                    className="input mt-1 w-full"
+                    type="date"
+                    value={expense.date}
+                    onChange={(e) =>
+                      setExpenses((rows) =>
+                        rows.map((row, i) =>
+                          i === index ? { ...row, date: e.target.value } : row,
+                        ),
+                      )
+                    }
+                  />
                 </label>
-                <label className="text-xs font-semibold">Description
-                  <input className="input mt-1 w-full" maxLength={280} value={expense.description}
-                    onChange={(e) => setExpenses((rows) => rows.map((row, i) => i === index ? {...row, description:e.target.value} : row))} />
+                <label className="text-xs font-semibold">
+                  Description
+                  <input
+                    className="input mt-1 w-full"
+                    maxLength={280}
+                    value={expense.description}
+                    onChange={(e) =>
+                      setExpenses((rows) =>
+                        rows.map((row, i) =>
+                          i === index ? { ...row, description: e.target.value } : row,
+                        ),
+                      )
+                    }
+                  />
                 </label>
-                <label className="text-xs font-semibold">Amount (PHP)
-                  <input className="input mt-1 w-full" type="number" min="0.01" step="0.01" value={expense.amount}
-                    onChange={(e) => setExpenses((rows) => rows.map((row, i) => i === index ? {...row, amount:e.target.value} : row))} />
+                <label className="text-xs font-semibold">
+                  Amount (PHP)
+                  <input
+                    className="input mt-1 w-full"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={expense.amount}
+                    onChange={(e) =>
+                      setExpenses((rows) =>
+                        rows.map((row, i) =>
+                          i === index ? { ...row, amount: e.target.value } : row,
+                        ),
+                      )
+                    }
+                  />
                 </label>
-                <button type="button" aria-label={`Remove expense ${index + 1}`} className="self-end rounded border p-2"
-                  onClick={() => setExpenses((rows) => rows.filter((_, i) => i !== index))}><Trash2 size={16} /></button>
+                <button
+                  type="button"
+                  aria-label={`Remove expense ${index + 1}`}
+                  className="self-end rounded border p-2"
+                  onClick={() => setExpenses((rows) => rows.filter((_, i) => i !== index))}
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             ))}
           </div>
           <div className="mt-4 flex flex-wrap justify-between gap-3">
-            <button type="button" className="inline-flex items-center gap-2 rounded border px-4 py-2 text-sm font-semibold"
-              onClick={() => setExpenses((rows) => [...rows, {date:'', description:'', amount:''}])}>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded border px-4 py-2 text-sm font-semibold"
+              onClick={() =>
+                setExpenses((rows) => [...rows, { date: '', description: '', amount: '' }])
+              }
+            >
               <Plus size={16} /> Add expense
             </button>
             <Button onClick={() => void submitExpenses()} disabled={busy}>
@@ -271,38 +359,76 @@ export function TrackPage() {
             Your reference <strong>{r.rfp_number}</strong> will not change.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="text-sm font-semibold">Project / Class
-              <input className="input mt-1 w-full" value={corrections.projectClass}
-                onChange={(e) => updateCorrections('projectClass', e.target.value)} />
+            <label className="text-sm font-semibold">
+              Project / Class
+              <input
+                className="input mt-1 w-full"
+                value={corrections.projectClass}
+                onChange={(e) => updateCorrections('projectClass', e.target.value)}
+              />
             </label>
-            <label className="text-sm font-semibold">Supplier / Payee
-              <input className="input mt-1 w-full" value={corrections.supplierPayee}
-                onChange={(e) => updateCorrections('supplierPayee', e.target.value)} />
+            <label className="text-sm font-semibold">
+              Supplier / Payee
+              <input
+                className="input mt-1 w-full"
+                value={corrections.supplierPayee}
+                onChange={(e) => updateCorrections('supplierPayee', e.target.value)}
+              />
             </label>
-            <label className="text-sm font-semibold">Amount (PHP)
-              <input className="input mt-1 w-full" type="number" min="0.01" step="0.01" value={corrections.amount}
-                onChange={(e) => updateCorrections('amount', e.target.value)} />
+            <label className="text-sm font-semibold">
+              Amount (PHP)
+              <input
+                className="input mt-1 w-full"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={corrections.amount}
+                onChange={(e) => updateCorrections('amount', e.target.value)}
+              />
             </label>
-            <label className="text-sm font-semibold">Date Needed
-              <input className="input mt-1 w-full" type="date" value={corrections.requiredPaymentDate}
-                onChange={(e) => updateCorrections('requiredPaymentDate', e.target.value)} />
+            <label className="text-sm font-semibold">
+              Date Needed
+              <input
+                className="input mt-1 w-full"
+                type="date"
+                value={corrections.requiredPaymentDate}
+                onChange={(e) => updateCorrections('requiredPaymentDate', e.target.value)}
+              />
             </label>
-            <label className="text-sm font-semibold">Urgency
-              <select className="input mt-1 w-full" value={corrections.requestType}
-                onChange={(e) => updateCorrections('requestType', e.target.value as 'Regular'|'Emergency')}>
+            <label className="text-sm font-semibold">
+              Urgency
+              <select
+                className="input mt-1 w-full"
+                value={corrections.requestType}
+                onChange={(e) =>
+                  updateCorrections('requestType', e.target.value as 'Regular' | 'Emergency')
+                }
+              >
                 <option value="Regular">Regular</option>
                 <option value="Emergency">Emergency</option>
               </select>
             </label>
-            <label className="text-sm font-semibold sm:col-span-2">Purpose / Description
-              <textarea className="input mt-1 w-full min-h-24" maxLength={3000} value={corrections.purposeDescription}
-                onChange={(e) => updateCorrections('purposeDescription', e.target.value)} />
+            <label className="text-sm font-semibold sm:col-span-2">
+              Purpose / Description
+              <textarea
+                className="input mt-1 w-full min-h-24"
+                maxLength={3000}
+                value={corrections.purposeDescription}
+                onChange={(e) => updateCorrections('purposeDescription', e.target.value)}
+              />
             </label>
           </div>
-          <label className="mt-4 block text-sm font-semibold" htmlFor="correction-note">Correction note</label>
-          <textarea id="correction-note" className="input mt-2 min-h-24 w-full"
-            maxLength={1500} value={note} onChange={(e) => setNote(e.target.value)}
-            placeholder="Describe the corrections or clarification provided." />
+          <label className="mt-4 block text-sm font-semibold" htmlFor="correction-note">
+            Correction note
+          </label>
+          <textarea
+            id="correction-note"
+            className="input mt-2 min-h-24 w-full"
+            maxLength={1500}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Describe the corrections or clarification provided."
+          />
           <div className="mt-4 flex justify-end">
             <Button disabled={busy || note.trim().length < 2} onClick={() => void resubmit()}>
               {busy ? <Spinner label="Resubmitting" /> : 'Resubmit corrections for approval'}
@@ -329,8 +455,12 @@ export function TrackPage() {
       {r.department_approval === 'Approved' && (
         <>
           <div className="flex items-center justify-between gap-3 rounded-lg border bg-white p-4">
-            <p className="text-sm text-slate-600">Department Head approved. You may print your RFP.</p>
-            <Button onClick={() => window.print()}><Printer size={16} /> Print / Save PDF</Button>
+            <p className="text-sm text-slate-600">
+              Department Head approved. You may print your RFP.
+            </p>
+            <Button onClick={() => window.print()}>
+              <Printer size={16} /> Print / Save PDF
+            </Button>
           </div>
           <div className="tracking-receipt">
             <DigitalRfpReceipt

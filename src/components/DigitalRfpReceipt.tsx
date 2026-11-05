@@ -125,9 +125,13 @@ export function DigitalRfpReceipt({
   const typeOfRequest = request.request_type || request.raw_record?.request_type || 'Not recorded';
   const paymentMethod = request.raw_record?.payment_method || 'Not recorded';
   const currentFinanceStage = stageIndex(request.final_status);
-  const isFundRequest = /cash advance|revolving fund|\bCA\b|\bRF\b|liquidation/i.test(request.rfp_type);
+  const isFundRequest = /cash advance|revolving fund|\bCA\b|\bRF\b|liquidation/i.test(
+    request.rfp_type,
+  );
   const showExpensePrint = isFundRequest && /paid|liquidation/i.test(request.final_status);
-  const expenses = liquidationExpenses.length ? liquidationExpenses : request.raw_record?.liquidation_expenses || [];
+  const expenses = liquidationExpenses.length
+    ? liquidationExpenses
+    : request.raw_record?.liquidation_expenses || [];
   const expenseTotal = expenses.reduce((sum, row) => sum + Number(row.amount || 0), 0);
 
   return (
@@ -177,7 +181,11 @@ export function DigitalRfpReceipt({
       </ReceiptSection>
 
       <div className="digital-rfp-middle-grid">
-        <ReceiptSection title="2. Attached documents (soft copy)" compact hideWhenExpensesPaid={showExpensePrint}>
+        <ReceiptSection
+          title="2. Attached documents (soft copy)"
+          compact
+          hideWhenExpensesPaid={showExpensePrint}
+        >
           <div className="digital-rfp-checklist">
             {documentItems.length ? (
               documentItems.map((item) => (
@@ -244,7 +252,10 @@ export function DigitalRfpReceipt({
         </div>
       </ReceiptSection>
 
-      <ReceiptSection title="5. Finance approval and processing (for Finance use only)" hideFromPrint>
+      <ReceiptSection
+        title="5. Finance approval and processing (for Finance use only)"
+        hideFromPrint
+      >
         <div className="digital-rfp-finance-grid">
           <ReferenceRow label="Finance Approver" value={value(receipt.processing.approvedBy)} />
           <ReferenceRow
@@ -279,19 +290,36 @@ export function DigitalRfpReceipt({
           <h2>Summary of expenses · {request.rfp_number}</h2>
           <p className="text-xs">Itemized cash advance / revolving fund expenses.</p>
           <table>
-            <thead><tr><th>Date</th><th>Description</th><th>Amount (PHP)</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Amount (PHP)</th>
+              </tr>
+            </thead>
             <tbody>
-              {expenses.length ? expenses.map((item, index) => (
-                <tr key={`${item.date}-${index}`}>
-                  <td>{manilaDate(item.date)}</td>
-                  <td>{item.description}</td>
-                  <td>{php.format(Number(item.amount))}</td>
+              {expenses.length ? (
+                expenses.map((item, index) => (
+                  <tr key={`${item.date}-${index}`}>
+                    <td>{manilaDate(item.date)}</td>
+                    <td>{item.description}</td>
+                    <td>{php.format(Number(item.amount))}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3}>
+                    Expense liquidation has not yet been submitted by the requestor.
+                  </td>
                 </tr>
-              )) : (
-                <tr><td colSpan={3}>Expense liquidation has not yet been submitted by the requestor.</td></tr>
               )}
             </tbody>
-            <tfoot><tr><th colSpan={2}>Total expenses</th><th>{php.format(expenseTotal)}</th></tr></tfoot>
+            <tfoot>
+              <tr>
+                <th colSpan={2}>Total expenses</th>
+                <th>{php.format(expenseTotal)}</th>
+              </tr>
+            </tfoot>
           </table>
         </section>
       )}
@@ -317,7 +345,9 @@ function ReceiptSection({
   hideWhenExpensesPaid?: boolean;
 }) {
   return (
-    <section className={`digital-rfp-section${compact ? ' digital-rfp-section-compact' : ''}${hideFromPrint ? ' digital-rfp-section-hide-print' : ''}${hideWhenExpensesPaid ? ' digital-rfp-section-expense-print-hide' : ''}`}>
+    <section
+      className={`digital-rfp-section${compact ? ' digital-rfp-section-compact' : ''}${hideFromPrint ? ' digital-rfp-section-hide-print' : ''}${hideWhenExpensesPaid ? ' digital-rfp-section-expense-print-hide' : ''}`}
+    >
       <h2>{title}</h2>
       {children}
     </section>

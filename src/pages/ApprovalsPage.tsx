@@ -119,7 +119,9 @@ export function ApprovalsPage() {
       (request) =>
         (!company || request.company === company) &&
         (!statusFilter || request.final_status === statusFilter) &&
-        (!finance || !requestTypeFilter || (request.raw_record?.request_type || request.request_type) === requestTypeFilter) &&
+        (!finance ||
+          !requestTypeFilter ||
+          (request.raw_record?.request_type || request.request_type) === requestTypeFilter) &&
         (!fromDate || manilaDay(request.submitted_at || 0) >= fromDate) &&
         (!toDate || manilaDay(request.submitted_at || 0) <= toDate) &&
         (!query ||
@@ -140,7 +142,18 @@ export function ApprovalsPage() {
           ? !/paid|liquidation complete|returned to requestor/i.test(request.final_status)
           : /paid|liquidation complete|returned to requestor/i.test(request.final_status)),
     );
-  }, [company, finance, fromDate, matchesQueueFocus, requestTypeFilter, rows, search, statusFilter, toDate, view]);
+  }, [
+    company,
+    finance,
+    fromDate,
+    matchesQueueFocus,
+    requestTypeFilter,
+    rows,
+    search,
+    statusFilter,
+    toDate,
+    view,
+  ]);
   const pageCount = Math.max(1, Math.ceil(visibleRows.length / pageSize));
   const paginatedRows = useMemo(
     () => visibleRows.slice((page - 1) * pageSize, page * pageSize),
@@ -148,7 +161,17 @@ export function ApprovalsPage() {
   );
   useEffect(() => {
     setPage(1);
-  }, [company, fromDate, pageSize, queueFocus, requestTypeFilter, search, statusFilter, toDate, view]);
+  }, [
+    company,
+    fromDate,
+    pageSize,
+    queueFocus,
+    requestTypeFilter,
+    search,
+    statusFilter,
+    toDate,
+    view,
+  ]);
   useEffect(() => {
     if (page > pageCount) setPage(pageCount);
   }, [page, pageCount]);
@@ -178,7 +201,13 @@ export function ApprovalsPage() {
     };
   }, [now, rows]);
   const hasFilters = Boolean(
-    company || search || statusFilter || requestTypeFilter || fromDate || toDate || queueFocus !== 'all',
+    company ||
+    search ||
+    statusFilter ||
+    requestTypeFilter ||
+    fromDate ||
+    toDate ||
+    queueFocus !== 'all',
   );
   const applyQueueFocus = (focus: QueueFocus) => {
     setQueueFocus((current) => (current === focus ? 'all' : focus));
@@ -212,7 +241,9 @@ export function ApprovalsPage() {
     setFinanceNotes(request.finance_remarks || '');
     const currentProcessingStatus = receipt.processing.status || '';
     setProcessingStatus(
-      ['Check Preparation', 'Check Approval', 'Check Released', 'Paid'].includes(currentProcessingStatus)
+      ['Check Preparation', 'Check Approval', 'Check Released', 'Paid'].includes(
+        currentProcessingStatus,
+      )
         ? currentProcessingStatus
         : '',
     );
