@@ -23,9 +23,8 @@ export const canActAsFinanceHead = (roles: string[]) => roles.includes('super_ad
 export const canPerformFinanceStageAction = (action: string, roles: string[]) => {
   if (!canAccessFinance(roles)) return false;
   if (['head_approve', 'head_reject'].includes(action)) return canActAsFinanceHead(roles);
-  return ['member_approve', 'member_reject', 'request_documents', 'hard_copy_approve'].includes(
-    action,
-  );
+  return ['member_approve', 'member_reject', 'request_documents', 'hard_copy_approve',
+    'liquidation_approve', 'liquidation_return'].includes(action);
 };
 
 export const canAccessDepartment = (
