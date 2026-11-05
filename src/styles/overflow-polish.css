@@ -210,3 +210,131 @@
     width: min(10rem, 100%);
   }
 }
+
+
+/* Finance filter layout must respond to the CONTENT width, not assume the sidebar
+   leaves enough space for seven controls on a single row. */
+.approval-filter-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.65rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.approval-filter-primary,
+.approval-filter-fields {
+  display: grid;
+  min-width: 0;
+  max-width: 100%;
+  gap: 0.65rem;
+  align-items: stretch;
+}
+
+.approval-filter-primary {
+  grid-template-columns: minmax(15.5rem, auto) minmax(0, 1fr);
+}
+
+.approval-filter-fields {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.approval-filter-fields.has-clear {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+}
+
+.approval-filter-primary > *,
+.approval-filter-fields > * {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.approval-filter-primary .approval-view-toggle {
+  display: grid;
+  grid-template-columns: minmax(4.6rem, 0.68fr) minmax(10rem, 1.32fr);
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.approval-filter-primary .approval-view-toggle button {
+  min-width: 0;
+  padding-inline: 0.48rem;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.approval-filter-primary .approval-search {
+  width: 100%;
+  min-width: 0;
+  grid-column: auto;
+}
+
+.approval-filter-fields > .input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.8rem;
+}
+
+.approval-filter-fields > .approval-clear {
+  align-self: stretch;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* Summary cards retain the 4-column look when space permits but reflow
+   before their numbers and labels start to collide. */
+.queue-health-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr));
+}
+
+.queue-health-card {
+  min-width: 0;
+  gap: 0.6rem;
+}
+
+.queue-health-card > span:nth-child(2) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.queue-health-count {
+  flex-shrink: 0;
+}
+
+@media (max-width: 1100px) {
+  .approval-filter-fields,
+  .approval-filter-fields.has-clear {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .approval-filter-fields > .approval-clear {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .approval-filter-primary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .approval-filter-primary .approval-view-toggle,
+  .approval-filter-primary .approval-search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .approval-filter-fields,
+  .approval-filter-fields.has-clear {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .approval-filter-fields > .approval-clear {
+    grid-column: 1;
+  }
+}
