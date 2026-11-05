@@ -4,6 +4,8 @@ import { Navigate } from 'react-router-dom';
 import type { StaffUser } from '../../shared/contracts/accounts';
 import { useAuth } from '../components/AuthProvider';
 import { Button, Spinner } from '../components/ui';
+import { EmailPreviewPanel } from '../components/EmailPreviewPanel';
+import { EmailQueueDiagnostics } from '../components/EmailQueueDiagnostics';
 import { AccountPagination } from '../features/accounts/AccountPagination';
 import { AccountForm, AccountRow, EmailForm } from '../features/accounts/AccountManagementForms';
 import { useAccountDirectory } from '../features/accounts/useAccountDirectory';
@@ -185,6 +187,8 @@ export function SettingsPage() {
           onPageChange={setPage}
         />
       </section>
+      <EmailQueueDiagnostics />
+      <EmailPreviewPanel />
       {account && (
         <AccountForm
           value={account}
