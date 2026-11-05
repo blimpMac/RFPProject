@@ -1,4 +1,5 @@
 import { HttpError } from '../lib/http.js';
+import { manilaReceiptSchedule } from '../../shared/utils/processing-sla.js';
 import { adminClient } from '../lib/supabase.js';
 import { canActAsFinanceHead, canPerformFinanceStageAction } from '../lib/staff-access.js';
 
@@ -233,17 +234,20 @@ export async function performFinanceStageAction(
           'Record the hard-copy received date and mark document verification Complete before approval.',
         );
       }
-      const dueAt = new Date(now.getTime() + 3 * 24 * 60 * 60_000);
+      const schedule = manilaReceiptSchedule(now);
       nextStatus = 'Processing';
       actionLabel = 'Hard Copy Approved · Processing Started';
       nextWorkflow.hard_copy_status = 'Approved';
       nextWorkflow.hard_copy_approved_at = nowIso;
       nextWorkflow.hard_copy_approved_by = actor.email;
       nextWorkflow.processing_started_at = nowIso;
-      nextWorkflow.processing_due_at = dueAt.toISOString();
+      nextWorkflow.processing_due_at = schedule.dueAt;
+      nextWorkflow.processing_day1 = schedule.day1;
+      nextWorkflow.processing_day3 = schedule.day3;
+      nextWorkflow.received_after_cutoff = schedule.afterCutoff;
       updateFields.finance_review = 'Approved';
       updateFields.finance_review_at = nowIso;
-      updateFields.planned_check_date = dueAt.toISOString().slice(0, 10);
+      updateFields.planned_check_date = schedule.day3;
       break;
     }
 
