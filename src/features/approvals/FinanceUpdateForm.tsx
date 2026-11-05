@@ -9,8 +9,6 @@ export function FinanceUpdateForm({
   verificationRemarks,
   checkDate,
   reason,
-  checkNumber,
-  paymentReference,
   processingStatus,
   lateDocuments,
   financeNotes,
@@ -20,8 +18,6 @@ export function FinanceUpdateForm({
   onVerificationRemarksChange,
   onCheckDateChange,
   onReasonChange,
-  onCheckNumberChange,
-  onPaymentReferenceChange,
   onProcessingStatusChange,
   onLateDocumentsChange,
   onFinanceNotesChange,
@@ -33,8 +29,6 @@ export function FinanceUpdateForm({
   verificationRemarks: string;
   checkDate: string;
   reason: string;
-  checkNumber: string;
-  paymentReference: string;
   processingStatus: string;
   lateDocuments: string;
   financeNotes: string;
@@ -44,8 +38,6 @@ export function FinanceUpdateForm({
   onVerificationRemarksChange: (value: string) => void;
   onCheckDateChange: (value: string) => void;
   onReasonChange: (value: string) => void;
-  onCheckNumberChange: (value: string) => void;
-  onPaymentReferenceChange: (value: string) => void;
   onProcessingStatusChange: (value: string) => void;
   onLateDocumentsChange: (value: string) => void;
   onFinanceNotesChange: (value: string) => void;
@@ -112,26 +104,6 @@ export function FinanceUpdateForm({
           />
         </div>
         <div className="field">
-          <label htmlFor="check-number">Check number</label>
-          <input
-            id="check-number"
-            className="input"
-            placeholder="If issued"
-            value={checkNumber}
-            onChange={(event) => onCheckNumberChange(event.target.value)}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="payment-reference">Payment reference</label>
-          <input
-            id="payment-reference"
-            className="input"
-            placeholder="Bank or payment reference"
-            value={paymentReference}
-            onChange={(event) => onPaymentReferenceChange(event.target.value)}
-          />
-        </div>
-        <div className="field">
           <label htmlFor="processing-status">Receipt processing status</label>
           <select
             id="processing-status"
@@ -141,7 +113,6 @@ export function FinanceUpdateForm({
           >
             <option value="">Use workflow status</option>
             {[
-              'For Processing',
               'Check Preparation',
               'Check Approval',
               'Check Released',
