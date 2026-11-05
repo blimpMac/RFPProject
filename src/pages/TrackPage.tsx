@@ -151,6 +151,20 @@ export function TrackPage() {
           ))}
         </div>
       </section>
+      <section className="card">
+        <h2 className="border-b p-4 font-semibold">Progress history</h2>
+        <ol className="divide-y">
+          {data!.logs.map((log) => (
+            <li className="p-4" key={`${log.occurred_at}-${log.action}`}>
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-medium">{log.action}</p>
+                <span className="text-xs text-slate-500">{manilaDate(log.occurred_at, true)}</span>
+              </div>
+              {log.remarks && <p className="mt-1 text-sm text-slate-600">{log.remarks}</p>}
+            </li>
+          ))}
+        </ol>
+      </section>
       {r.department_approval === 'Approved' && (
         <DigitalRfpReceipt
           request={r}
@@ -191,20 +205,6 @@ export function TrackPage() {
           This RFP was resubmitted with the same number and sent to the Department Approver.
         </p>
       )}
-      <section className="card">
-        <h2 className="border-b p-4 font-semibold">Progress history</h2>
-        <ol className="divide-y">
-          {data!.logs.map((log) => (
-            <li className="p-4" key={`${log.occurred_at}-${log.action}`}>
-              <div className="flex items-center justify-between gap-3">
-                <p className="font-medium">{log.action}</p>
-                <span className="text-xs text-slate-500">{manilaDate(log.occurred_at, true)}</span>
-              </div>
-              {log.remarks && <p className="mt-1 text-sm text-slate-600">{log.remarks}</p>}
-            </li>
-          ))}
-        </ol>
-      </section>
     </main>
   );
 }
