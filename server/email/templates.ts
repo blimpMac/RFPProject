@@ -14,6 +14,10 @@ export const emailTemplateKeys = [
   'documentation_required',
   'check_released',
   'payment_completed',
+  'liquidation_required',
+  'liquidation_submitted',
+  'liquidation_approved',
+  'liquidation_returned',
 ] as const;
 export type EmailTemplateKey = (typeof emailTemplateKeys)[number];
 
@@ -164,6 +168,35 @@ export function renderEmail(
         `Check released for ${rfp}`,
         `<p>The check has been released. Please coordinate with the responsible finance staff for receipt.</p>${summary(request)}`,
       ),
+    };
+  if (template === 'liquidation_required') {
+    const trackingUrl = typeof payload.trackingToken === 'string'
+      ? `${siteUrl}/track/${encodeURIComponent(payload.trackingToken)}` : '';
+    return {
+      subject: `Expense liquidation required: ${request.rfp_number}`,
+      html: shell(
+        `Expense liquidation due — ${rfp}`,
+        `<p>Three days have elapsed since payment for your Cash Advance or Revolving Fund. Submit the itemized expense dates, descriptions and amounts through your private tracking page.</p>${summary(request)}${trackingUrl ? `<p style="margin-top:24px">${button('Submit expense liquidation', trackingUrl, '#315c93')}</p>` : '<p>Use the private monitoring link from your submission receipt to submit the expense list.</p>'}`,
+      ),
+    };
+  }
+  if (template === 'liquidation_submitted')
+    return {
+      subject: `Expense liquidation review required: ${request.rfp_number}`,
+      html: shell(
+        `Expense liquidation submitted — ${rfp}`,
+        `<p>The requestor has submitted ${escape(payload.expenseCount || 0)} expense line(s) for Finance verification.</p>${summary(request)}<p style="margin-top:24px">${button('Review liquidation in Finance', `${siteUrl}/admin/approvals`, '#315c93')}</p>`,
+      ),
+    };
+  if (template === 'liquidation_approved')
+    return {
+      subject: `Expense liquidation completed: ${request.rfp_number}`,
+      html: shell(`Expense liquidation completed — ${rfp}`, `<p>Finance has reviewed and approved the submitted expense details.</p>${summary(request)}`),
+    };
+  if (template === 'liquidation_returned')
+    return {
+      subject: `Expense liquidation requires corrections: ${request.rfp_number}`,
+      html: shell(`Expense liquidation returned — ${rfp}`, `<p>Finance returned your liquidation for corrections. Open your private monitoring link and resubmit the expense list.</p>${summary(request)}${remarks}`),
     };
   if (template === 'payment_completed')
     return {
