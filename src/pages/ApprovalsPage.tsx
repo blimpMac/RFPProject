@@ -137,8 +137,8 @@ export function ApprovalsPage() {
             .includes(query)) &&
         matchesQueueFocus(request) &&
         (view === 'pending'
-          ? !/paid|returned to requestor/i.test(request.final_status)
-          : /paid|returned to requestor/i.test(request.final_status)),
+          ? !/paid|liquidation complete|returned to requestor/i.test(request.final_status)
+          : /paid|liquidation complete|returned to requestor/i.test(request.final_status)),
     );
   }, [company, finance, fromDate, matchesQueueFocus, requestTypeFilter, rows, search, statusFilter, toDate, view]);
   const pageCount = Math.max(1, Math.ceil(visibleRows.length / pageSize));
@@ -158,7 +158,7 @@ export function ApprovalsPage() {
   const statusOptions = [...new Set(rows.map((request) => request.final_status))].sort();
   const queueCounts = useMemo(() => {
     const activeRows = rows.filter(
-      (request) => !/paid|returned to requestor/i.test(request.final_status),
+      (request) => !/paid|liquidation complete|returned to requestor/i.test(request.final_status),
     );
     return {
       member: activeRows.filter((request) =>
