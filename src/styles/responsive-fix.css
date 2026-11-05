@@ -660,4 +660,49 @@ svg {
   .digital-rfp-approval-card:last-child {
     border-right: 0 !important;
   }
+  /* Prevent screen/tablet spacing from offsetting the two print columns. */
+  .digital-rfp-print-page .digital-rfp-middle-grid .digital-rfp-section + .digital-rfp-section {
+    margin-top: 0 !important;
+  }
+
+  /* Never force the entire receipt into one unbreakable box: lengthy names,
+     notes, or document lists must flow instead of overlapping/clipping. */
+  .digital-rfp-print-page .digital-rfp-sheet {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  .digital-rfp-print-page .digital-rfp-section {
+    overflow: visible !important;
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  /* The five Finance processing statuses must wrap within the available
+     column instead of running into the reference field or page edge. */
+  .digital-rfp-print-page .digital-rfp-processing-status {
+    min-width: 0;
+    flex-wrap: wrap !important;
+    align-items: center;
+    align-content: center;
+    row-gap: 1mm;
+  }
+
+  .digital-rfp-print-page .digital-rfp-processing-status .digital-rfp-check-item {
+    white-space: normal !important;
+    max-width: 100%;
+  }
+
+  .digital-rfp-print-page .digital-rfp-check-item > span:last-child,
+  .digital-rfp-print-page .digital-rfp-number strong,
+  .digital-rfp-print-page .digital-rfp-reference-row > *,
+  .digital-rfp-print-page .digital-rfp-approval-card > * {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .digital-rfp-print-page .digital-rfp-status-line {
+    flex-wrap: wrap !important;
+  }
 }
