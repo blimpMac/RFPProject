@@ -63,8 +63,6 @@ export function ApprovalsPage() {
   const [documentVerification, setDocumentVerification] = useState('');
   const [verificationRemarks, setVerificationRemarks] = useState('');
   const [financeNotes, setFinanceNotes] = useState('');
-  const [checkNumber, setCheckNumber] = useState('');
-  const [paymentReference, setPaymentReference] = useState('');
   const [processingStatus, setProcessingStatus] = useState('');
   const [lateDocuments, setLateDocuments] = useState('');
   const [modalMode, setModalMode] = useState<ModalMode>('view');
@@ -212,8 +210,6 @@ export function ApprovalsPage() {
     setDocumentVerification(operations.document_verification || '');
     setVerificationRemarks(operations.verification_remarks || '');
     setFinanceNotes(request.finance_remarks || '');
-    setCheckNumber(receipt.processing.checkNumber || '');
-    setPaymentReference(receipt.processing.paymentReference || '');
     setProcessingStatus(receipt.processing.status || '');
     setLateDocuments(receipt.lateDocuments.join('\n'));
     setNotice('');
@@ -341,8 +337,6 @@ export function ApprovalsPage() {
         financeRemarks: financeNotes || null,
         plannedCheckDate: checkDate || null,
         changeReason: reason || null,
-        checkNumber: checkNumber || null,
-        paymentReference: paymentReference || null,
         processingStatus: processingStatus || null,
         lateDocuments: lateDocuments
           .split('\n')
@@ -581,8 +575,6 @@ export function ApprovalsPage() {
               verificationRemarks={verificationRemarks}
               checkDate={checkDate}
               reason={reason}
-              checkNumber={checkNumber}
-              paymentReference={paymentReference}
               processingStatus={processingStatus}
               lateDocuments={lateDocuments}
               financeNotes={financeNotes}
@@ -592,8 +584,6 @@ export function ApprovalsPage() {
               onVerificationRemarksChange={setVerificationRemarks}
               onCheckDateChange={setCheckDate}
               onReasonChange={setReason}
-              onCheckNumberChange={setCheckNumber}
-              onPaymentReferenceChange={setPaymentReference}
               onProcessingStatusChange={setProcessingStatus}
               onLateDocumentsChange={setLateDocuments}
               onFinanceNotesChange={setFinanceNotes}
