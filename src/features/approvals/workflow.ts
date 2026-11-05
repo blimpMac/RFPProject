@@ -48,7 +48,7 @@ function elapsedDays(value: string | null, now: number) {
 export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
   const status = request.final_status;
   const processingDue = financeWorkflow(request).processing_due_at;
-  if (processingDue && !/paid|returned to requestor|liquidation|liquidation/i.test(status)) {
+  if (processingDue && !/paid|returned to requestor|liquidation/i.test(status)) {
     const processingStart = financeWorkflow(request).processing_started_at || request.submitted_at || now;
     const schedule = manilaReceiptSchedule(processingStart);
     const today = manilaDay(now);
