@@ -37,7 +37,8 @@ export function ApprovalQueueFilters({
 }) {
   return (
     <section className="approval-filter-panel" aria-label="Approval queue filters">
-      <div className="approval-view-toggle" role="group" aria-label="Request view">
+      <div className="approval-filter-primary">
+        <div className="approval-view-toggle" role="group" aria-label="Request view">
         <button
           type="button"
           className={view === 'pending' ? 'active' : ''}
@@ -73,6 +74,8 @@ export function ApprovalQueueFilters({
           </button>
         )}
       </label>
+      </div>
+      <div className={`approval-filter-fields${hasFilters ? ' has-clear' : ''}`}>
       <select
         className="input"
         aria-label="Status"
@@ -116,6 +119,7 @@ export function ApprovalQueueFilters({
           Clear filters
         </button>
       )}
+      </div>
     </section>
   );
 }
