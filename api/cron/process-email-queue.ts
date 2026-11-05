@@ -1,4 +1,5 @@
 import { processEmailQueue } from '../../server/email/service.js';
+import { processDueLiquidations } from '../../server/services/liquidation-workflow.js';
 
 function authorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
@@ -10,10 +11,17 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ ok: false, error: 'Unauthorized.' }, { status: 401 });
   }
 
+  let liquidations: { checked: number; transitioned: number } | null = null;
   try {
-    return Response.json({ ok: true, results: await processEmailQueue() });
+    liquidations = await processDueLiquidations();
+  } catch (error) {
+    console.error('Liquidation state processor failed', error);
+  }
+  try {
+    const results = await processEmailQueue();
+    return Response.json({ ok: liquidations !== null, liquidations, results });
   } catch (error) {
     console.error(error);
-    return Response.json({ ok: false, error: 'Email queue processing failed.' }, { status: 500 });
+    return Response.json({ ok: false, liquidations, error: 'Email queue processing failed.' }, { status: 500 });
   }
 }
