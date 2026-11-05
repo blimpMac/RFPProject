@@ -139,14 +139,6 @@ export const handleFinanceRoutes: RouteHandler = async ({ event, route, db }) =>
       processing: {
         ...existingProcessing,
         target_release_date: nextDate,
-        check_number:
-          input.checkNumber === undefined
-            ? existingProcessing.check_number || null
-            : input.checkNumber || null,
-        payment_reference:
-          input.paymentReference === undefined
-            ? existingProcessing.payment_reference || null
-            : input.paymentReference || null,
         status:
           input.processingStatus === undefined
             ? existingProcessing.status || null
