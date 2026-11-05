@@ -438,3 +438,88 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* CA / RF expense detail is shown in the digital preview and begins a separate
+   print page once the original request has reached the payment/liquidation stage. */
+.digital-rfp-expense-summary {
+  margin: 1rem;
+  padding: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.digital-rfp-expense-summary h2 {
+  font-size: 1rem;
+  font-weight: 800;
+  margin-bottom: 0.4rem;
+}
+.digital-rfp-expense-summary table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+}
+.digital-rfp-expense-summary th,
+.digital-rfp-expense-summary td {
+  border: 1px solid #cbd5e1;
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.digital-rfp-expense-summary td:last-child,
+.digital-rfp-expense-summary th:last-child {
+  text-align: right;
+}
+
+@media print {
+  /* Section 5 remains on the interactive preview but never prints. */
+  .digital-rfp-section-hide-print,
+  .digital-rfp-current-state {
+    display: none !important;
+  }
+  .digital-rfp-section-expense-print-hide {
+    display: none !important;
+  }
+  .digital-rfp-expense-summary {
+    break-before: page;
+    page-break-before: always;
+    break-inside: auto;
+    display: block !important;
+    padding: 3mm;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    font-size: 10pt;
+  }
+  .digital-rfp-expense-summary table {
+    font-size: 9pt;
+  }
+  .digital-rfp-expense-summary tr {
+    break-inside: avoid;
+  }
+  /* On the public tracking page, print only the already-approved RFP receipt. */
+  body:has(.track-page) .track-page .tracking-receipt,
+  body:has(.track-page) .track-page .tracking-receipt * {
+    visibility: visible !important;
+  }
+  body:has(.track-page) .track-page .tracking-receipt {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+  body:has(.track-page) .track-page .tracking-receipt .digital-rfp-sheet {
+    width: 198mm !important;
+    max-width: 198mm !important;
+    height: auto !important;
+    overflow: visible !important;
+    page-break-inside: auto !important;
+  }
+  body:has(.track-page) .track-page .tracking-receipt .digital-rfp-section {
+    break-inside: avoid-page;
+  }
+}
