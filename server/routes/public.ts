@@ -42,6 +42,9 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     ensureMethod(event, 'POST');
     await enforceSubmissionLimit(event);
     const input = startSchema.parse(readJson(event));
+    if (/^(CA|RF) Liquidation$/i.test(input.request.rfpType) && !input.request.liquidationExpenses.length) {
+      throw new HttpError(400, 'List the expense date, description, and amount for at least one liquidation item.');
+    }
     if (
       input.attachments.length > config.MAX_UPLOAD_FILES ||
       input.attachments.some((file) => file.size > config.MAX_UPLOAD_SIZE_MB * 1024 * 1024)
@@ -96,6 +99,7 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
           ...existingRaw,
           request_type: input.request.requestType,
           submission_checklist: input.request.attachmentChecklist || [],
+          liquidation_expenses: input.request.liquidationExpenses || [],
         },
       })
       .eq('id', started.data.requestId);
