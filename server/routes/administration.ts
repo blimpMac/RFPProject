@@ -55,7 +55,7 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
 
   if (route === 'email-queue') {
     await requireStaff(event, ['super_administrator']);
-    const validateRfp = z.string().regex(/^(RFP|CA|RF)-\\d{4,}$/i);
+    const validateRfp = z.string().regex(/^(RFP|CA|RF)-\d{4,}$/i);
     const rfpNumber = event.httpMethod === 'GET'
       ? validateRfp.parse(event.queryStringParameters?.rfpNumber)
       : validateRfp.parse(z.object({ rfpNumber: z.string() }).parse(readJson(event)).rfpNumber);
