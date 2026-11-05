@@ -592,6 +592,11 @@ svg {
     display: none !important;
   }
 
+  /* The live workflow state is useful on-screen but is not part of the paper RFP. */
+  .digital-rfp-print-page .digital-rfp-current-state {
+    display: none !important;
+  }
+
   .digital-rfp-header {
     grid-template-columns: 1fr 1.35fr 0.92fr !important;
     text-align: initial !important;
