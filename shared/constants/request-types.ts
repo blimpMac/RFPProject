@@ -6,6 +6,8 @@ export const rfpRequestTypes = [
   'Manpower Agency Payments',
   'Reimbursement',
   'Opex - non PO transactions',
-  'Cash Advance Request',
-  'CA / RF Liquidation',
+  'Cash Advance (CA)',
+  'Revolving Fund (RF)',
+  'CA Liquidation',
+  'RF Liquidation',
 ] as const;
