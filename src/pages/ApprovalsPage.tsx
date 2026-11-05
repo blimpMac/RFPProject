@@ -210,7 +210,12 @@ export function ApprovalsPage() {
     setDocumentVerification(operations.document_verification || '');
     setVerificationRemarks(operations.verification_remarks || '');
     setFinanceNotes(request.finance_remarks || '');
-    setProcessingStatus(receipt.processing.status || '');
+    const currentProcessingStatus = receipt.processing.status || '';
+    setProcessingStatus(
+      ['Check Preparation', 'Check Approval', 'Check Released', 'Paid'].includes(currentProcessingStatus)
+        ? currentProcessingStatus
+        : '',
+    );
     setLateDocuments(receipt.lateDocuments.join('\n'));
     setNotice('');
     setError('');
