@@ -112,7 +112,7 @@ export function TrackPage() {
     })));
   }, [data?.request.id]); // only the request identity, not each background refresh
 
-  const updateCorrections = <K extends keyof Corrections>(key: K, value: Corrections[K]) =>
+  const updateCorrections = <K extends keyof Corrections,>(key: K, value: Corrections[K]) =>
     setCorrections((current) => ({ ...current, [key]: value }));
 
   const resubmit = async () => {
