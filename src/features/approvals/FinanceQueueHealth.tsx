@@ -20,7 +20,8 @@ export function FinanceQueueHealth({
   onFocus: (focus: QueueFocus) => void;
 }) {
   return (
-    <section className="queue-health-grid" aria-label="Finance queue health">
+    <div className="queue-health-container">
+      <section className="queue-health-grid" aria-label="Finance queue health">
       <QueueHealthCard
         active={queueFocus === 'member'}
         count={counts.member}
@@ -58,7 +59,8 @@ export function FinanceQueueHealth({
         tone="green"
         onClick={() => onFocus('processing')}
       />
-    </section>
+      </section>
+    </div>
   );
 }
 
