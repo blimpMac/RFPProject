@@ -82,6 +82,42 @@ export const documentRequirements: Record<string, DocumentRequirementGroup[]> = 
       'Delivery Receipt, if any',
     ] },
   ],
+  'Cash Advance (CA)': [
+    { label: 'Internal documents', items: [
+      'Approved Request for Payment Form',
+      'Budget Estimate with budget allocation breakdown',
+      'Service Request / BOM / BOQ, if needed for servicing',
+      'Quotation / Canvass / DR / PO, if needed',
+      'Training agreement and signed form, if CA for training',
+    ] },
+    { label: 'External documents', items: [
+      'Contract (Rental / Lease Contract)',
+      'MNT Form, if needed',
+      'CAPEX, if needed',
+    ] },
+  ],
+  'Revolving Fund (RF)': [
+    { label: 'Internal documents', items: [
+      'Approved Request for Payment Form',
+      'Fund allocation / replenishment budget',
+      'Estimated expense breakdown',
+    ] },
+    { label: 'External documents', items: [
+      'Supporting expense forecast or applicable quotations, if any',
+    ] },
+  ],
+  'CA Liquidation': [
+    { label: 'Expense summary', items: [
+      'Itemized expenses: expense date, description, and amount',
+      'Proof of return of any unspent cash, if applicable',
+    ] },
+  ],
+  'RF Liquidation': [
+    { label: 'Expense summary', items: [
+      'Itemized expenses: expense date, description, and amount',
+      'Replenishment / balance reconciliation, if applicable',
+    ] },
+  ],
   'Cash Advance Request': [
     { label: 'Internal documents', items: [
       'Approved Request for Payment Form',
