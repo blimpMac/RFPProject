@@ -33,7 +33,7 @@ export const processingOverdue = (request: RfpRequest, now: number) => {
   return Boolean(
     dueAt &&
     new Date(dueAt).getTime() < now &&
-    !/paid|returned to requestor/i.test(request.final_status),
+    !/paid|returned to requestor|liquidation/i.test(request.final_status),
   );
 };
 
@@ -48,8 +48,8 @@ function elapsedDays(value: string | null, now: number) {
 export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
   const status = request.final_status;
   const processingDue = financeWorkflow(request).processing_due_at;
-  if (processingDue && !/paid|returned to requestor|pending liquidation/i.test(status)) {
-    const processingStart = financeWorkflow(request).processing_started_at || request.submitted_at;
+  if (processingDue && !/paid|returned to requestor|liquidation|liquidation/i.test(status)) {
+    const processingStart = financeWorkflow(request).processing_started_at || request.submitted_at || now;
     const schedule = manilaReceiptSchedule(processingStart);
     const today = manilaDay(now);
     const overdue = manilaCalendarDaysBetween(schedule.day3, today);
@@ -68,7 +68,7 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
     };
   }
   if (status === 'Pending Department Approval') {
-    const schedule = manilaReceiptSchedule(request.submitted_at);
+    const schedule = manilaReceiptSchedule(request.submitted_at || now);
     const days = manilaCalendarDaysBetween(schedule.day1, manilaDay(now));
     return {
       label: days < 0 ? 'Department review · Day 1 tomorrow' : `Department review · Day ${days + 1}`,
@@ -98,12 +98,6 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
       detail: 'Manual document verification is required before processing',
       tone: 'warning',
     };
-  }
-  if (status === 'Liquidation Submitted') {
-    return [
-      { value: 'liquidation_approve', label: 'Approve expense liquidation' },
-      { value: 'liquidation_return', label: 'Return expense summary for correction' },
-    ];
   }
   if (['Pending Finance Review', 'Documentation Required'].includes(status)) {
     const days = elapsedDays(request.department_approval_at || request.submitted_at, now);
@@ -158,6 +152,12 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
 }
 
 export const financeActionOptions = (status: string, financeHead: boolean): Action[] => {
+  if (status === 'Liquidation Submitted') {
+    return [
+      { value: 'liquidation_approve', label: 'Approve expense liquidation' },
+      { value: 'liquidation_return', label: 'Return expense summary for correction' },
+    ];
+  }
   if (['Pending Finance Review', 'Documentation Required'].includes(status)) {
     return [
       { value: 'member_approve', label: 'Approve as Finance member' },
