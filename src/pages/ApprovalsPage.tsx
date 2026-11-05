@@ -51,6 +51,7 @@ export function ApprovalsPage() {
   const [company, setCompany] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [requestTypeFilter, setRequestTypeFilter] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [queueFocus, setQueueFocus] = useState<QueueFocus>('all');
@@ -120,6 +121,7 @@ export function ApprovalsPage() {
       (request) =>
         (!company || request.company === company) &&
         (!statusFilter || request.final_status === statusFilter) &&
+        (!finance || !requestTypeFilter || (request.raw_record?.request_type || request.request_type) === requestTypeFilter) &&
         (!fromDate || manilaDay(request.submitted_at || 0) >= fromDate) &&
         (!toDate || manilaDay(request.submitted_at || 0) <= toDate) &&
         (!query ||
@@ -140,7 +142,7 @@ export function ApprovalsPage() {
           ? !/paid|returned to requestor/i.test(request.final_status)
           : /paid|returned to requestor/i.test(request.final_status)),
     );
-  }, [company, fromDate, matchesQueueFocus, rows, search, statusFilter, toDate, view]);
+  }, [company, finance, fromDate, matchesQueueFocus, requestTypeFilter, rows, search, statusFilter, toDate, view]);
   const pageCount = Math.max(1, Math.ceil(visibleRows.length / pageSize));
   const paginatedRows = useMemo(
     () => visibleRows.slice((page - 1) * pageSize, page * pageSize),
@@ -148,7 +150,7 @@ export function ApprovalsPage() {
   );
   useEffect(() => {
     setPage(1);
-  }, [company, fromDate, pageSize, queueFocus, search, statusFilter, toDate, view]);
+  }, [company, fromDate, pageSize, queueFocus, requestTypeFilter, search, statusFilter, toDate, view]);
   useEffect(() => {
     if (page > pageCount) setPage(pageCount);
   }, [page, pageCount]);
@@ -178,7 +180,7 @@ export function ApprovalsPage() {
     };
   }, [now, rows]);
   const hasFilters = Boolean(
-    company || search || statusFilter || fromDate || toDate || queueFocus !== 'all',
+    company || search || statusFilter || requestTypeFilter || fromDate || toDate || queueFocus !== 'all',
   );
   const applyQueueFocus = (focus: QueueFocus) => {
     setQueueFocus((current) => (current === focus ? 'all' : focus));
@@ -188,6 +190,7 @@ export function ApprovalsPage() {
     setCompany('');
     setSearch('');
     setStatusFilter('');
+    setRequestTypeFilter('');
     setFromDate('');
     setToDate('');
     setQueueFocus('all');
@@ -397,6 +400,8 @@ export function ApprovalsPage() {
         view={view}
         search={search}
         statusFilter={statusFilter}
+        requestTypeFilter={requestTypeFilter}
+        finance={finance}
         fromDate={fromDate}
         toDate={toDate}
         company={company}
@@ -406,6 +411,7 @@ export function ApprovalsPage() {
         onViewChange={setView}
         onSearchChange={setSearch}
         onStatusChange={setStatusFilter}
+        onRequestTypeChange={setRequestTypeFilter}
         onFromDateChange={setFromDate}
         onToDateChange={setToDate}
         onCompanyChange={setCompany}
