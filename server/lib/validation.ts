@@ -92,6 +92,23 @@ export const resubmitSchema = z.object({
   requestId: z.uuid(),
   trackingToken: z.string().min(20),
   correctionNote: z.string().trim().min(2).max(1500),
+  corrections: z.object({
+    projectClass: z.string().trim().min(1).max(160),
+    supplierPayee: z.string().trim().min(1).max(180),
+    purposeDescription: z.string().trim().min(5).max(3000),
+    amount: z.coerce.number().positive().max(999999999999.99),
+    requiredPaymentDate: z.iso.date(),
+    requestType: z.enum(['Regular', 'Emergency']),
+  }).optional(),
+});
+export const liquidationSubmissionSchema = z.object({
+  requestId: z.uuid(),
+  trackingToken: z.string().min(20),
+  expenses: z.array(z.object({
+    date: z.iso.date(),
+    description: z.string().trim().min(2).max(280),
+    amount: z.coerce.number().positive().max(999999999.99),
+  })).min(1).max(100),
 });
 export const departmentRereviewSchema = z.object({
   requestId: z.uuid(),
