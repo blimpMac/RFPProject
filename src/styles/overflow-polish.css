@@ -410,3 +410,31 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* Finance includes one additional request urgency filter. Keep every control
+   in an equal-width column and reflow at content breakpoints. */
+.approval-filter-fields.has-request-type {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.approval-filter-fields.has-request-type.has-clear {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+}
+@media (max-width: 1279px) {
+  .approval-filter-fields.has-request-type,
+  .approval-filter-fields.has-request-type.has-clear {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .approval-filter-fields.has-request-type,
+  .approval-filter-fields.has-request-type.has-clear {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .approval-filter-fields.has-request-type,
+  .approval-filter-fields.has-request-type.has-clear {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
