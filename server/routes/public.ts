@@ -6,6 +6,7 @@ import {
   completeAttachmentSchema,
   decisionSchema,
   finalizeSchema,
+  liquidationSubmissionSchema,
   resubmitSchema,
   startSchema,
 } from '../lib/validation.js';
@@ -193,6 +194,33 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
   if (route === 'submissions/resubmit') {
     ensureMethod(event, 'POST');
     const input = resubmitSchema.parse(readJson(event));
+    if (input.corrections) {
+      const current = await db.from('rfp_requests')
+        .select('id,final_status,version,raw_record')
+        .eq('id', input.requestId)
+        .eq('public_tracking_hash', sha256(input.trackingToken))
+        .single();
+      if (current.error || !current.data) throw new HttpError(403, 'Invalid requestor tracking credential.');
+      if (current.data.final_status !== 'Returned to Requestor')
+        throw new HttpError(409, 'Only a returned request can be edited and resubmitted.');
+      const raw = current.data.raw_record && typeof current.data.raw_record === 'object' && !Array.isArray(current.data.raw_record)
+        ? (current.data.raw_record as Record<string, unknown>) : {};
+      const c = input.corrections;
+      const updated = await db.from('rfp_requests').update({
+        project_class: c.projectClass,
+        supplier_payee: c.supplierPayee,
+        purpose_description: c.purposeDescription,
+        amount: c.amount,
+        required_payment_date: c.requiredPaymentDate,
+        raw_record: { ...raw, request_type: c.requestType },
+        version: current.data.version + 1,
+      }).eq('id', input.requestId)
+        .eq('public_tracking_hash', sha256(input.trackingToken))
+        .eq('final_status', 'Returned to Requestor')
+        .eq('version', current.data.version)
+        .select('id').maybeSingle();
+      if (updated.error || !updated.data) throw new HttpError(409, 'Request changed during correction. Refresh and try again.');
+    }
     const reviewToken = randomToken();
     const expiresAt = new Date(Date.now() + config.REVIEW_TOKEN_HOURS * 60 * 60_000).toISOString();
     const result = await db.rpc('resubmit_returned_request', {
@@ -206,6 +234,59 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     if (result.error) throw new HttpError(409, result.error.message);
     const delivery = await flushEmailQueueForRequest(input.requestId);
     return json(200, { ok: true, request: result.data, delivery });
+  }
+
+  if (route === 'submissions/liquidate') {
+    ensureMethod(event, 'POST');
+    const input = liquidationSubmissionSchema.parse(readJson(event));
+    const current = await db.from('rfp_requests')
+      .select('id,rfp_number,requestor_email,final_status,rfp_type,raw_record,version')
+      .eq('id', input.requestId)
+      .eq('public_tracking_hash', sha256(input.trackingToken))
+      .single();
+    if (current.error || !current.data) throw new HttpError(403, 'Invalid requestor tracking credential.');
+    if (current.data.final_status !== 'Pending Liquidation')
+      throw new HttpError(409, 'This request is not yet awaiting expense liquidation.');
+    if (!/cash advance|revolving fund|^(CA|RF)/i.test(current.data.rfp_type))
+      throw new HttpError(409, 'Only CA and RF requests can submit this liquidation.');
+    const raw = current.data.raw_record && typeof current.data.raw_record === 'object' && !Array.isArray(current.data.raw_record)
+      ? (current.data.raw_record as Record<string, unknown>) : {};
+    const updated = await db.from('rfp_requests').update({
+      raw_record: { ...raw, liquidation_expenses: input.expenses, liquidation_submitted_at: new Date().toISOString() },
+      final_status: 'Liquidation Submitted',
+      last_action: 'Expense Liquidation Submitted',
+      version: current.data.version + 1,
+    }).eq('id', input.requestId).eq('version', current.data.version)
+      .eq('final_status', 'Pending Liquidation').select('id').maybeSingle();
+    if (updated.error || !updated.data) throw new HttpError(409, 'Unable to save liquidation; refresh and retry.');
+    const total = input.expenses.reduce((sum, entry) => sum + entry.amount, 0);
+    const log = await db.from('approval_logs').insert({
+      request_id: input.requestId, rfp_number: current.data.rfp_number,
+      action: 'Expense Liquidation Submitted', actor_email: current.data.requestor_email,
+      remarks: `${input.expenses.length} expense line(s) · PHP ${total.toFixed(2)}`,
+      previous_status: 'Pending Liquidation', new_status: 'Liquidation Submitted',
+    });
+    if (log.error) throw log.error;
+    const roles = await db.from('user_roles').select('user_id').eq('role', 'finance_reviewer');
+    if (roles.error) throw roles.error;
+    const memberIds = [...new Set((roles.data || []).map((row) => row.user_id))];
+    if (memberIds.length) {
+      const profiles = await db.from('profiles').select('email').in('id',memberIds).eq('active',true);
+      if (profiles.error) throw profiles.error;
+      const queued = await db.from('email_notifications').upsert(
+        (profiles.data || []).filter((p) => !!p.email).map((p) => ({
+          request_id: input.requestId, template_key: 'liquidation_submitted',
+          recipient_email: p.email.toLowerCase(),
+          subject: `Liquidation review: ${current.data.rfp_number}`,
+          payload: { expenseCount: input.expenses.length, expenseTotal: total },
+          deduplication_key: `${input.requestId}:liquidation_submitted:${current.data.version + 1}:${p.email.toLowerCase()}`,
+        })),
+        { onConflict: 'deduplication_key', ignoreDuplicates: true },
+      );
+      if (queued.error) throw queued.error;
+    }
+    await flushEmailQueueForRequest(input.requestId);
+    return json(200, { ok: true, rfpNumber: current.data.rfp_number, status: 'Liquidation Submitted' });
   }
 
   if (route.startsWith('track/')) {
@@ -263,6 +344,8 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
         request_type: typeof rawRecord.request_type === 'string' ? rawRecord.request_type : null,
         raw_record: undefined,
       },
+      liquidationExpenses: Array.isArray(rawRecord.liquidation_expenses)
+        ? rawRecord.liquidation_expenses : [],
       workflow,
       financeOperations,
       financeReceipt,
