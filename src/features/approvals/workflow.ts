@@ -1,6 +1,7 @@
 import { manilaDate } from '../../lib/format';
 import type { RfpRequest } from '../../types';
 import { manilaDay } from '../requests/sla';
+import { manilaReceiptSchedule, manilaCalendarDaysBetween } from '../../../shared/utils/processing-sla';
 
 export type Action = { value: string; label: string };
 export type QueueFocus = 'all' | 'member' | 'head' | 'hardcopy' | 'processing';
@@ -47,28 +48,31 @@ function elapsedDays(value: string | null, now: number) {
 export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
   const status = request.final_status;
   const processingDue = financeWorkflow(request).processing_due_at;
-  if (processingDue && !/paid|returned to requestor/i.test(status)) {
-    const difference = new Date(processingDue).getTime() - now;
-    if (difference < 0) {
-      const overdueHours = Math.max(1, Math.ceil(Math.abs(difference) / 36e5));
+  if (processingDue && !/paid|returned to requestor|pending liquidation/i.test(status)) {
+    const processingStart = financeWorkflow(request).processing_started_at || request.submitted_at;
+    const schedule = manilaReceiptSchedule(processingStart);
+    const today = manilaDay(now);
+    const overdue = manilaCalendarDaysBetween(schedule.day3, today);
+    if (overdue > 0) {
       return {
-        label: `${overdueHours}h overdue`,
-        detail: `3-day processing deadline was ${manilaDate(processingDue, true)}`,
+        label: `${overdue} day${overdue === 1 ? '' : 's'} overdue`,
+        detail: `3-day processing SLA ended on ${schedule.day3} (Philippine time)`,
         tone: 'danger',
       };
     }
-    const hours = Math.max(1, Math.ceil(difference / 36e5));
+    const currentDay = Math.max(0, manilaCalendarDaysBetween(schedule.day1, today) + 1);
     return {
-      label: `${hours}h left in 3-day process`,
-      detail: `Processing deadline ${manilaDate(processingDue, true)}`,
-      tone: hours <= 24 ? 'warning' : 'good',
+      label: currentDay === 0 ? 'Processing · Day 1 tomorrow' : `Processing · Day ${Math.min(3, currentDay)} of 3`,
+      detail: `Day 1: ${schedule.day1} · Day 3 deadline: ${schedule.day3} (Philippine time)`,
+      tone: currentDay >= 3 ? 'warning' : 'good',
     };
   }
   if (status === 'Pending Department Approval') {
-    const days = elapsedDays(request.submitted_at, now);
+    const schedule = manilaReceiptSchedule(request.submitted_at);
+    const days = manilaCalendarDaysBetween(schedule.day1, manilaDay(now));
     return {
-      label: `Department review · Day ${days + 1}`,
-      detail: days > 1 ? `${days} days since submission` : 'Within department review window',
+      label: days < 0 ? 'Department review · Day 1 tomorrow' : `Department review · Day ${days + 1}`,
+      detail: `Received ${schedule.afterCutoff ? 'at/after' : 'before'} 3 PM · Day 1: ${schedule.day1}`,
       tone: days > 1 ? 'warning' : 'neutral',
     };
   }
