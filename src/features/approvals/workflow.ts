@@ -76,6 +76,15 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
       tone: days > 1 ? 'warning' : 'neutral',
     };
   }
+  if (status === 'Pending Liquidation') {
+    return { label: 'Expense liquidation due', detail: 'Awaiting an itemized expense report from the requestor', tone: 'warning' };
+  }
+  if (status === 'Liquidation Submitted') {
+    return { label: 'Review liquidation', detail: 'Finance must verify the submitted expense summary', tone: 'warning' };
+  }
+  if (status === 'Liquidation Complete') {
+    return { label: 'Liquidation completed', detail: 'Finance approved the submitted expense summary', tone: 'good' };
+  }
   if (status === 'Pending Finance Head Review') {
     return {
       label: 'Finance Head decision',
@@ -89,6 +98,12 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
       detail: 'Manual document verification is required before processing',
       tone: 'warning',
     };
+  }
+  if (status === 'Liquidation Submitted') {
+    return [
+      { value: 'liquidation_approve', label: 'Approve expense liquidation' },
+      { value: 'liquidation_return', label: 'Return expense summary for correction' },
+    ];
   }
   if (['Pending Finance Review', 'Documentation Required'].includes(status)) {
     const days = elapsedDays(request.department_approval_at || request.submitted_at, now);
