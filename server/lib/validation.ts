@@ -26,6 +26,11 @@ export const requestSchema = z.object({
   requiredPaymentDate: z.iso.date(),
   approvingHead: z.string().trim().min(2).max(160),
   attachmentChecklist: z.array(z.string().trim().min(1).max(180)).max(40).default([]),
+  liquidationExpenses: z.array(z.object({
+    date: z.iso.date(),
+    description: z.string().trim().min(2).max(280),
+    amount: z.coerce.number().positive().max(999999999.99),
+  })).max(100).default([]),
 });
 export const attachmentSchema = z.object({
   name: z.string().min(1).max(180),
