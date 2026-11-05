@@ -25,6 +25,8 @@ const stageActions = new Set([
   'head_approve',
   'head_reject',
   'hard_copy_approve',
+  'liquidation_approve',
+  'liquidation_return',
 ]);
 
 const asRecord = (value: unknown): Record<string, unknown> =>
@@ -251,6 +253,25 @@ export async function performFinanceStageAction(
       break;
     }
 
+    case 'liquidation_approve':
+      requireStatus(currentStatus, ['Liquidation Submitted'], 'Expense liquidation approval');
+      nextStatus = 'Liquidation Complete';
+      actionLabel = 'Expense Liquidation Approved';
+      nextWorkflow.liquidation_status = 'Approved';
+      nextWorkflow.liquidation_reviewed_at = nowIso;
+      nextWorkflow.liquidation_reviewed_by = actor.email;
+      break;
+
+    case 'liquidation_return':
+      requireStatus(currentStatus, ['Liquidation Submitted'], 'Expense liquidation return');
+      requireRemarks(input.remarks, 'Returning expense liquidation');
+      nextStatus = 'Pending Liquidation';
+      actionLabel = 'Expense Liquidation Returned';
+      nextWorkflow.liquidation_status = 'Returned';
+      nextWorkflow.liquidation_reviewed_at = nowIso;
+      nextWorkflow.liquidation_reviewed_by = actor.email;
+      break;
+
     default:
       throw new HttpError(400, 'Unsupported Finance stage action.');
   }
@@ -345,6 +366,16 @@ export async function performFinanceStageAction(
       'finance_head_rejected',
       `${rfpNumber} declined by Finance Head`,
       { remarks: input.remarks.trim() },
+      nextVersion,
+    );
+  } else if (input.action === 'liquidation_approve' || input.action === 'liquidation_return') {
+    await queueNotifications(
+      db,
+      request,
+      [asText(request.requestor_email)],
+      input.action === 'liquidation_approve' ? 'liquidation_approved' : 'liquidation_returned',
+      `${rfpNumber} expense liquidation ${input.action === 'liquidation_approve' ? 'approved' : 'returned'}`,
+      { remarks: input.remarks.trim() || null },
       nextVersion,
     );
   } else if (input.action === 'hard_copy_approve') {
