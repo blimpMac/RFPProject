@@ -10,7 +10,10 @@ export const allowedMimes = [
   'image/gif',
 ] as const;
 export const requestSchema = z.object({
-  requestorName: z.string().trim().min(2).max(120),
+  requestorName: z.string().trim().min(3).max(120).refine(
+    (name) => name.split(/\s+/u).filter(Boolean).length >= 2,
+    'Enter the complete first and last name of the requestor.',
+  ),
   requestorEmail: z.string().trim().toLowerCase().email().max(160),
   company: z.enum(companies),
   department: z.string().trim().min(1).max(100),
@@ -74,10 +77,8 @@ export const financeUpdateSchema = z.object({
   financeRemarks: z.string().trim().max(1500).nullable().optional(),
   plannedCheckDate: z.iso.date().nullable().optional(),
   changeReason: z.string().trim().max(1000).nullable().optional(),
-  checkNumber: z.string().trim().max(120).nullable().optional(),
-  paymentReference: z.string().trim().max(180).nullable().optional(),
   processingStatus: z
-    .enum(['For Processing', 'Check Preparation', 'Check Approval', 'Check Released', 'Paid'])
+    .enum(['Check Preparation', 'Check Approval', 'Check Released', 'Paid'])
     .nullable()
     .optional(),
   lateDocuments: z.array(z.string().trim().min(1).max(180)).max(40).optional(),
