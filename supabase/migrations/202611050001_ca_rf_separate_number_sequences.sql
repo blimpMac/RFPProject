@@ -1,0 +1,5 @@
+-- Deployed 2026-11-05 as Supabase migration ca_rf_separate_number_sequences.
+-- CA and RF numbering are independent and never renumber existing RFP records.
+-- Actual deployed DDL lives in Supabase migrations; this checked-in note documents the policy.
+-- New submissions use next_rfp_number(p_request->>'rfpType') in start_rfp_submission.
+-- Prefix selection: CA for cash advance and CA liquidation; RF for revolving fund and RF liquidation; RFP otherwise.
