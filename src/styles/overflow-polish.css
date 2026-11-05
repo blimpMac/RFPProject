@@ -285,10 +285,9 @@
   white-space: nowrap;
 }
 
-/* Summary cards retain the 4-column look when space permits but reflow
-   before their numbers and labels start to collide. */
+/* Finance summary uses a deterministic balanced grid, never a 3+1 orphan row. */
 .queue-health-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .queue-health-card {
@@ -336,5 +335,77 @@
 
   .approval-filter-fields > .approval-clear {
     grid-column: 1;
+  }
+}
+
+
+/* Size Finance summary cards by their actual content width (sidebar accounted
+   for), and keep each count anchored in the same grid column and top position. */
+.queue-health-container {
+  container-type: inline-size;
+  width: 100%;
+  min-width: 0;
+}
+
+.queue-health-container .queue-health-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.queue-health-container .queue-health-card {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) 1.85rem;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 6rem;
+  height: 100%;
+  padding: 0.85rem;
+}
+
+.queue-health-container .queue-health-card .queue-health-icon {
+  width: 2rem;
+  height: 2rem;
+  align-self: center;
+}
+
+.queue-health-container .queue-health-card > span:nth-child(2) {
+  min-width: 0;
+  max-width: 100%;
+  align-self: center;
+  text-align: left;
+  overflow-wrap: break-word;
+}
+
+.queue-health-container .queue-health-card .queue-health-count {
+  box-sizing: border-box;
+  display: grid;
+  flex: none;
+  place-items: center;
+  justify-self: end;
+  align-self: start;
+  width: 1.85rem;
+  height: 1.85rem;
+  min-width: 1.85rem;
+  min-height: 1.85rem;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  border-radius: 50%;
+}
+
+@container (min-width: 64rem) {
+  .queue-health-container .queue-health-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 37.99rem) {
+  .queue-health-container .queue-health-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
