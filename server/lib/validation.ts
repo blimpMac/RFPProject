@@ -69,6 +69,8 @@ export const financeSchema = z.object({
     'awaiting_signatory',
     'check_released',
     'payment_released',
+    'liquidation_approve',
+    'liquidation_return',
   ]),
   remarks: z.string().trim().max(1500).default(''),
   plannedCheckDate: z.iso.date().nullable().optional(),
