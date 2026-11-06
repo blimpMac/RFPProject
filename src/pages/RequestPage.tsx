@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, CheckCircle2, ClipboardList, Copy } from 'lucide-react';
 import { FileDropzone } from '../components/FileDropzone';
+import { useAuth } from '../components/AuthProvider';
 import { RequestAttachmentChecklist } from '../components/RequestAttachmentChecklist';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Button, Spinner } from '../components/ui';
@@ -44,7 +45,9 @@ type StartResult = {
   trackingToken: string;
   uploads: { id: string; name: string; path: string; token: string }[];
 };
-export function RequestPage() {
+export function RequestPage({ embedded = false }: { embedded?: boolean }) {
+  const { identity } = useAuth();
+  const PageBody = embedded ? 'section' : 'main';
   const [form, setForm] = useState(initial);
   const [files, setFiles] = useState<File[]>([]);
   const [attachmentChecklist, setAttachmentChecklist] = useState<string[]>([]);
@@ -62,6 +65,18 @@ export function RequestPage() {
   const [clock, setClock] = useState(() => Date.now());
   const afterCutoff = isAfterManilaCutoff(clock);
   const slaSchedule = manilaReceiptSchedule(clock);
+  // Prefill verified signed-in contact details, but do not overwrite user edits.
+  // The public form must remain unchanged and unauthenticated.
+  useEffect(() => {
+    if (!embedded || !identity) return;
+    const fullName = identity.fullName.trim();
+    const hasFirstLast = fullName.split(/\s+/u).length >= 2;
+    setForm((current) => ({
+      ...current,
+      requestorName: current.requestorName || (hasFirstLast ? fullName : ''),
+      requestorEmail: current.requestorEmail || identity.email,
+    }));
+  }, [embedded, identity?.email, identity?.fullName]);
   useEffect(() => {
     const timer = window.setInterval(() => setClock(Date.now()), 30_000);
     return () => window.clearInterval(timer);
@@ -155,7 +170,12 @@ export function RequestPage() {
         trackingToken: started.trackingToken,
       });
       setSuccess({ rfpNumber: result.rfpNumber, trackingToken: started.trackingToken });
-      setForm(initial);
+      const fullName = identity?.fullName.trim() || '';
+      setForm({
+        ...initial,
+        requestorName: embedded && fullName.split(/\s+/u).length >= 2 ? fullName : '',
+        requestorEmail: embedded ? identity?.email || '' : '',
+      });
       setFiles([]);
       setAttachmentChecklist([]);
       setLiquidationExpenses([]);
@@ -172,8 +192,8 @@ export function RequestPage() {
       setCopied(true);
     };
     return (
-      <div className="flex min-h-screen flex-col bg-slate-50">
-        <main className="grid flex-1 place-items-center p-4 py-10">
+      <div className={embedded ? 'min-w-0 w-full' : 'flex min-h-screen flex-col bg-slate-50'}>
+        <PageBody className={embedded ? 'grid w-full min-w-0 place-items-center py-2 sm:py-6' : 'grid flex-1 place-items-center p-4 py-10'}>
           <div className="card w-full max-w-3xl overflow-hidden shadow-lg">
             <div className="grid md:grid-cols-[1.25fr_.75fr]">
               <div className="p-7 text-center sm:p-10">
@@ -193,7 +213,12 @@ export function RequestPage() {
                   updates, and any requested corrections.
                 </p>
                 <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
-                  <a className="btn btn-primary" href={trackingPath}>
+                  <a
+                    className="btn btn-primary"
+                    href={trackingPath}
+                    target={embedded ? '_blank' : undefined}
+                    rel={embedded ? 'noopener noreferrer' : undefined}
+                  >
                     View live status
                   </a>
                   <Button variant="secondary" onClick={() => void copyLink()}>
@@ -245,13 +270,14 @@ export function RequestPage() {
               </div>
             </div>
           </div>
-        </main>
-        <SiteFooter />
+        </PageBody>
+        {!embedded && <SiteFooter />}
       </div>
     );
   }
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className={embedded ? 'w-full min-w-0' : 'flex min-h-screen flex-col bg-slate-50'}>
+      {!embedded && (
       <header className="public-header border-b">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:gap-5">
           <div className="brand-lockup" aria-label="GREENLIGHT POWER and GEMCOR">
@@ -281,7 +307,8 @@ export function RequestPage() {
           </div>
         </div>
       </header>
-      <main className="page-enter mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+      )}
+      <PageBody className={embedded ? 'page-enter mx-auto w-full min-w-0 max-w-6xl pb-6' : 'page-enter mx-auto w-full max-w-5xl flex-1 px-4 py-8'}>
         <div className="mb-6">
           <p className="text-sm font-bold uppercase tracking-[0.14em] text-[#315c93]">
             Payment request
@@ -547,8 +574,8 @@ export function RequestPage() {
             </Button>
           </div>
         </form>
-      </main>
-      <SiteFooter />
+      </PageBody>
+      {!embedded && <SiteFooter />}
     </div>
   );
 }
