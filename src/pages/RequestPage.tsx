@@ -193,7 +193,13 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
     };
     return (
       <div className={embedded ? 'min-w-0 w-full' : 'flex min-h-screen flex-col bg-slate-50'}>
-        <PageBody className={embedded ? 'grid w-full min-w-0 place-items-center py-2 sm:py-6' : 'grid flex-1 place-items-center p-4 py-10'}>
+        <PageBody
+          className={
+            embedded
+              ? 'grid w-full min-w-0 place-items-center py-2 sm:py-6'
+              : 'grid flex-1 place-items-center p-4 py-10'
+          }
+        >
           <div className="card w-full max-w-3xl overflow-hidden shadow-lg">
             <div className="grid md:grid-cols-[1.25fr_.75fr]">
               <div className="p-7 text-center sm:p-10">
@@ -278,37 +284,47 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
   return (
     <div className={embedded ? 'w-full min-w-0' : 'flex min-h-screen flex-col bg-slate-50'}>
       {!embedded && (
-      <header className="public-header border-b">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:gap-5">
-          <div className="brand-lockup" aria-label="GREENLIGHT POWER and GEMCOR">
-            <img className="brand-logo" src="/brands/greenlight-power.png" alt="GREENLIGHT POWER" />
-            <span className="h-8 w-px bg-slate-300" aria-hidden="true" />
-            <img
-              className="brand-logo brand-logo-gemcor"
-              src="/brands/gemcor.png"
-              alt="GEMCOR — Greenmetal Electric Manufacturing Corporation"
-            />
-          </div>
-          <div className="hidden items-center gap-3 border-l border-slate-300 pl-5 md:flex">
-            <ClipboardList />
-            <div>
-              <p className="font-semibold">RFP Monitoring System</p>
-              <p className="text-xs text-slate-600">Request for payment submission</p>
+        <header className="public-header border-b">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:gap-5">
+            <div className="brand-lockup" aria-label="GREENLIGHT POWER and GEMCOR">
+              <img
+                className="brand-logo"
+                src="/brands/greenlight-power.png"
+                alt="GREENLIGHT POWER"
+              />
+              <span className="h-8 w-px bg-slate-300" aria-hidden="true" />
+              <img
+                className="brand-logo brand-logo-gemcor"
+                src="/brands/gemcor.png"
+                alt="GEMCOR — Greenmetal Electric Manufacturing Corporation"
+              />
+            </div>
+            <div className="hidden items-center gap-3 border-l border-slate-300 pl-5 md:flex">
+              <ClipboardList />
+              <div>
+                <p className="font-semibold">RFP Monitoring System</p>
+                <p className="text-xs text-slate-600">Request for payment submission</p>
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <ThemeToggle compact />
+              <a
+                className="public-header-link rounded-md px-3 py-2 text-sm font-bold text-[#173f6b] hover:bg-slate-100"
+                href="/admin"
+              >
+                Staff Login
+              </a>
             </div>
           </div>
-          <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle compact />
-            <a
-              className="public-header-link rounded-md px-3 py-2 text-sm font-bold text-[#173f6b] hover:bg-slate-100"
-              href="/admin"
-            >
-              Staff Login
-            </a>
-          </div>
-        </div>
-      </header>
+        </header>
       )}
-      <PageBody className={embedded ? 'page-enter mx-auto w-full min-w-0 max-w-6xl pb-6' : 'page-enter mx-auto w-full max-w-5xl flex-1 px-4 py-8'}>
+      <PageBody
+        className={
+          embedded
+            ? 'page-enter mx-auto w-full min-w-0 max-w-6xl pb-6'
+            : 'page-enter mx-auto w-full max-w-5xl flex-1 px-4 py-8'
+        }
+      >
         <div className="mb-6">
           <p className="text-sm font-bold uppercase tracking-[0.14em] text-[#315c93]">
             Payment request
