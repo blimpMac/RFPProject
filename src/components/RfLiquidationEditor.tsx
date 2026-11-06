@@ -1,6 +1,6 @@
 import { CheckCircle2, FileStack, Info, Plus, Trash2 } from 'lucide-react';
 import {
-  rfExpenseRowsPerCopy, rfTotals, sumRfAmounts, toCentavos,
+  rfCopies, rfExpenseRowsPerCopy, rfTotals, sumRfAmounts, toCentavos,
   type RfLiquidation,
 } from '../../shared/utils/rf-liquidation';
 import {
@@ -162,6 +162,7 @@ export function RfLiquidationEditor({
     Math.ceil(value.unliquidatedAdvances.length / 2),
   );
   const numeric = normalizeRfDraft(value);
+  const usedCopies = rfCopies(numeric, company).length;
   const totals = rfTotals(numeric);
   const completeExpenseCount = value.expenses.filter(rfExpenseRowComplete).length;
   const completeAdvanceCount = value.unliquidatedAdvances.filter(rfAdvanceRowComplete).length;
@@ -180,7 +181,8 @@ export function RfLiquidationEditor({
             once a row is filled in.</p>
         </div>
         <span className="rf-editor-copy-counter"><FileStack size={17} aria-hidden="true" />
-          {pageCount} {pageCount === 1 ? 'RF form' : 'RF forms'}
+          {usedCopies} {usedCopies === 1 ? 'form used' : 'forms used'}
+          {pageCount > usedCopies ? ' · Next ready' : ''}
         </span>
       </div>
 
@@ -333,7 +335,7 @@ export function RfLiquidationEditor({
         <div className="rf-editor-final-heading">
           <div><span className="rf-editor-eyebrow">Automatically calculated</span>
             <h4>Consolidated RF liquidation summary</h4>
-            <p>Includes {pageCount} RF {pageCount === 1 ? 'form copy' : 'form copies'}.
+            <p>Includes {usedCopies} completed RF {usedCopies === 1 ? 'form copy' : 'form copies'}.
               The total expenses flow into the main request amount automatically.</p>
           </div>
           <span className="rf-editor-summary-icon"><FileStack size={19} aria-hidden="true" /></span>
