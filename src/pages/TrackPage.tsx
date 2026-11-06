@@ -8,6 +8,7 @@ import { DigitalRfpReceipt } from '../components/DigitalRfpReceipt';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { displayRequestStatus } from '../features/requests/sla';
 import type { FinanceReceipt } from '../../shared/contracts/digital-rfp';
+import type { RfLiquidation } from '../../shared/utils/rf-liquidation';
 
 type Expense = { date: string; description: string; amount: string };
 type Corrections = {
@@ -63,6 +64,7 @@ type Tracking = {
   financeReceipt?: FinanceReceipt;
   submissionChecklist: string[];
   liquidationExpenses?: { date: string; description: string; amount: number }[];
+  rfLiquidation?: RfLiquidation | null;
   logs: { occurred_at: string; action: string; remarks: string | null; new_status: string }[];
   attachments: { id: string; original_filename: string; status: string }[];
 };
@@ -471,6 +473,7 @@ export function TrackPage() {
               financeReceipt={data!.financeReceipt}
               submissionChecklist={data!.submissionChecklist}
               liquidationExpenses={data!.liquidationExpenses || []}
+              rfLiquidation={data!.rfLiquidation}
             />
           </div>
         </>
