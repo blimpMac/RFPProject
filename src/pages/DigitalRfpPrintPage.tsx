@@ -12,6 +12,7 @@ import { Button, Spinner } from '../components/ui';
 import { get } from '../lib/api';
 import type { RfpRequest } from '../types';
 import { normalizeFinanceReceipt } from '../../shared/contracts/digital-rfp';
+import type { RfLiquidation } from '../../shared/utils/rf-liquidation';
 
 type PrintData = {
   request: RfpRequest;
@@ -84,6 +85,7 @@ export function DigitalRfpPrintPage() {
         financeOperations={financeOperations}
         financeReceipt={financeReceipt}
         submissionChecklist={checklist}
+        rfLiquidation={request.raw_record?.rf_liquidation as RfLiquidation | undefined}
       />
     </main>
   );
