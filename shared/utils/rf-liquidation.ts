@@ -71,8 +71,7 @@ export function rfTotals(form: RfLiquidation) {
   const cashOnHand = fromCentavos(
     toCentavos(revolvingFundAmount) -
     toCentavos(expenses) -
-    toCentavos(unliquidatedAdvances) -
-    toCentavos(previousReplenishment),
+    toCentavos(unliquidatedAdvances),
   );
   return {
     expenses,
