@@ -34,6 +34,11 @@ export const blankRfAdvance = (): RfAdvanceDraftRow => ({
 export function rfRowHasAnyValue(row: object): boolean {
   return Object.values(row).some((v) => String(v).trim() !== '');
 }
+const hasValidMoney = (value: string): boolean => {
+  const number = Number(value);
+  return value.trim() !== '' && Number.isFinite(number) && number > 0 &&
+    Math.abs(Math.round(number * 100) - number * 100) < 0.00001;
+};
 export function rfExpenseRowComplete(row: RfExpenseDraftRow): boolean {
   return !!(
     row.date &&
@@ -41,8 +46,7 @@ export function rfExpenseRowComplete(row: RfExpenseDraftRow): boolean {
     row.name.trim() &&
     row.itemDescription.trim() &&
     row.account.trim() &&
-    Number.isFinite(Number(row.amount)) &&
-    Number(row.amount) > 0
+    hasValidMoney(row.amount)
   );
 }
 export function rfAdvanceRowComplete(row: RfAdvanceDraftRow): boolean {
