@@ -43,9 +43,15 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     ensureMethod(event, 'POST');
     await enforceSubmissionLimit(event);
     const input = startSchema.parse(readJson(event));
+    const isRfLiquidation = input.request.rfpType === 'RF Liquidation';
+    const rfExpenses = isRfLiquidation && input.request.rfLiquidation
+      ? input.request.rfLiquidation.expenses.map((row) => ({
+          date: row.date, description: row.itemDescription, amount: row.amount,
+        }))
+      : null;
     if (
       /^(CA|RF) Liquidation$/i.test(input.request.rfpType) &&
-      !input.request.liquidationExpenses.length
+      !(rfExpenses ?? input.request.liquidationExpenses).length
     ) {
       throw new HttpError(
         400,
@@ -106,7 +112,8 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
           ...existingRaw,
           request_type: input.request.requestType,
           submission_checklist: input.request.attachmentChecklist || [],
-          liquidation_expenses: input.request.liquidationExpenses || [],
+          liquidation_expenses: rfExpenses ?? input.request.liquidationExpenses ?? [],
+          rf_liquidation: isRfLiquidation ? input.request.rfLiquidation : undefined,
         },
       })
       .eq('id', started.data.requestId);
@@ -395,6 +402,7 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
       liquidationExpenses: Array.isArray(rawRecord.liquidation_expenses)
         ? rawRecord.liquidation_expenses
         : [],
+      rfLiquidation: rawRecord.rf_liquidation || null,
       workflow,
       financeOperations,
       financeReceipt,
