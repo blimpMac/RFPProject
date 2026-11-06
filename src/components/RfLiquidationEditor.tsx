@@ -91,7 +91,7 @@ export function validateRfDraft(draft: RfLiquidationDraft): string | null {
 }
 
 function EntryField({
-  label, value, onChange, type = 'text', placeholder, className = '',
+  label, value, onChange, type = 'text', placeholder, className = '', readOnly = false, min,
 }: {
   label: string;
   value: string;
@@ -99,6 +99,8 @@ function EntryField({
   type?: 'text' | 'date' | 'number';
   placeholder?: string;
   className?: string;
+  readOnly?: boolean;
+  min?: string;
 }) {
   return (
     <label className={`rf-entry-field ${className}`}>
@@ -109,7 +111,8 @@ function EntryField({
         value={value}
         placeholder={placeholder}
         inputMode={type === 'number' ? 'decimal' : undefined}
-        min={type === 'number' ? '0.01' : undefined}
+        min={min ?? (type === 'number' ? '0.01' : undefined)}
+        readOnly={readOnly}
         step={type === 'number' ? '0.01' : undefined}
         onChange={(e) => onChange(e.target.value)}
       />
@@ -188,7 +191,7 @@ export function RfLiquidationEditor({
         <EntryField label="Period covered" value={value.periodCovered}
           placeholder="e.g. Nov 1–15, 2026"
           onChange={(next) => set('periodCovered', next)} />
-        <EntryField label="Department" value={department} onChange={() => {}} />
+        <EntryField label="Department" value={department} readOnly onChange={() => {}} />
         <EntryField label="Project / SOF" value={value.projectSof}
           placeholder="Project name or SOF number"
           onChange={(next) => set('projectSof', next)} />
@@ -336,7 +339,7 @@ export function RfLiquidationEditor({
           <span className="rf-editor-summary-icon"><FileStack size={19} aria-hidden="true" /></span>
         </div>
         <div className="rf-editor-previous">
-          <EntryField label="Previous replenishment (not yet received)" type="number"
+          <EntryField label="Previous replenishment (not yet received)" type="number" min="0"
             placeholder="0.00 (if none)" value={value.previousReplenishment}
             onChange={(next) => set('previousReplenishment', next)} />
           <p>Shown for reference; it is not deducted twice from cash on hand.</p>
