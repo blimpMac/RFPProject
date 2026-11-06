@@ -28,7 +28,7 @@ const rfUnliquidatedAdvanceSchema = z.object({
 });
 export const rfLiquidationSchema = z.object({
   custodianName: z.string().trim().min(3).max(120)
-    .refine((name) => name.split(/\\s+/u).length >= 2, 'Enter custodian first and last name.'),
+    .refine((name) => name.split(/\s+/u).length >= 2, 'Enter custodian first and last name.'),
   periodCovered: z.string().trim().min(2).max(120),
   projectSof: z.string().trim().min(1).max(180),
   revolvingFundAmount: money.positive(),
