@@ -63,6 +63,7 @@ export default function App() {
             <Route path="/admin/rfp/:id/print" element={<DigitalRfpPrintPage />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<DashboardPage />} />
+              <Route path="new-request" element={<RequestPage embedded />} />
               <Route path="monitoring" element={<MonitoringPage />} />
               <Route path="approvals" element={<ApprovalsPage />} />
               <Route path="documents" element={<DocumentsPage />} />
