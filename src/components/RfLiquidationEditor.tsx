@@ -1,22 +1,16 @@
-import { useEffect } from 'react';
-import { FilePlus2, Trash2 } from 'lucide-react';
+import { CheckCircle2, FileStack, Info, Plus, Trash2 } from 'lucide-react';
 import {
-  rfExpenseRowsPerCopy,
-  rfTotals,
-  sumRfAmounts,
-  toCentavos,
+  rfExpenseRowsPerCopy, rfTotals, sumRfAmounts, toCentavos,
   type RfLiquidation,
 } from '../../shared/utils/rf-liquidation';
+import {
+  blankRfExpense, blankRfAdvance,
+  rfRowHasAnyValue, rfExpenseRowComplete, rfAdvanceRowComplete,
+  updateRfExpenseRow, updateRfAdvanceRow, removeRfExpenseRow, removeRfAdvanceRow,
+  RF_MAX_EXPENSE_ROWS, RF_MAX_ADVANCE_ROWS,
+  type RfExpenseDraftRow, type RfAdvanceDraftRow,
+} from '../../shared/utils/rf-entry-rows';
 
-type ExpenseDraft = {
-  date: string;
-  invoiceOrNo: string;
-  name: string;
-  itemDescription: string;
-  account: string;
-  amount: string;
-};
-type AdvanceDraft = { date: string; name: string; purpose: string; amount: string };
 export type RfLiquidationDraft = {
   custodianName: string;
   periodCovered: string;
@@ -24,18 +18,10 @@ export type RfLiquidationDraft = {
   revolvingFundAmount: string;
   previousReplenishment: string;
   cashOnHandAsOf: string;
-  expenses: ExpenseDraft[];
-  unliquidatedAdvances: AdvanceDraft[];
+  expenses: RfExpenseDraftRow[];
+  unliquidatedAdvances: RfAdvanceDraftRow[];
 };
-const blankExpense = (): ExpenseDraft => ({
-  date: '',
-  invoiceOrNo: '',
-  name: '',
-  itemDescription: '',
-  account: '',
-  amount: '',
-});
-const blankAdvance = (): AdvanceDraft => ({ date: '', name: '', purpose: '', amount: '' });
+
 export const emptyRfLiquidationDraft = (): RfLiquidationDraft => ({
   custodianName: '',
   periodCovered: '',
@@ -43,22 +29,10 @@ export const emptyRfLiquidationDraft = (): RfLiquidationDraft => ({
   revolvingFundAmount: '',
   previousReplenishment: '',
   cashOnHandAsOf: '',
-  expenses: [],
+  expenses: [blankRfExpense()],
   unliquidatedAdvances: [],
 });
-const expenseFields = [
-  'date',
-  'invoiceOrNo',
-  'name',
-  'itemDescription',
-  'account',
-  'amount',
-] as const;
-const advanceFields = ['date', 'name', 'purpose', 'amount'] as const;
-const hasAny = <T extends object>(row: T) =>
-  Object.values(row).some((v) => String(v).trim() !== '');
-const hasAll = (row: ExpenseDraft) =>
-  expenseFields.every((key) => row[key].trim() !== '') && Number(row.amount) > 0;
+
 const php = (amount: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 const num = (v: string) => Number(v) || 0;
@@ -71,24 +45,17 @@ export function normalizeRfDraft(draft: RfLiquidationDraft): RfLiquidation {
     revolvingFundAmount: num(draft.revolvingFundAmount),
     previousReplenishment: num(draft.previousReplenishment),
     cashOnHandAsOf: draft.cashOnHandAsOf,
-    expenses: draft.expenses
-      .filter((row) => hasAny(row))
-      .map((row) => ({
-        date: row.date,
-        invoiceOrNo: row.invoiceOrNo.trim(),
-        name: row.name.trim(),
-        itemDescription: row.itemDescription.trim(),
-        account: row.account.trim(),
-        amount: num(row.amount),
-      })),
-    unliquidatedAdvances: draft.unliquidatedAdvances
-      .filter((row) => hasAny(row))
-      .map((row) => ({
-        date: row.date,
-        name: row.name.trim(),
-        purpose: row.purpose.trim(),
-        amount: num(row.amount),
-      })),
+    expenses: draft.expenses.filter(rfRowHasAnyValue).map((row) => ({
+      date: row.date,
+      invoiceOrNo: row.invoiceOrNo.trim(),
+      name: row.name.trim(),
+      itemDescription: row.itemDescription.trim(),
+      account: row.account.trim(),
+      amount: num(row.amount),
+    })),
+    unliquidatedAdvances: draft.unliquidatedAdvances.filter(rfRowHasAnyValue).map((row) => ({
+      date: row.date, name: row.name.trim(), purpose: row.purpose.trim(), amount: num(row.amount),
+    })),
   };
 }
 
@@ -102,36 +69,82 @@ export function validateRfDraft(draft: RfLiquidationDraft): string | null {
     return 'RF form: Enter a valid positive Revolving Fund Amount.';
   if (!Number.isFinite(v.previousReplenishment) || v.previousReplenishment < 0)
     return 'RF form: Previous replenishment cannot be negative.';
-  if (!v.expenses.length) return 'RF form: Add at least one expense before submitting.';
+  if (!v.expenses.length) return 'RF form: Enter at least one complete expense row.';
   for (const [i, row] of v.expenses.entries()) {
-    if (
-      !row.date ||
-      !row.invoiceOrNo ||
-      !row.name ||
-      !row.itemDescription ||
-      !row.account ||
-      !(row.amount > 0) ||
-      !Number.isFinite(row.amount) ||
-      (toCentavos(row.amount) !== row.amount * 100 &&
-        Math.abs(toCentavos(row.amount) - row.amount * 100) > 0.00001)
-    )
-      return `RF form: Complete all six fields for expense row ${i + 1} (use N/A if no OR number).`;
+    if (!row.date || !row.invoiceOrNo || !row.name || !row.itemDescription || !row.account ||
+      !(row.amount > 0) || !Number.isFinite(row.amount) ||
+      Math.abs(toCentavos(row.amount) - row.amount * 100) > .00001) {
+      return `RF form: Complete all six fields in expense row ${i+1} (use N/A if no OR number).`;
+    }
   }
   for (const [i, row] of v.unliquidatedAdvances.entries()) {
-    if (!row.date || !row.name || !row.purpose || !(row.amount > 0) || !Number.isFinite(row.amount))
-      return `RF form: Complete Date, Name, Purpose, and Amount for unliquidated CA row ${i + 1}.`;
+    if (!row.date || !row.name || !row.purpose || !(row.amount > 0) ||
+      !Number.isFinite(row.amount) ||
+      Math.abs(toCentavos(row.amount) - row.amount * 100) > .00001) {
+      return `RF form: Complete Date, Name, Purpose, and Amount in unliquidated CA row ${i+1}.`;
+    }
   }
-  if (v.expenses.length > 2000 || v.unliquidatedAdvances.length > 200)
+  if (v.expenses.length > RF_MAX_EXPENSE_ROWS ||
+    v.unliquidatedAdvances.length > RF_MAX_ADVANCE_ROWS)
     return 'The RF liquidation exceeds the maximum supported number of entries.';
   return null;
 }
 
+function EntryField({
+  label, value, onChange, type = 'text', placeholder, className = '',
+}: {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  type?: 'text' | 'date' | 'number';
+  placeholder?: string;
+  className?: string;
+}) {
+  return (
+    <label className={`rf-entry-field ${className}`}>
+      <span>{label}</span>
+      <input
+        className="input"
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        inputMode={type === 'number' ? 'decimal' : undefined}
+        min={type === 'number' ? '0.01' : undefined}
+        step={type === 'number' ? '0.01' : undefined}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+
+const expenseInputs: {
+  field: keyof RfExpenseDraftRow;
+  label: string;
+  type?: 'text' | 'date' | 'number';
+  placeholder?: string;
+  css?: string;
+}[] = [
+  { field: 'date', label: 'Expense date', type: 'date' },
+  { field: 'invoiceOrNo', label: 'Invoice / OR no.', placeholder: 'OR / N/A' },
+  { field: 'name', label: 'Name / Payee', placeholder: 'Supplier or recipient' },
+  { field: 'itemDescription', label: 'Item description', placeholder: 'What was purchased', css: 'rf-entry-description' },
+  { field: 'account', label: 'Account', placeholder: 'Expense account' },
+  { field: 'amount', label: 'Amount (PHP)', type: 'number', placeholder: '0.00', css: 'rf-entry-amount' },
+];
+const advanceInputs: {
+  field: keyof RfAdvanceDraftRow;
+  label: string;
+  type?: 'text' | 'date' | 'number';
+  placeholder?: string;
+}[] = [
+  { field: 'date', label: 'Date', type: 'date' },
+  { field: 'name', label: 'Name', placeholder: 'Recipient' },
+  { field: 'purpose', label: 'Purpose', placeholder: 'Advance purpose' },
+  { field: 'amount', label: 'Amount (PHP)', type: 'number', placeholder: '0.00' },
+];
+
 export function RfLiquidationEditor({
-  value,
-  onChange,
-  company,
-  department,
-  requestorName,
+  value, onChange, company, department, requestorName,
 }: {
   value: RfLiquidationDraft;
   onChange: (next: RfLiquidationDraft) => void;
@@ -147,359 +160,201 @@ export function RfLiquidationEditor({
   );
   const numeric = normalizeRfDraft(value);
   const totals = rfTotals(numeric);
-  const set = <K extends keyof RfLiquidationDraft>(key: K, field: RfLiquidationDraft[K]) =>
+  const completeExpenseCount = value.expenses.filter(rfExpenseRowComplete).length;
+  const completeAdvanceCount = value.unliquidatedAdvances.filter(rfAdvanceRowComplete).length;
+  const set = <K extends keyof RfLiquidationDraft,>(key: K, field: RfLiquidationDraft[K]) =>
     onChange({ ...value, [key]: field });
 
-  // A complete last row exactly fills the template; open a fresh copy
-  // automatically. The empty next row isn't included in submitted totals.
-  useEffect(() => {
-    const last = value.expenses.at(-1);
-    if (last && value.expenses.length % capacity === 0 && hasAll(last)) {
-      onChange({ ...value, expenses: [...value.expenses, blankExpense()] });
-    }
-  }, [value, capacity, onChange]);
-
-  function editExpense(index: number, key: keyof ExpenseDraft, next: string) {
-    set(
-      'expenses',
-      value.expenses.map((row, i) => (i === index ? { ...row, [key]: next } : row)),
-    );
-  }
-  function editAdvance(index: number, key: keyof AdvanceDraft, next: string) {
-    set(
-      'unliquidatedAdvances',
-      value.unliquidatedAdvances.map((row, i) => (i === index ? { ...row, [key]: next } : row)),
-    );
-  }
+  const isGemcor = /gemcor|greenmetal/i.test(company);
 
   return (
-    <section
-      className="rf-editor md:col-span-2 rounded-2xl border border-[#a8bcd0] bg-[#f8fbff] p-4 sm:p-6"
-      aria-label="RF liquidation form"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-[#315c93]">
-            Required before submitting
-          </p>
-          <h3 className="mt-1 text-xl font-bold text-[#102a43]">
-            Revolving Fund Liquidation for Replenishment / Close-out
-          </h3>
-          <p className="mt-2 text-sm text-slate-600">
-            Matches your {/gemcor|greenmetal/i.test(company) ? 'GEMCOR' : 'GPI'} RF template. Every{' '}
-            {capacity} expense lines automatically create the next RF form copy.
-          </p>
+    <section className="rf-editor md:col-span-2" aria-label="RF liquidation form">
+      <div className="rf-editor-header">
+        <div className="rf-editor-heading">
+          <span className="rf-editor-eyebrow">Required · RF Liquidation</span>
+          <h3>Revolving Fund Liquidation</h3>
+          <p>Complete the form below. Totals update automatically, and the next entry appears
+            once a row is filled in.</p>
         </div>
-        <span className="rounded-full bg-[#102a43] px-4 py-2 text-sm font-semibold text-white">
-          {pageCount} {pageCount === 1 ? 'copy' : 'copies'}
+        <span className="rf-editor-copy-counter"><FileStack size={17} aria-hidden="true" />
+          {pageCount} {pageCount === 1 ? 'RF form' : 'RF forms'}
         </span>
       </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <label className="field text-sm font-semibold">
-          Name / Custodian
-          <input
-            required
-            className="input mt-1 w-full"
-            value={value.custodianName}
-            placeholder="First and last name"
-            onChange={(e) => set('custodianName', e.target.value)}
-          />
-        </label>
-        <label className="field text-sm font-semibold">
-          Period Covered
-          <input
-            required
-            className="input mt-1 w-full"
-            value={value.periodCovered}
-            placeholder="e.g. Nov 1–15, 2026"
-            onChange={(e) => set('periodCovered', e.target.value)}
-          />
-        </label>
-        <label className="field text-sm font-semibold">
-          Department
-          <input className="input mt-1 w-full" value={department} readOnly />
-        </label>
-        <label className="field text-sm font-semibold">
-          Project / SOF
-          <input
-            required
-            className="input mt-1 w-full"
-            value={value.projectSof}
-            placeholder="Project name or SOF number"
-            onChange={(e) => set('projectSof', e.target.value)}
-          />
-        </label>
-        <label className="field text-sm font-semibold">
-          Revolving Fund Amount (PHP)
-          <input
-            required
-            type="number"
-            min="0.01"
-            step="0.01"
-            className="input mt-1 w-full"
-            value={value.revolvingFundAmount}
-            onChange={(e) => set('revolvingFundAmount', e.target.value)}
-          />
-        </label>
-        <label className="field text-sm font-semibold">
-          Cash On Hand As Of
-          <input
-            required
-            type="date"
-            className="input mt-1 w-full"
-            value={value.cashOnHandAsOf}
-            onChange={(e) => set('cashOnHandAsOf', e.target.value)}
-          />
-        </label>
+
+      <div className="rf-editor-details">
+        <EntryField label="Name / Custodian" value={value.custodianName}
+          placeholder="First and last name"
+          onChange={(next) => set('custodianName', next)} />
+        <EntryField label="Period covered" value={value.periodCovered}
+          placeholder="e.g. Nov 1–15, 2026"
+          onChange={(next) => set('periodCovered', next)} />
+        <EntryField label="Department" value={department} onChange={() => {}} />
+        <EntryField label="Project / SOF" value={value.projectSof}
+          placeholder="Project name or SOF number"
+          onChange={(next) => set('projectSof', next)} />
+        <EntryField label="Revolving fund amount (PHP)" value={value.revolvingFundAmount}
+          type="number" placeholder="0.00"
+          onChange={(next) => set('revolvingFundAmount', next)} />
+        <EntryField label="Cash on hand as of" type="date" value={value.cashOnHandAsOf}
+          onChange={(next) => set('cashOnHandAsOf', next)} />
       </div>
-      <p className="mt-3 text-xs text-slate-600">
-        Prepared by: {value.custodianName || requestorName || 'Custodian'} · Checked by Head of
-        Department · Approved by Finance
+      <p className="rf-editor-caption">
+        Prepared by {value.custodianName || requestorName || 'Custodian'} ·
+        Checked by Department Head · Approved by Finance
       </p>
+
+      <div className="rf-editor-live-totals" aria-live="polite" aria-atomic="true">
+        <div><span>Total expenses</span><strong>{php(totals.expenses)}</strong></div>
+        <div><span>Unliquidated advances</span><strong>{php(totals.unliquidatedAdvances)}</strong></div>
+        <div className="rf-editor-primary-total"><span>RF liquidation amount</span>
+          <strong>{php(totals.expenses)}</strong></div>
+      </div>
+
       {Array.from({ length: pageCount }, (_, pageIndex) => {
-        const expenses = value.expenses.slice(pageIndex * capacity, (pageIndex + 1) * capacity);
-        const advances = value.unliquidatedAdvances.slice(pageIndex * 2, (pageIndex + 1) * 2);
-        const expenseTotal = sumRfAmounts(expenses.map((e) => ({ amount: num(e.amount) })));
-        const advanceTotal = sumRfAmounts(advances.map((e) => ({ amount: num(e.amount) })));
+        const expenseRows = value.expenses.slice(pageIndex * capacity, (pageIndex + 1) * capacity);
+        const advanceRows = value.unliquidatedAdvances.slice(pageIndex * 2, (pageIndex + 1) * 2);
+        const expenseTotal = sumRfAmounts(expenseRows.map((row) => ({ amount: num(row.amount) })));
+        const advanceTotal = sumRfAmounts(advanceRows.map((row) => ({ amount: num(row.amount) })));
         return (
-          <div
-            className="rf-editor-copy mt-6 overflow-hidden rounded-xl border bg-white"
-            key={pageIndex}
-          >
-            <div className="flex flex-wrap justify-between gap-2 bg-[#102a43] px-4 py-3 text-white">
-              <strong>
-                RF Form — Copy {pageIndex + 1} of {pageCount}
-              </strong>
-              <span className="text-xs">
-                {expenses.length} / {capacity} expense lines · {advances.length} / 2 unliquidated CA
-                lines
+          <div className="rf-editor-copy" key={pageIndex}>
+            <div className="rf-editor-copy-header">
+              <div className="rf-editor-copy-title">
+                <span className="rf-editor-copy-index">{String(pageIndex + 1).padStart(2, '0')}</span>
+                <div><h4>RF Form · Copy {pageIndex + 1}</h4>
+                  <p>{isGemcor ? 'GEMCOR' : 'Greenlight'} template · {capacity} expense entries per copy</p></div>
+              </div>
+              <span className="rf-editor-copy-progress">
+                {expenseRows.filter(rfExpenseRowComplete).length} / {capacity} expenses
               </span>
             </div>
-            <div className="px-4 pt-4">
-              <h4 className="font-bold text-[#173f6b]">Expense details</h4>
-              <p className="text-xs text-slate-600">
-                Use “N/A” in Invoice/OR No. if no receipt number applies.
-              </p>
-            </div>
-            <div className="overflow-x-auto p-4">
-              <table className="w-full min-w-[780px] border-collapse text-xs">
-                <thead className="bg-[#e5edf5] text-left text-[#102a43]">
-                  <tr>
-                    {[
-                      'Date',
-                      'Invoice / OR No.',
-                      'Name',
-                      'Item Description',
-                      'Account',
-                      'Amount (PHP)',
-                      '',
-                    ].map((h) => (
-                      <th key={h} className="border border-slate-300 p-2">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {expenses.map((row, i) => {
-                    const index = pageIndex * capacity + i;
-                    return (
-                      <tr key={index}>
-                        {expenseFields.map((field) => (
-                          <td key={field} className="min-w-24 border border-slate-200 p-1">
-                            <input
-                              className="w-full min-w-0 bg-transparent px-1 py-2 outline-offset-2 focus:bg-blue-50"
-                              aria-label={`Copy ${pageIndex + 1}, expense ${i + 1}, ${field}`}
-                              type={
-                                field === 'date' ? 'date' : field === 'amount' ? 'number' : 'text'
-                              }
-                              min={field === 'amount' ? '0.01' : undefined}
-                              step={field === 'amount' ? '0.01' : undefined}
-                              maxLength={
-                                field === 'itemDescription' ? 280 : field === 'account' ? 120 : 160
-                              }
-                              value={row[field]}
-                              onChange={(e) => editExpense(index, field, e.target.value)}
-                            />
-                          </td>
+            <div className="rf-editor-copy-body">
+              <div className="rf-editor-subheading">
+                <h5>Expense details</h5>
+                <span>Next row opens automatically after completing all fields</span>
+              </div>
+              <div className="rf-entry-list">
+                {expenseRows.map((row, indexOnPage) => {
+                  const index = pageIndex * capacity + indexOnPage;
+                  const complete = rfExpenseRowComplete(row);
+                  return (
+                    <div className={`rf-entry-row${complete ? ' is-complete' : ''}`} key={index}>
+                      <div className="rf-entry-row-heading">
+                        <span className="rf-entry-row-number">#{String(index + 1).padStart(2, '0')}</span>
+                        <span className={`rf-entry-row-status${complete ? ' is-complete' : ''}`}>
+                          {complete ? <><CheckCircle2 size={14}/> Completed</> : 'Enter expense details'}
+                        </span>
+                        <button type="button" className="rf-entry-remove"
+                          aria-label={`Remove expense row ${index + 1}`}
+                          onClick={() => set('expenses', removeRfExpenseRow(value.expenses, index))}>
+                          <Trash2 size={15} aria-hidden="true" />
+                        </button>
+                      </div>
+                      <div className="rf-entry-fields">
+                        {expenseInputs.map(({ field, label, type, placeholder, css }) => (
+                          <EntryField key={field} label={label} type={type} placeholder={placeholder}
+                            className={css || ''}
+                            value={row[field]}
+                            onChange={(next) => set('expenses', updateRfExpenseRow(
+                              value.expenses, index, field, next,
+                            ))} />
                         ))}
-                        <td className="border border-slate-200 p-1">
-                          <button
-                            className="rounded p-2 text-red-600 hover:bg-red-50"
-                            type="button"
-                            title="Remove expense"
-                            aria-label={`Remove expense ${index + 1}`}
-                            onClick={() =>
-                              set(
-                                'expenses',
-                                value.expenses.filter((_, j) => j !== index),
-                              )
-                            }
-                          >
-                            <Trash2 size={15} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {value.expenses.length >= RF_MAX_EXPENSE_ROWS && pageIndex === pageCount - 1 &&
+                <p className="rf-editor-limit">Maximum {RF_MAX_EXPENSE_ROWS} expense lines reached.</p>}
+              {pageIndex === 0 && completeExpenseCount === 0 && (
+                <p className="rf-editor-help"><Info size={14} aria-hidden="true" />
+                  All six fields are needed. Write N/A for Invoice/OR if none applies.</p>
+              )}
+              <div className="rf-editor-copy-subtotal">
+                <span>Copy {pageIndex + 1} · expense subtotal</span>
+                <strong>{php(expenseTotal)}</strong>
+              </div>
+
+              <div className="rf-editor-advance-section">
+                <div className="rf-editor-subheading">
+                  <h5>Unliquidated cash advances</h5>
+                  <span>Optional · 2 entries per copy</span>
+                </div>
+                <div className="rf-entry-list">
+                  {advanceRows.map((row, indexOnPage) => {
+                    const index = pageIndex * 2 + indexOnPage;
+                    const complete = rfAdvanceRowComplete(row);
+                    return (
+                      <div className={`rf-entry-row rf-entry-row-advance${complete ? ' is-complete' : ''}`} key={index}>
+                        <div className="rf-entry-row-heading">
+                          <span className="rf-entry-row-number">CA #{String(index + 1).padStart(2, '0')}</span>
+                          <span className={`rf-entry-row-status${complete ? ' is-complete' : ''}`}>
+                            {complete ? <><CheckCircle2 size={14}/> Completed</> : 'Enter advance details'}
+                          </span>
+                          <button type="button" className="rf-entry-remove"
+                            aria-label={`Remove cash advance row ${index + 1}`}
+                            onClick={() => set('unliquidatedAdvances',
+                              removeRfAdvanceRow(value.unliquidatedAdvances, index))}>
+                            <Trash2 size={15} aria-hidden="true" />
                           </button>
-                        </td>
-                      </tr>
+                        </div>
+                        <div className="rf-entry-fields rf-entry-fields-advance">
+                          {advanceInputs.map(({ field, label, type, placeholder }) => (
+                            <EntryField key={field} label={label} type={type} placeholder={placeholder}
+                              value={row[field]}
+                              onChange={(next) => set('unliquidatedAdvances',
+                                updateRfAdvanceRow(value.unliquidatedAdvances, index, field, next))} />
+                          ))}
+                        </div>
+                      </div>
                     );
                   })}
-                  {!expenses.length && (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="border border-slate-200 p-4 text-center text-slate-500"
-                      >
-                        No expense lines in this copy yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-slate-50 font-bold">
-                    <td colSpan={5} className="border border-slate-200 p-2 text-right">
-                      Copy {pageIndex + 1} expenses total
-                    </td>
-                    <td colSpan={2} className="border border-slate-200 p-2 text-right">
-                      {php(expenseTotal)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-              {pageIndex === pageCount - 1 && (
-                <button
-                  type="button"
-                  className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#315c93] px-3 py-2 text-sm font-semibold text-white"
-                  onClick={() => set('expenses', [...value.expenses, blankExpense()])}
-                  disabled={value.expenses.length >= 2000}
-                >
-                  <FilePlus2 size={16} /> Add expense line
-                </button>
-              )}
-            </div>
-            <div className="border-t p-4">
-              <h4 className="font-bold text-[#173f6b]">Unliquidated Cash Advance from RF</h4>
-              <div className="mt-2 overflow-x-auto">
-                <table className="w-full min-w-[650px] border-collapse text-xs">
-                  <thead className="bg-[#e5edf5] text-left">
-                    <tr>
-                      {['Date', 'Name', 'Purpose', 'Amount (PHP)', ''].map((h) => (
-                        <th key={h} className="border border-slate-300 p-2">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {advances.map((row, i) => {
-                      const index = pageIndex * 2 + i;
-                      return (
-                        <tr key={index}>
-                          {advanceFields.map((field) => (
-                            <td key={field} className="border border-slate-200 p-1">
-                              <input
-                                className="w-full bg-transparent px-1 py-2"
-                                aria-label={`Copy ${pageIndex + 1} unliquidated CA ${i + 1} ${field}`}
-                                type={
-                                  field === 'date' ? 'date' : field === 'amount' ? 'number' : 'text'
-                                }
-                                min={field === 'amount' ? '0.01' : undefined}
-                                step={field === 'amount' ? '0.01' : undefined}
-                                maxLength={160}
-                                value={row[field]}
-                                onChange={(e) => editAdvance(index, field, e.target.value)}
-                              />
-                            </td>
-                          ))}
-                          <td className="border border-slate-200 p-1">
-                            <button
-                              type="button"
-                              aria-label={`Remove unliquidated CA ${index + 1}`}
-                              className="p-2 text-red-600"
-                              onClick={() =>
-                                set(
-                                  'unliquidatedAdvances',
-                                  value.unliquidatedAdvances.filter((_, j) => j !== index),
-                                )
-                              }
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-slate-50 font-bold">
-                      <td colSpan={3} className="border border-slate-200 p-2 text-right">
-                        Unliquidated CA total (this copy)
-                      </td>
-                      <td colSpan={2} className="border border-slate-200 p-2 text-right">
-                        {php(advanceTotal)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+                </div>
+                {pageIndex === pageCount - 1 &&
+                  !value.unliquidatedAdvances.length && (
+                  <button type="button" className="btn btn-secondary rf-entry-add"
+                    onClick={() => set('unliquidatedAdvances', [blankRfAdvance()])}>
+                    <Plus size={15} aria-hidden="true" /> Add cash advance
+                  </button>
+                )}
+                <div className="rf-editor-copy-subtotal">
+                  <span>Copy {pageIndex + 1} · unliquidated CA</span>
+                  <strong>{php(advanceTotal)}</strong>
+                </div>
               </div>
-              {pageIndex === pageCount - 1 && (
-                <button
-                  type="button"
-                  className="mt-3 rounded-lg border px-3 py-2 text-sm font-semibold"
-                  onClick={() =>
-                    set('unliquidatedAdvances', [...value.unliquidatedAdvances, blankAdvance()])
-                  }
-                  disabled={value.unliquidatedAdvances.length >= 200}
-                >
-                  + Add unliquidated CA
-                </button>
-              )}
             </div>
           </div>
         );
       })}
-      <div
-        className="mt-6 rounded-xl border-2 border-[#315c93] bg-white p-4 sm:p-5"
-        aria-live="polite"
-      >
-        <h4 className="text-lg font-bold text-[#102a43]">Consolidated totals — final page</h4>
-        <p className="mt-1 text-sm text-slate-600">
-          Automatically sums all {pageCount} RF form {pageCount === 1 ? 'copy' : 'copies'}. Amount
-          is passed directly to the RFP request.
-        </p>
-        <label className="mt-4 block text-sm font-semibold">
-          Previous Replenishment (not yet received) — PHP
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            className="input mt-1 w-full sm:max-w-sm"
-            value={value.previousReplenishment}
-            placeholder="0.00"
-            onChange={(e) => set('previousReplenishment', e.target.value)}
-          />
-        </label>
-        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-          <div className="rounded-lg bg-[#edf4fb] p-3">
-            <dt>All-copy expenses / For Replenishment</dt>
-            <dd className="mt-1 text-lg font-bold">{php(totals.expenses)}</dd>
+
+      <div className="rf-editor-final">
+        <div className="rf-editor-final-heading">
+          <div><span className="rf-editor-eyebrow">Automatically calculated</span>
+            <h4>Consolidated RF liquidation summary</h4>
+            <p>Includes {pageCount} RF {pageCount === 1 ? 'form copy' : 'form copies'}.
+              The total expenses flow into the main request amount automatically.</p>
           </div>
-          <div className="rounded-lg bg-[#edf4fb] p-3">
-            <dt>All-copy unliquidated CA</dt>
-            <dd className="mt-1 text-lg font-bold">{php(totals.unliquidatedAdvances)}</dd>
+          <span className="rf-editor-summary-icon"><FileStack size={19} aria-hidden="true" /></span>
+        </div>
+        <div className="rf-editor-previous">
+          <EntryField label="Previous replenishment (not yet received)" type="number"
+            placeholder="0.00 (if none)" value={value.previousReplenishment}
+            onChange={(next) => set('previousReplenishment', next)} />
+          <p>Shown for reference; it is not deducted twice from cash on hand.</p>
+        </div>
+        <dl className="rf-editor-summary-list" aria-live="polite">
+          <div><dt>Revolving fund amount</dt><dd>{php(totals.revolvingFundAmount)}</dd></div>
+          <div><dt>Total expenses · {completeExpenseCount} entries</dt>
+            <dd>{php(totals.expenses)}</dd></div>
+          <div><dt>Unliquidated cash advances · {completeAdvanceCount} entries</dt>
+            <dd>{php(totals.unliquidatedAdvances)}</dd></div>
+          <div><dt>Previous replenishment · reference only</dt>
+            <dd>{php(totals.previousReplenishment)}</dd></div>
+          <div className="rf-editor-cash-balance">
+            <dt>Actual cash on hand <small>as of {value.cashOnHandAsOf || '—'}</small></dt>
+            <dd>{php(totals.cashOnHand)}</dd>
           </div>
-          <div className="rounded-lg bg-slate-100 p-3">
-            <dt>Revolving Fund Amount</dt>
-            <dd className="mt-1 text-lg font-bold">{php(totals.revolvingFundAmount)}</dd>
-          </div>
-          <div className="rounded-lg bg-slate-100 p-3">
-            <dt>Previous Replenishment (not received)</dt>
-            <dd className="mt-1 text-lg font-bold">{php(totals.previousReplenishment)}</dd>
-          </div>
-          <div className="rounded-lg border border-[#315c93] p-3 sm:col-span-2">
-            <dt className="font-bold">Actual Cash On Hand as of {value.cashOnHandAsOf || '—'}</dt>
-            <dd className="mt-1 text-xl font-black">{php(totals.cashOnHand)}</dd>
-            <p className="mt-1 text-xs text-slate-500">
-              RF amount − total expenses − unliquidated CA (pending replenishment shown separately)
-            </p>
+          <div className="rf-editor-request-amount">
+            <dt>Amount passed to RF Liquidation request</dt><dd>{php(totals.expenses)}</dd>
           </div>
         </dl>
       </div>
