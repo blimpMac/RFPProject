@@ -44,11 +44,14 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     await enforceSubmissionLimit(event);
     const input = startSchema.parse(readJson(event));
     const isRfLiquidation = input.request.rfpType === 'RF Liquidation';
-    const rfExpenses = isRfLiquidation && input.request.rfLiquidation
-      ? input.request.rfLiquidation.expenses.map((row) => ({
-          date: row.date, description: row.itemDescription, amount: row.amount,
-        }))
-      : null;
+    const rfExpenses =
+      isRfLiquidation && input.request.rfLiquidation
+        ? input.request.rfLiquidation.expenses.map((row) => ({
+            date: row.date,
+            description: row.itemDescription,
+            amount: row.amount,
+          }))
+        : null;
     if (
       /^(CA|RF) Liquidation$/i.test(input.request.rfpType) &&
       !(rfExpenses ?? input.request.liquidationExpenses).length

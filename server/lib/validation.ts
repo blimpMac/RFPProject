@@ -10,8 +10,15 @@ export const allowedMimes = [
   'image/webp',
   'image/gif',
 ] as const;
-const money = z.number().finite().nonnegative().max(999999999.99)
-  .refine((amount) => Math.abs(toCentavos(amount)-amount*100) < 0.00001, 'Use no more than two decimal places.');
+const money = z
+  .number()
+  .finite()
+  .nonnegative()
+  .max(999999999.99)
+  .refine(
+    (amount) => Math.abs(toCentavos(amount) - amount * 100) < 0.00001,
+    'Use no more than two decimal places.',
+  );
 const rfExpenseSchema = z.object({
   date: z.iso.date(),
   invoiceOrNo: z.string().trim().min(1).max(160),
@@ -27,7 +34,11 @@ const rfUnliquidatedAdvanceSchema = z.object({
   amount: money.positive(),
 });
 export const rfLiquidationSchema = z.object({
-  custodianName: z.string().trim().min(3).max(120)
+  custodianName: z
+    .string()
+    .trim()
+    .min(3)
+    .max(120)
     .refine((name) => name.split(/\s+/u).length >= 2, 'Enter custodian first and last name.'),
   periodCovered: z.string().trim().min(2).max(120),
   projectSof: z.string().trim().min(1).max(180),
@@ -38,52 +49,63 @@ export const rfLiquidationSchema = z.object({
   unliquidatedAdvances: z.array(rfUnliquidatedAdvanceSchema).max(200).default([]),
 });
 
-export const requestSchema = z.object({
-  requestorName: z
-    .string()
-    .trim()
-    .min(3)
-    .max(120)
-    .refine(
-      (name) => name.split(/\s+/u).filter(Boolean).length >= 2,
-      'Enter the complete first and last name of the requestor.',
-    ),
-  requestorEmail: z.string().trim().toLowerCase().email().max(160),
-  company: z.enum(companies),
-  department: z.string().trim().min(1).max(100),
-  projectClass: z.string().trim().min(1).max(160),
-  rfpType: z.string().trim().min(1).max(100),
-  requestType: z.enum(['Regular', 'Emergency']),
-  supplierPayee: z.string().trim().min(1).max(180),
-  purposeDescription: z.string().trim().min(5).max(3000),
-  amount: z.coerce.number().positive().max(999999999999.99),
-  requiredPaymentDate: z.iso.date(),
-  approvingHead: z.string().trim().min(2).max(160),
-  attachmentChecklist: z.array(z.string().trim().min(1).max(180)).max(40).default([]),
-  liquidationExpenses: z
-    .array(
-      z.object({
-        date: z.iso.date(),
-        description: z.string().trim().min(2).max(280),
-        amount: z.coerce.number().positive().max(999999999.99),
-      }),
-    )
-    .max(2000)
-    .default([]),
-  rfLiquidation: rfLiquidationSchema.optional(),
-}).superRefine((request,ctx) => {
-  if (request.rfpType !== 'RF Liquidation') return;
-  if (!request.rfLiquidation) {
-    ctx.addIssue({code:'custom',path:['rfLiquidation'],message:'Complete the RF liquidation form before submitting.'});
-    return;
-  }
-  const expensesTotal = request.rfLiquidation.expenses.reduce(
-    (total, row) => total + toCentavos(row.amount), 0) / 100;
-  if (toCentavos(request.amount) !== toCentavos(expensesTotal)) {
-    ctx.addIssue({code:'custom',path:['amount'],
-      message:'RF request amount must equal the combined expense total across all RF form copies.'});
-  }
-});
+export const requestSchema = z
+  .object({
+    requestorName: z
+      .string()
+      .trim()
+      .min(3)
+      .max(120)
+      .refine(
+        (name) => name.split(/\s+/u).filter(Boolean).length >= 2,
+        'Enter the complete first and last name of the requestor.',
+      ),
+    requestorEmail: z.string().trim().toLowerCase().email().max(160),
+    company: z.enum(companies),
+    department: z.string().trim().min(1).max(100),
+    projectClass: z.string().trim().min(1).max(160),
+    rfpType: z.string().trim().min(1).max(100),
+    requestType: z.enum(['Regular', 'Emergency']),
+    supplierPayee: z.string().trim().min(1).max(180),
+    purposeDescription: z.string().trim().min(5).max(3000),
+    amount: z.coerce.number().positive().max(999999999999.99),
+    requiredPaymentDate: z.iso.date(),
+    approvingHead: z.string().trim().min(2).max(160),
+    attachmentChecklist: z.array(z.string().trim().min(1).max(180)).max(40).default([]),
+    liquidationExpenses: z
+      .array(
+        z.object({
+          date: z.iso.date(),
+          description: z.string().trim().min(2).max(280),
+          amount: z.coerce.number().positive().max(999999999.99),
+        }),
+      )
+      .max(2000)
+      .default([]),
+    rfLiquidation: rfLiquidationSchema.optional(),
+  })
+  .superRefine((request, ctx) => {
+    if (request.rfpType !== 'RF Liquidation') return;
+    if (!request.rfLiquidation) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['rfLiquidation'],
+        message: 'Complete the RF liquidation form before submitting.',
+      });
+      return;
+    }
+    const expensesTotal =
+      request.rfLiquidation.expenses.reduce((total, row) => total + toCentavos(row.amount), 0) /
+      100;
+    if (toCentavos(request.amount) !== toCentavos(expensesTotal)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['amount'],
+        message:
+          'RF request amount must equal the combined expense total across all RF form copies.',
+      });
+    }
+  });
 export const attachmentSchema = z.object({
   name: z.string().min(1).max(180),
   type: z.enum(allowedMimes),

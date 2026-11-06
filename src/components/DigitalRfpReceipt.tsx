@@ -133,8 +133,8 @@ export function DigitalRfpReceipt({
     request.rfp_type,
   );
   const isRfLiquidation = request.rfp_type === 'RF Liquidation' && !!rfLiquidation;
-  const showExpensePrint = !isRfLiquidation && isFundRequest &&
-    /paid|liquidation/i.test(request.final_status);
+  const showExpensePrint =
+    !isRfLiquidation && isFundRequest && /paid|liquidation/i.test(request.final_status);
   const expenses = liquidationExpenses.length
     ? liquidationExpenses
     : request.raw_record?.liquidation_expenses || [];

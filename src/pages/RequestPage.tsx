@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, CheckCircle2, ClipboardList, Copy } from 'lucide-react';
 import { FileDropzone } from '../components/FileDropzone';
 import {
-  RfLiquidationEditor, emptyRfLiquidationDraft, normalizeRfDraft, validateRfDraft,
+  RfLiquidationEditor,
+  emptyRfLiquidationDraft,
+  normalizeRfDraft,
+  validateRfDraft,
 } from '../components/RfLiquidationEditor';
 import { rfTotals } from '../../shared/utils/rf-liquidation';
 import { useAuth } from '../components/AuthProvider';
@@ -74,7 +77,9 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
   const rfLiquidation = normalizeRfDraft(rfDraft);
   const rfExpenseTotal = rfTotals(rfLiquidation).expenses;
   const requestAmount = isRfLiquidation
-    ? (rfExpenseTotal > 0 ? rfExpenseTotal.toFixed(2) : '')
+    ? rfExpenseTotal > 0
+      ? rfExpenseTotal.toFixed(2)
+      : ''
     : form.amount;
   // Prefill verified signed-in contact details, but do not overwrite user edits.
   // The public form must remain unchanged and unauthenticated.
@@ -121,7 +126,9 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const missing = Object.values({ ...form, amount: requestAmount }).some((value) => !value.trim());
+    const missing = Object.values({ ...form, amount: requestAmount }).some(
+      (value) => !value.trim(),
+    );
     if (missing || !selectedApprover) {
       setError(
         'Complete every required field and choose a department with an active Approving Head.',
@@ -159,7 +166,9 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
           rfLiquidation: isRfLiquidation ? rfLiquidation : undefined,
           liquidationExpenses: isRfLiquidation
             ? rfLiquidation.expenses.map((row) => ({
-                date:row.date, description:row.itemDescription, amount:row.amount,
+                date: row.date,
+                description: row.itemDescription,
+                amount: row.amount,
               }))
             : form.rfpType === 'CA Liquidation'
               ? liquidationExpenses.map((item) => ({
@@ -440,14 +449,20 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
               onChange={(v) => update('supplierPayee', v)}
             />
             <Field
-              label={isRfLiquidation ? 'Amount (PHP) · Automatically summed from RF copies' : 'Amount (PHP)'}
+              label={
+                isRfLiquidation
+                  ? 'Amount (PHP) · Automatically summed from RF copies'
+                  : 'Amount (PHP)'
+              }
               type="number"
               inputMode="decimal"
               min="0.01"
               step="0.01"
               readOnly={isRfLiquidation}
               value={requestAmount}
-              onChange={(v) => { if (!isRfLiquidation) update('amount', v); }}
+              onChange={(v) => {
+                if (!isRfLiquidation) update('amount', v);
+              }}
             />
             <Field
               label="Date Needed"
