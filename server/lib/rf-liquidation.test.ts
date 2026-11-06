@@ -9,8 +9,13 @@ import {
 } from '../../shared/utils/rf-liquidation.ts';
 import { requestSchema } from './validation.ts';
 import {
-  blankRfExpense, blankRfAdvance, rfExpenseRowComplete, rfAdvanceRowComplete,
-  updateRfExpenseRow, updateRfAdvanceRow, removeRfExpenseRow,
+  blankRfExpense,
+  blankRfAdvance,
+  rfExpenseRowComplete,
+  rfAdvanceRowComplete,
+  updateRfExpenseRow,
+  updateRfAdvanceRow,
+  removeRfExpenseRow,
 } from '../../shared/utils/rf-entry-rows.ts';
 
 const expense = (i: number, amount = 0.1) => ({
@@ -149,8 +154,12 @@ test('advance editor automatically inserts the next row and rejects incomplete a
 
 test('editing last completed row does not create another form when a trailing blank already exists', () => {
   const original = {
-    date: '2026-11-06', invoiceOrNo: 'OR-18', name: 'Vendor',
-    itemDescription: 'Expense', account: 'Operations', amount: '12.34',
+    date: '2026-11-06',
+    invoiceOrNo: 'OR-18',
+    name: 'Vendor',
+    itemDescription: 'Expense',
+    account: 'Operations',
+    amount: '12.34',
   };
   let rows = [original];
   rows = updateRfExpenseRow(rows, 0, 'amount', '12.34');
