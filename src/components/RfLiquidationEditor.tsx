@@ -270,7 +270,7 @@ export function RfLiquidationEditor({ value, onChange, company, department, requ
           <div className="rounded-lg bg-slate-100 p-3"><dt>Previous Replenishment (not received)</dt><dd className="mt-1 text-lg font-bold">{php(totals.previousReplenishment)}</dd></div>
           <div className="rounded-lg border border-[#315c93] p-3 sm:col-span-2"><dt className="font-bold">Actual Cash On Hand as of {value.cashOnHandAsOf || '—'}</dt>
             <dd className="mt-1 text-xl font-black">{php(totals.cashOnHand)}</dd>
-            <p className="mt-1 text-xs text-slate-500">RF amount − total expenses − unliquidated CA − pending replenishment</p></div>
+            <p className="mt-1 text-xs text-slate-500">RF amount − total expenses − unliquidated CA (pending replenishment shown separately)</p></div>
         </dl>
       </div>
     </section>
