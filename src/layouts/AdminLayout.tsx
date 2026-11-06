@@ -294,6 +294,15 @@ export function AdminLayout() {
               </h1>
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
+              <Link
+                to="/admin/new-request"
+                className="btn btn-primary inline-flex items-center justify-center gap-2 whitespace-nowrap px-3 py-2 text-xs font-semibold sm:px-4 sm:text-sm"
+                aria-label="Add a new Request"
+                aria-current={location.pathname === '/admin/new-request' ? 'page' : undefined}
+              >
+                <FilePlus2 size={16} aria-hidden="true" />
+                <span className="hidden sm:inline">Add a new Request</span>
+              </Link>
               <ThemeToggle compact />
             </div>
           </header>
