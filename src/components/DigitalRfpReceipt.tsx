@@ -5,6 +5,8 @@ import {
   type FinanceReceipt,
 } from '../../shared/contracts/digital-rfp';
 import { manilaDate, php } from '../lib/format';
+import { RfLiquidationPrint } from './RfLiquidationPrint';
+import type { RfLiquidation } from '../../shared/utils/rf-liquidation';
 
 export type DigitalRfpWorkflow = {
   member_status?: string | null;
@@ -94,6 +96,7 @@ export function DigitalRfpReceipt({
   financeReceipt,
   submissionChecklist = [],
   liquidationExpenses = [],
+  rfLiquidation,
 }: {
   request: DigitalRfpRequest;
   attachments: DigitalRfpAttachment[];
@@ -102,6 +105,7 @@ export function DigitalRfpReceipt({
   financeReceipt?: FinanceReceipt;
   submissionChecklist?: string[];
   liquidationExpenses?: { date: string; description: string; amount: number }[];
+  rfLiquidation?: RfLiquidation | null;
 }) {
   const brand = companyBrand(request.company);
   const receipt =
@@ -128,7 +132,9 @@ export function DigitalRfpReceipt({
   const isFundRequest = /cash advance|revolving fund|\bCA\b|\bRF\b|liquidation/i.test(
     request.rfp_type,
   );
-  const showExpensePrint = isFundRequest && /paid|liquidation/i.test(request.final_status);
+  const isRfLiquidation = request.rfp_type === 'RF Liquidation' && !!rfLiquidation;
+  const showExpensePrint = !isRfLiquidation && isFundRequest &&
+    /paid|liquidation/i.test(request.final_status);
   const expenses = liquidationExpenses.length
     ? liquidationExpenses
     : request.raw_record?.liquidation_expenses || [];
@@ -184,7 +190,7 @@ export function DigitalRfpReceipt({
         <ReceiptSection
           title="2. Attached documents (soft copy)"
           compact
-          hideWhenExpensesPaid={showExpensePrint}
+          hideWhenExpensesPaid={showExpensePrint || isRfLiquidation}
         >
           <div className="digital-rfp-checklist">
             {documentItems.length ? (
@@ -322,6 +328,14 @@ export function DigitalRfpReceipt({
             </tfoot>
           </table>
         </section>
+      )}
+      {isRfLiquidation && rfLiquidation && (
+        <RfLiquidationPrint
+          form={rfLiquidation}
+          company={request.company || ''}
+          department={request.department}
+          reference={request.rfp_number}
+        />
       )}
       <footer className="digital-rfp-footer">
         System-generated record · {brand.name} · Printed{' '}
