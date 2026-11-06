@@ -8,6 +8,10 @@ import {
   type RfLiquidation,
 } from '../../shared/utils/rf-liquidation.ts';
 import { requestSchema } from './validation.ts';
+import {
+  blankRfExpense, blankRfAdvance, rfExpenseRowComplete, rfAdvanceRowComplete,
+  updateRfExpenseRow, updateRfAdvanceRow, removeRfExpenseRow,
+} from '../../shared/utils/rf-entry-rows.ts';
 
 const expense = (i: number, amount = 0.1) => ({
   date: '2026-11-06',
@@ -101,4 +105,56 @@ test('RF Liquidation cannot be submitted without RF form or with mismatched tota
     false,
   );
   assert.equal(requestSchema.safeParse({ ...request, rfLiquidation: base }).success, true);
+});
+
+test('expense editor creates exactly one new row as soon as last row is complete', () => {
+  const base = blankRfExpense();
+  const entries = [
+    ['date', '2026-11-06'],
+    ['invoiceOrNo', 'OR-0082'],
+    ['name', 'Sample Vendor'],
+    ['itemDescription', 'Site supplies'],
+    ['account', 'Site Expenses'],
+    ['amount', '157.25'],
+  ] as const;
+  let rows = [base];
+  for (const [field, value] of entries) {
+    rows = updateRfExpenseRow(rows, 0, field, value);
+  }
+  assert.equal(rows.length, 2);
+  assert.equal(rfExpenseRowComplete(rows[0]), true);
+  assert.deepEqual(rows[1], blankRfExpense());
+  assert.equal(rfExpenseRowComplete(rows[1]), false);
+  rows = updateRfExpenseRow(rows, 0, 'account', 'Repairs and Maintenance');
+  assert.equal(rows.length, 2, 'editing completed prior row must not create duplicates');
+  rows = removeRfExpenseRow(rows, 0);
+  assert.equal(rows.length, 1, 'removing row preserves one blank editing row');
+});
+
+test('advance editor automatically inserts the next row and rejects incomplete amount', () => {
+  let rows = [blankRfAdvance()];
+  const fields = [
+    ['date', '2026-11-06'],
+    ['name', 'Juan Santos'],
+    ['purpose', 'Site transfer'],
+    ['amount', '55.555'],
+  ] as const;
+  for (const [field, value] of fields) rows = updateRfAdvanceRow(rows, 0, field, value);
+  assert.equal(rows.length, 1, 'non-centavo amounts are not complete');
+  rows = updateRfAdvanceRow(rows, 0, 'amount', '55.55');
+  assert.equal(rfAdvanceRowComplete(rows[0]), true);
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows[1], blankRfAdvance());
+});
+
+test('editing last completed row does not create another form when a trailing blank already exists', () => {
+  const original = {
+    date: '2026-11-06', invoiceOrNo: 'OR-18', name: 'Vendor',
+    itemDescription: 'Expense', account: 'Operations', amount: '12.34',
+  };
+  let rows = [original];
+  rows = updateRfExpenseRow(rows, 0, 'amount', '12.34');
+  assert.equal(rows.length, 2);
+  rows = updateRfExpenseRow(rows, 1, 'date', '2026-11-07');
+  assert.equal(rows.length, 2);
 });
