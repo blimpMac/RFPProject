@@ -8,6 +8,7 @@ import './styles/ux-refinement.css';
 import './styles/compact-layout.css';
 import './styles/responsive-fix.css';
 import './styles/overflow-polish.css';
+import './styles/rf-liquidation-editor.css';
 
 const themeStorageKey = 'rfp-theme';
 const savedTheme = localStorage.getItem(themeStorageKey);
