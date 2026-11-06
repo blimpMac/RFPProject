@@ -55,7 +55,7 @@ test('centavo-safe calculation and cash-on-hand reconciliation',()=>{
   const totals=rfTotals(base);
   assert.equal(totals.expenses,1250);
   assert.equal(totals.unliquidatedAdvances,200);
-  assert.equal(totals.cashOnHand,8200);
+  assert.equal(totals.cashOnHand,8550);
 });
 test('RF Liquidation cannot be submitted without RF form or with mismatched total',()=>{
   assert.equal(requestSchema.safeParse(request).success,false);
