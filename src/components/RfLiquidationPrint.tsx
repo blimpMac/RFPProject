@@ -102,7 +102,7 @@ export function RfLiquidationPrint({ form, company, department, reference }: {
           <div><dt>Revolving Fund Amount</dt><dd>{php.format(totals.revolvingFundAmount)}</dd></div>
           <div><dt>Less: Total Expenses / For Replenishment ({copies.length} copies)</dt><dd>{php.format(totals.expenses)}</dd></div>
           <div><dt>Less: Total Unliquidated CA</dt><dd>{php.format(totals.unliquidatedAdvances)}</dd></div>
-          <div><dt>Less: Previous Replenishment (not yet received)</dt><dd>{php.format(totals.previousReplenishment)}</dd></div>
+          <div><dt>Previous Replenishment (not yet received) · for reference</dt><dd>{php.format(totals.previousReplenishment)}</dd></div>
           <div className="rf-print-cash"><dt>ACTUAL CASH ON HAND as of {manilaDate(form.cashOnHandAsOf)}</dt>
             <dd>{php.format(totals.cashOnHand)}</dd></div>
         </dl>
