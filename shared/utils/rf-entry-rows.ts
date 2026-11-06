@@ -54,8 +54,7 @@ export function rfAdvanceRowComplete(row: RfAdvanceDraftRow): boolean {
     row.date &&
     row.name.trim() &&
     row.purpose.trim() &&
-    Number.isFinite(Number(row.amount)) &&
-    Number(row.amount) > 0
+    hasValidMoney(row.amount)
   );
 }
 function insertFollowingBlank<T>(
