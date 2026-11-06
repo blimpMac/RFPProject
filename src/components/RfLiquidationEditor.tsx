@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { FilePlus2, Trash2 } from 'lucide-react';
 import {
-  fromCentavos, rfExpenseRowsPerCopy, rfTotals, sumRfAmounts, toCentavos,
+  rfExpenseRowsPerCopy, rfTotals, sumRfAmounts, toCentavos,
   type RfLiquidation,
 } from '../../shared/utils/rf-liquidation';
 
@@ -25,7 +25,7 @@ export const emptyRfLiquidationDraft = (): RfLiquidationDraft => ({
 });
 const expenseFields = ['date','invoiceOrNo','name','itemDescription','account','amount'] as const;
 const advanceFields = ['date','name','purpose','amount'] as const;
-const hasAny = (row: Record<string,string>) => Object.values(row).some(v => v.trim() !== '');
+const hasAny = <T extends object>(row: T) => Object.values(row).some((v) => String(v).trim() !== '');
 const hasAll = (row: ExpenseDraft) =>
   expenseFields.every((key) => row[key].trim() !== '') && Number(row.amount) > 0;
 const php = (amount: number) => new Intl.NumberFormat('en-PH', {style:'currency',currency:'PHP'}).format(amount);
