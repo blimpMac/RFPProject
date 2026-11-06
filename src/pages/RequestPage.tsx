@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, CheckCircle2, ClipboardList, Copy } from 'lucide-react';
 import { FileDropzone } from '../components/FileDropzone';
+import {
+  RfLiquidationEditor, emptyRfLiquidationDraft, normalizeRfDraft, validateRfDraft,
+} from '../components/RfLiquidationEditor';
+import { rfTotals } from '../../shared/utils/rf-liquidation';
 import { useAuth } from '../components/AuthProvider';
 import { RequestAttachmentChecklist } from '../components/RequestAttachmentChecklist';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -51,6 +55,7 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
   const [form, setForm] = useState(initial);
   const [files, setFiles] = useState<File[]>([]);
   const [attachmentChecklist, setAttachmentChecklist] = useState<string[]>([]);
+  const [rfDraft, setRfDraft] = useState(emptyRfLiquidationDraft);
   const [liquidationExpenses, setLiquidationExpenses] = useState<
     { date: string; description: string; amount: string }[]
   >([]);
@@ -65,6 +70,12 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
   const [clock, setClock] = useState(() => Date.now());
   const afterCutoff = isAfterManilaCutoff(clock);
   const slaSchedule = manilaReceiptSchedule(clock);
+  const isRfLiquidation = form.rfpType === 'RF Liquidation';
+  const rfLiquidation = normalizeRfDraft(rfDraft);
+  const rfExpenseTotal = rfTotals(rfLiquidation).expenses;
+  const requestAmount = isRfLiquidation
+    ? (rfExpenseTotal > 0 ? rfExpenseTotal.toFixed(2) : '')
+    : form.amount;
   // Prefill verified signed-in contact details, but do not overwrite user edits.
   // The public form must remain unchanged and unauthenticated.
   useEffect(() => {
@@ -110,7 +121,7 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const missing = Object.values(form).some((value) => !value.trim());
+    const missing = Object.values({ ...form, amount: requestAmount }).some((value) => !value.trim());
     if (missing || !selectedApprover) {
       setError(
         'Complete every required field and choose a department with an active Approving Head.',
@@ -121,8 +132,15 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
       setError('Enter the requestor’s full first and last name for check verification.');
       return;
     }
+    if (isRfLiquidation) {
+      const rfError = validateRfDraft(rfDraft);
+      if (rfError) {
+        setError(rfError);
+        return;
+      }
+    }
     if (
-      /^(CA|RF) Liquidation$/i.test(form.rfpType) &&
+      form.rfpType === 'CA Liquidation' &&
       (liquidationExpenses.length === 0 ||
         liquidationExpenses.some(
           (item) => !item.date || item.description.trim().length < 2 || !(Number(item.amount) > 0),
@@ -136,15 +154,20 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
       const started = await post<StartResult>('submissions/start', {
         request: {
           ...form,
-          amount: Number(form.amount),
+          amount: Number(requestAmount),
           attachmentChecklist,
-          liquidationExpenses: /^(CA|RF) Liquidation$/i.test(form.rfpType)
-            ? liquidationExpenses.map((item) => ({
-                date: item.date,
-                description: item.description.trim(),
-                amount: Number(item.amount),
+          rfLiquidation: isRfLiquidation ? rfLiquidation : undefined,
+          liquidationExpenses: isRfLiquidation
+            ? rfLiquidation.expenses.map((row) => ({
+                date:row.date, description:row.itemDescription, amount:row.amount,
               }))
-            : [],
+            : form.rfpType === 'CA Liquidation'
+              ? liquidationExpenses.map((item) => ({
+                  date: item.date,
+                  description: item.description.trim(),
+                  amount: Number(item.amount),
+                }))
+              : [],
         },
         attachments: files.map((f) => ({ name: f.name, type: f.type, size: f.size })),
         idempotencyKey: crypto.randomUUID(),
@@ -179,6 +202,7 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
       setFiles([]);
       setAttachmentChecklist([]);
       setLiquidationExpenses([]);
+      setRfDraft(emptyRfLiquidationDraft());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Submission failed.');
     } finally {
@@ -416,13 +440,14 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
               onChange={(v) => update('supplierPayee', v)}
             />
             <Field
-              label="Amount (PHP)"
+              label={isRfLiquidation ? 'Amount (PHP) · Automatically summed from RF copies' : 'Amount (PHP)'}
               type="number"
               inputMode="decimal"
               min="0.01"
               step="0.01"
-              value={form.amount}
-              onChange={(v) => update('amount', v)}
+              readOnly={isRfLiquidation}
+              value={requestAmount}
+              onChange={(v) => { if (!isRfLiquidation) update('amount', v); }}
             />
             <Field
               label="Date Needed"
@@ -453,7 +478,16 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
                 onChange={(e) => update('purposeDescription', e.target.value)}
               />
             </div>
-            {/^(CA|RF) Liquidation$/i.test(form.rfpType) && (
+            {isRfLiquidation && (
+              <RfLiquidationEditor
+                value={rfDraft}
+                onChange={setRfDraft}
+                company={form.company}
+                department={form.department}
+                requestorName={form.requestorName}
+              />
+            )}
+            {form.rfpType === 'CA Liquidation' && (
               <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4">
                 <h3 className="font-semibold text-amber-950">Itemized {form.rfpType} expenses</h3>
                 <p className="mt-1 text-sm text-amber-900">
