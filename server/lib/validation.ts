@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { rfTotals, toCentavos } from '../../shared/utils/rf-liquidation.js';
 
 const companies = ['Greenlight Power Inc.', 'Greenmetal Electric Manufacturing Corp.'] as const;
 
@@ -9,6 +10,34 @@ export const allowedMimes = [
   'image/webp',
   'image/gif',
 ] as const;
+const money = z.number().finite().nonnegative().max(999999999.99)
+  .refine((amount) => Math.abs(toCentavos(amount)-amount*100) < 0.00001, 'Use no more than two decimal places.');
+const rfExpenseSchema = z.object({
+  date: z.iso.date(),
+  invoiceOrNo: z.string().trim().min(1).max(160),
+  name: z.string().trim().min(2).max(160),
+  itemDescription: z.string().trim().min(2).max(280),
+  account: z.string().trim().min(1).max(120),
+  amount: money.positive(),
+});
+const rfUnliquidatedAdvanceSchema = z.object({
+  date: z.iso.date(),
+  name: z.string().trim().min(2).max(160),
+  purpose: z.string().trim().min(2).max(180),
+  amount: money.positive(),
+});
+export const rfLiquidationSchema = z.object({
+  custodianName: z.string().trim().min(3).max(120)
+    .refine((name) => name.split(/\\s+/u).length >= 2, 'Enter custodian first and last name.'),
+  periodCovered: z.string().trim().min(2).max(120),
+  projectSof: z.string().trim().min(1).max(180),
+  revolvingFundAmount: money.positive(),
+  previousReplenishment: money,
+  cashOnHandAsOf: z.iso.date(),
+  expenses: z.array(rfExpenseSchema).min(1).max(2000),
+  unliquidatedAdvances: z.array(rfUnliquidatedAdvanceSchema).max(200).default([]),
+});
+
 export const requestSchema = z.object({
   requestorName: z
     .string()
@@ -39,8 +68,20 @@ export const requestSchema = z.object({
         amount: z.coerce.number().positive().max(999999999.99),
       }),
     )
-    .max(100)
+    .max(2000)
     .default([]),
+  rfLiquidation: rfLiquidationSchema.optional(),
+}).superRefine((request,ctx) => {
+  if (request.rfpType !== 'RF Liquidation') return;
+  if (!request.rfLiquidation) {
+    ctx.addIssue({code:'custom',path:['rfLiquidation'],message:'Complete the RF liquidation form before submitting.'});
+    return;
+  }
+  const expensesTotal = rfTotals(request.rfLiquidation).expenses;
+  if (toCentavos(request.amount) !== toCentavos(expensesTotal)) {
+    ctx.addIssue({code:'custom',path:['amount'],
+      message:'RF request amount must equal the combined expense total across all RF form copies.'});
+  }
 });
 export const attachmentSchema = z.object({
   name: z.string().min(1).max(180),
