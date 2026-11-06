@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { rfTotals, toCentavos } from '../../shared/utils/rf-liquidation.js';
+const toCentavos = (amount: number) => Math.round(amount * 100);
 
 const companies = ['Greenlight Power Inc.', 'Greenmetal Electric Manufacturing Corp.'] as const;
 
@@ -77,7 +77,8 @@ export const requestSchema = z.object({
     ctx.addIssue({code:'custom',path:['rfLiquidation'],message:'Complete the RF liquidation form before submitting.'});
     return;
   }
-  const expensesTotal = rfTotals(request.rfLiquidation).expenses;
+  const expensesTotal = request.rfLiquidation.expenses.reduce(
+    (total, row) => total + toCentavos(row.amount), 0) / 100;
   if (toCentavos(request.amount) !== toCentavos(expensesTotal)) {
     ctx.addIssue({code:'custom',path:['amount'],
       message:'RF request amount must equal the combined expense total across all RF form copies.'});
