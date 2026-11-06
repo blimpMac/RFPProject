@@ -4,6 +4,7 @@ import {
   BarChart3,
   CheckSquare,
   ChevronLeft,
+  FilePlus2,
   FileStack,
   History,
   LogOut,
@@ -36,6 +37,13 @@ const navigationItems: NavigationItem[] = [
     description: 'Performance and request health',
     group: 'Workspace',
     icon: BarChart3,
+  },
+  {
+    to: '/admin/new-request',
+    label: 'Add a new Request',
+    description: 'Create and submit a payment request',
+    group: 'Workspace',
+    icon: FilePlus2,
   },
   {
     to: '/admin/monitoring',
