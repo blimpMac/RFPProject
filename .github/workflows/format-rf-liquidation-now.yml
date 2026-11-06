@@ -1,0 +1,33 @@
+name: One-time RF liquidation validation and formatting
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/format-rf-liquidation-now.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Format then run complete checks
+        run: |
+          npm run format
+          npm run check
+      - name: Commit formatting-only updates
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -u
+            git commit -m "Format audited RF liquidation implementation"
+            git push origin HEAD:main
+          fi
