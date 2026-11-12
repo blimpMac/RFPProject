@@ -78,7 +78,7 @@ export function RfLiquidationPrint({
             <th scope="col">Invoice/OR No.</th>
             <th scope="col">Name</th>
             <th scope="col">Item Description</th>
-            <th scope="col">Account</th>
+            <th scope="col">Purpose</th>
             <th scope="col">Amount</th>
           </tr>
         </thead>

@@ -152,6 +152,7 @@ test('print source contains workbook labels and no invented packet sections', ()
   for (const label of [
     'Revolving Fund Liquidation for Replenishment/Close-out',
     'Invoice/OR No.',
+    'Purpose',
     'Total Expenses/For Replenishment',
     'Unliquidated Cash Advance from RF',
     'Previous Replenishment (not yet received)',
@@ -165,4 +166,5 @@ test('print source contains workbook labels and no invented packet sections', ()
   for (const invented of ['REFERENCE NO.', 'RF FORM COPY', 'CONSOLIDATED SUMMARY', 'Page {']) {
     assert.equal(source.includes(invented), false);
   }
+  assert.equal(source.includes('>Account</th>'), false);
 });

@@ -170,7 +170,7 @@ const expenseInputs: {
     placeholder: 'What was purchased',
     css: 'rf-entry-description',
   },
-  { field: 'account', label: 'Account', placeholder: 'Expense account' },
+  { field: 'account', label: 'Purpose', placeholder: 'Expense purpose' },
   {
     field: 'amount',
     label: 'Amount (PHP)',
