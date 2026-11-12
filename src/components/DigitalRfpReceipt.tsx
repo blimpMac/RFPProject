@@ -329,6 +329,10 @@ export function DigitalRfpReceipt({
           </table>
         </section>
       )}
+      <footer className="digital-rfp-footer">
+        System-generated record · {brand.name} · Printed{' '}
+        {manilaDate(new Date().toISOString(), true)}
+      </footer>
       {isRfLiquidation && rfLiquidation && (
         <RfLiquidationPrint
           form={rfLiquidation}
@@ -337,10 +341,6 @@ export function DigitalRfpReceipt({
           reference={request.rfp_number}
         />
       )}
-      <footer className="digital-rfp-footer">
-        System-generated record · {brand.name} · Printed{' '}
-        {manilaDate(new Date().toISOString(), true)}
-      </footer>
     </article>
   );
 }
