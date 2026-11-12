@@ -16,7 +16,7 @@
   color: #000;
   background: #fff;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 9px;
+  font-size: 10.5px;
   line-height: 1.15;
   box-shadow: 0 2px 16px rgb(15 23 42 / 14%);
 }
@@ -31,13 +31,13 @@
   width: 210mm;
   min-height: 297mm;
   padding: 6.35mm;
-  font-size: 8.5px;
+  font-size: 10px;
 }
 
 .rf-workbook-header {
   position: relative;
   display: flex;
-  min-height: 25mm;
+  min-height: 32mm;
   align-items: center;
   flex-direction: column;
   justify-content: center;
@@ -47,16 +47,15 @@
   position: absolute;
   top: 0;
   left: 50%;
-  width: auto;
-  max-width: 58mm;
-  max-height: 17mm;
+  width: 75mm;
+  height: 22mm;
   object-fit: contain;
   transform: translateX(-50%);
 }
 
 .rf-workbook-header h1 {
-  margin: 19mm 0 0;
-  font-size: 13px;
+  margin: 25mm 0 0;
+  font-size: 15px;
   font-weight: 700;
   text-align: center;
 }
@@ -74,7 +73,7 @@
 }
 
 .rf-workbook-reference strong {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .rf-workbook-fields {
@@ -167,6 +166,7 @@
   grid-template-columns: 1fr 30mm;
   width: 79mm;
   margin: 1mm 0 1mm auto;
+  font-size: 11px;
 }
 
 .rf-workbook-expense-total span,
@@ -179,7 +179,7 @@
 
 .rf-workbook-subtitle {
   margin: 1mm 0 0.7mm;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -249,12 +249,12 @@
   min-height: 5mm;
   padding-bottom: 0.7mm;
   border-bottom: 0.25mm solid #000;
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
 .rf-form-gemcor .rf-workbook-header {
-  min-height: 25mm;
+  min-height: 32mm;
 }
 .rf-form-gemcor .rf-workbook-signatures {
   margin-top: 4mm;

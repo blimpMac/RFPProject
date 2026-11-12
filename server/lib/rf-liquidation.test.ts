@@ -172,3 +172,11 @@ test('print source contains workbook labels and no invented packet sections', ()
   assert.equal(source.includes('RF No.'), false);
   assert.equal(source.includes('Prepared by Custodian:'), false);
 });
+
+test('RF print stylesheet keeps the enlarged readable form scale', () => {
+  const stylesheet = readFileSync('src/styles/rf-print-a4.css', 'utf8');
+  assert.match(stylesheet, /\.rf-form-page\s*\{[\s\S]*?font-size: 10\.5px;/);
+  assert.match(stylesheet, /\.rf-workbook-header img\s*\{[\s\S]*?width: 75mm;/);
+  assert.match(stylesheet, /\.rf-workbook-header img\s*\{[\s\S]*?height: 22mm;/);
+  assert.match(stylesheet, /\.rf-workbook-expense-total,[\s\S]*?font-size: 11px;/);
+});
