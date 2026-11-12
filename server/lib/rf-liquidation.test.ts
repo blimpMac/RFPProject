@@ -156,10 +156,12 @@ test('print source contains workbook labels and no invented packet sections', ()
     'Total Expenses/For Replenishment',
     'Unliquidated Cash Advance from RF',
     'Previous Replenishment (not yet received)',
-    'Prepared by Custodian:',
-    'Checked by Head of Department',
-    'Approved by Finance',
-    'RF No.',
+    'Custodian Name:',
+    'Prepared by:',
+    'Checked by:',
+    'Approved by:',
+    'departmentHead.toUpperCase()',
+    'form.custodianName.toUpperCase()',
     'reference',
   ])
     assert.match(source, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
@@ -167,4 +169,6 @@ test('print source contains workbook labels and no invented packet sections', ()
     assert.equal(source.includes(invented), false);
   }
   assert.equal(source.includes('>Account</th>'), false);
+  assert.equal(source.includes('RF No.'), false);
+  assert.equal(source.includes('Prepared by Custodian:'), false);
 });

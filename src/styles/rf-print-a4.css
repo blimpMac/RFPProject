@@ -37,22 +37,25 @@
 .rf-workbook-header {
   position: relative;
   display: flex;
-  min-height: 16mm;
+  min-height: 25mm;
   align-items: center;
+  flex-direction: column;
   justify-content: center;
 }
 
 .rf-workbook-header img {
   position: absolute;
-  left: 0;
+  top: 0;
+  left: 50%;
   width: auto;
-  max-width: 42mm;
-  max-height: 13mm;
+  max-width: 58mm;
+  max-height: 17mm;
   object-fit: contain;
+  transform: translateX(-50%);
 }
 
 .rf-workbook-header h1 {
-  margin: 0;
+  margin: 19mm 0 0;
   font-size: 13px;
   font-weight: 700;
   text-align: center;
@@ -60,28 +63,18 @@
 
 .rf-workbook-reference {
   position: absolute;
+  top: 1mm;
   right: 0;
-  min-width: 27mm;
-  padding: 1.2mm 1.8mm;
-  border: 0.25mm solid #000;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-.rf-workbook-reference span,
 .rf-workbook-reference strong {
   display: block;
 }
 
-.rf-workbook-reference span {
-  font-size: 7px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
 .rf-workbook-reference strong {
-  margin-top: 0.5mm;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .rf-workbook-fields {
@@ -251,14 +244,17 @@
   gap: 1mm;
 }
 
-.rf-workbook-signatures span {
+.rf-workbook-signatures strong {
   display: block;
-  height: 5mm;
+  min-height: 5mm;
+  padding-bottom: 0.7mm;
   border-bottom: 0.25mm solid #000;
+  font-size: 9px;
+  font-weight: 700;
 }
 
 .rf-form-gemcor .rf-workbook-header {
-  min-height: 13mm;
+  min-height: 25mm;
 }
 .rf-form-gemcor .rf-workbook-signatures {
   margin-top: 4mm;

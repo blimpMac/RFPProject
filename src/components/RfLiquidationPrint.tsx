@@ -18,11 +18,13 @@ export function RfLiquidationPrint({
   form,
   company,
   department,
+  departmentHead,
   reference,
 }: {
   form: RfLiquidation;
   company: string;
   department: string;
+  departmentHead: string;
   reference: string;
 }) {
   const brand = companyBrand(company);
@@ -39,14 +41,13 @@ export function RfLiquidationPrint({
         <img src={brand.logo} alt={`${brand.name} logo`} />
         <h1>Revolving Fund Liquidation for Replenishment/Close-out</h1>
         <div className="rf-workbook-reference" aria-label={`Request number ${reference}`}>
-          <span>{reference.startsWith('CA-') ? 'CA No.' : 'RF No.'}</span>
           <strong>{reference}</strong>
         </div>
       </header>
 
       <dl className="rf-workbook-fields">
         <div>
-          <dt>Name/Custodian:</dt>
+          <dt>Custodian Name:</dt>
           <dd>{form.custodianName}</dd>
         </div>
         <div>
@@ -175,16 +176,16 @@ export function RfLiquidationPrint({
 
       <div className="rf-workbook-signatures">
         <div>
-          <span />
-          Prepared by Custodian:
+          <strong>{form.custodianName.toUpperCase()}</strong>
+          <span>Prepared by:</span>
         </div>
         <div>
-          <span />
-          Checked by Head of Department
+          <strong>{departmentHead.toUpperCase()}</strong>
+          <span>Checked by:</span>
         </div>
         <div>
-          <span />
-          Approved by Finance
+          <strong aria-hidden="true">&nbsp;</strong>
+          <span>Approved by:</span>
         </div>
       </div>
     </section>

@@ -153,6 +153,7 @@ export function DigitalRfpReceipt({
           form={rfLiquidation}
           company={request.company || ''}
           department={request.department}
+          departmentHead={request.approving_head}
           reference={request.rfp_number}
         />
       </article>

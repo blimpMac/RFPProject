@@ -233,7 +233,7 @@ export function RfLiquidationEditor({
 
       <div className="rf-editor-details">
         <EntryField
-          label="Name / Custodian"
+          label="Custodian Name"
           value={value.custodianName}
           placeholder="First and last name"
           onChange={(next) => set('custodianName', next)}
