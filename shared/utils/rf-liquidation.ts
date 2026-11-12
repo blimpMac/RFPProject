@@ -110,22 +110,23 @@ export type RfPrintPage =
 export function rfPrintPages(
   form: Pick<RfLiquidation, 'expenses' | 'unliquidatedAdvances'>,
   company: string,
+  precedingPages = 0,
 ): RfPrintPage[] {
   const copies = rfCopies(form, company);
   const summaryPageCount = Math.max(1, Math.ceil(copies.length / RF_SUMMARY_COPIES_PER_PAGE));
-  const totalPages = copies.length + summaryPageCount;
+  const totalPages = precedingPages + copies.length + summaryPageCount;
   const expenseRowSlots = rfExpenseRowsPerCopy(company);
 
   const copyPages: RfPrintPage[] = copies.map((copy, i) => ({
     kind: 'copy',
-    pageNumber: i + 1,
+    pageNumber: precedingPages + i + 1,
     totalPages,
     copy,
     expenseRowSlots,
   }));
   const summaryPages: RfPrintPage[] = Array.from({ length: summaryPageCount }, (_, i) => ({
     kind: 'summary',
-    pageNumber: copies.length + i + 1,
+    pageNumber: precedingPages + copies.length + i + 1,
     totalPages,
     summaryPageNumber: i + 1,
     summaryPageCount,
