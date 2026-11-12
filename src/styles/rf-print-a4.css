@@ -153,6 +153,7 @@
 }
 
 .rf-workbook-money {
+  font-weight: 700;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -175,6 +176,7 @@
 .rf-workbook-advance-total span {
   padding-right: 0.8mm;
   border-bottom: 0.25mm solid #000;
+  font-weight: 700;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -217,6 +219,7 @@
 
 .rf-workbook-reconciliation dd {
   border-bottom: 0.25mm solid #000;
+  font-weight: 700;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
