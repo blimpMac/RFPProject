@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { renderEmail, renderEmailPreview } from './templates.ts';
+import { emailTemplateKeys, renderEmail, renderEmailPreview } from './templates.ts';
 
 const request = {
   rfp_number: 'RFP-0248',
@@ -39,9 +39,10 @@ test('real department approval messages display three secure action links, not o
   assert.match(email.html, />Return for Correction<\/a>/);
   assert.doesNotMatch(email.html, />Open secure review<\/a>/);
   assert.match(email.html, /confirm your choice/i);
-  // Mobile email clients cannot fit three action buttons in one table row.
-  assert.ok(email.html.includes('>Approve</a></td></tr><tr>'));
-  assert.ok(email.html.includes('>Reject</a></td></tr><tr>'));
+  assert.match(
+    email.html,
+    />Approve<\/a><\/td><td[^>]*>.*>Reject<\/a><\/td><td[^>]*>.*>Return for Correction<\/a><\/td><\/tr>/,
+  );
 });
 
 test('empty review token does not generate a fake approval link', () => {
@@ -81,4 +82,28 @@ test('reject and return notifications clearly describe different outcomes', () =
   assert.doesNotMatch(rejected.html, /resubmit it using the same RFP number/i);
   assert.match(returned.html, /returned for correction/i);
   assert.match(returned.html, /resubmit it using the same RFP number/i);
+});
+
+test('every email template keeps table rows structurally valid', () => {
+  for (const template of emailTemplateKeys) {
+    const html = renderEmailPreview(template, url).html;
+    const stack: string[] = [];
+    for (const match of html.matchAll(/<\/?(table|tbody|tr|td)\b[^>]*>/giu)) {
+      const tag = match[1].toLowerCase();
+      if (!match[0].startsWith('</')) {
+        stack.push(tag);
+        continue;
+      }
+      assert.equal(stack.pop(), tag, `${template} has malformed ${tag} nesting`);
+    }
+    assert.deepEqual(stack, [], `${template} has unclosed table markup`);
+    assert.doesNotMatch(html, /<\/table>\s*<tr\b/iu, `${template} has a row outside a table`);
+  }
+});
+
+test('digital RFP receipt uses the full email column without orphan rows', () => {
+  const email = renderEmailPreview('processing_started', url);
+  assert.match(email.html, /REQUEST FOR PAYMENT \(RFP\)/);
+  assert.match(email.html, /table-layout:fixed/);
+  assert.doesNotMatch(email.html, /<\/table>\s*<tr\b/iu);
 });
