@@ -275,13 +275,13 @@ export function TrackPage() {
           <div className="mt-4 space-y-3">
             {expenses.map((expense, index) => (
               <div
-                className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_2fr_1fr_auto]"
+                className="grid min-w-0 gap-3 rounded-lg border p-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_auto]"
                 key={index}
               >
-                <label className="text-xs font-semibold">
+                <label className="min-w-0 text-xs font-semibold">
                   Date
                   <input
-                    className="input mt-1 w-full"
+                    className="input mt-1 min-w-0 w-full"
                     type="date"
                     value={expense.date}
                     onChange={(e) =>
@@ -293,10 +293,10 @@ export function TrackPage() {
                     }
                   />
                 </label>
-                <label className="text-xs font-semibold">
+                <label className="min-w-0 text-xs font-semibold">
                   Description
                   <input
-                    className="input mt-1 w-full"
+                    className="input mt-1 min-w-0 w-full"
                     maxLength={280}
                     value={expense.description}
                     onChange={(e) =>
@@ -308,10 +308,10 @@ export function TrackPage() {
                     }
                   />
                 </label>
-                <label className="text-xs font-semibold">
+                <label className="min-w-0 text-xs font-semibold">
                   Amount (PHP)
                   <input
-                    className="input mt-1 w-full"
+                    className="input mt-1 min-w-0 w-full"
                     type="number"
                     min="0.01"
                     step="0.01"
@@ -364,7 +364,7 @@ export function TrackPage() {
             <label className="text-sm font-semibold">
               Project / Class
               <input
-                className="input mt-1 w-full"
+                className="input mt-1 min-w-0 w-full"
                 value={corrections.projectClass}
                 onChange={(e) => updateCorrections('projectClass', e.target.value)}
               />
@@ -372,7 +372,7 @@ export function TrackPage() {
             <label className="text-sm font-semibold">
               Supplier / Payee
               <input
-                className="input mt-1 w-full"
+                className="input mt-1 min-w-0 w-full"
                 value={corrections.supplierPayee}
                 onChange={(e) => updateCorrections('supplierPayee', e.target.value)}
               />
@@ -380,7 +380,7 @@ export function TrackPage() {
             <label className="text-sm font-semibold">
               Amount (PHP)
               <input
-                className="input mt-1 w-full"
+                className="input mt-1 min-w-0 w-full"
                 type="number"
                 min="0.01"
                 step="0.01"
@@ -391,7 +391,7 @@ export function TrackPage() {
             <label className="text-sm font-semibold">
               Date Needed
               <input
-                className="input mt-1 w-full"
+                className="input mt-1 min-w-0 w-full"
                 type="date"
                 value={corrections.requiredPaymentDate}
                 onChange={(e) => updateCorrections('requiredPaymentDate', e.target.value)}
@@ -400,7 +400,7 @@ export function TrackPage() {
             <label className="text-sm font-semibold">
               Urgency
               <select
-                className="input mt-1 w-full"
+                className="input mt-1 min-w-0 w-full"
                 value={corrections.requestType}
                 onChange={(e) =>
                   updateCorrections('requestType', e.target.value as 'Regular' | 'Emergency')
