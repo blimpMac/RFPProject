@@ -72,7 +72,13 @@ export function renderEmail(
     };
   }
   if (template === 'supervisor_review') {
-    const reviewUrl = `${siteUrl}/review/${encodeURIComponent(String(payload.reviewToken))}`;
+    const reviewToken = typeof payload.reviewToken === 'string' ? payload.reviewToken.trim() : '';
+    // Each email action opens the review page with that choice selected.
+    // Never execute an approval over GET: the approver confirms via POST.
+    const reviewPath = reviewToken ? `/review/${encodeURIComponent(reviewToken)}` : '';
+    const reviewUrl = reviewPath ? new URL(reviewPath, `${siteUrl.replace(/\\/$/, '')}/`).toString() : '';
+    const actionUrl = (action: 'approve' | 'reject' | 'return') =>
+      `${reviewUrl}?action=${action}`;
     const documents = attachmentLinks.length
       ? `<h2 style="font-size:16px;margin-top:24px;color:#102a43">Supporting documents</h2>${attachmentLinks.map((attachment) => `<div style="margin:14px 0 24px">${attachment.cid ? `<img src="cid:${attachment.cid}" alt="${escape(attachment.name)}" style="width:100%;max-width:540px;max-height:720px;object-fit:contain;display:block;margin:8px auto;border:1px solid #dfe4ea;border-radius:8px">` : ''}<div style="margin-top:8px;font-size:13px;text-align:center">${attachment.url ? `<a href="${escape(attachment.url)}" style="color:#315c93">${escape(attachment.name)}</a>` : escape(attachment.name)}</div></div>`).join('')}`
       : '';
@@ -84,7 +90,7 @@ export function renderEmail(
       subject: `Review required: ${request.rfp_number}`,
       html: shell(
         `Department approval — ${rfp}`,
-        `<p style="margin-top:0;color:#526174">A payment request is ready for your review.</p>${details}${correction}${documents}<p style="margin-top:26px">${button('Open secure review', reviewUrl)}</p><p style="font-size:12px;color:#667085;line-height:1.5">Opening this link does not approve or reject the request. A decision requires confirmation on the secure page.</p>`,
+        `<p style="margin-top:0;color:#526174">A payment request is ready for your review.</p>${details}${correction}${documents}<p style="margin-top:24px;font-size:14px;font-weight:700;color:#102a43">Choose your next action:</p>${reviewUrl ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:10px 0 16px"><tr><td style="padding:4px 6px 4px 0">${button('Approve', actionUrl('approve'), '#1f6f4a')}</td><td style="padding:4px 6px">${button('Reject', actionUrl('reject'), '#b42318')}</td><td style="padding:4px 0 4px 6px">${button('Return for Correction', actionUrl('return'), '#315c93')}</td></tr></table><p style="font-size:12px;line-height:1.5">If the buttons are not clickable, copy this secure review URL into your browser:<br><a style="overflow-wrap:anywhere;color:#315c93" href="${escape(reviewUrl)}">${escape(reviewUrl)}</a></p>` : '<p style="color:#b42318">No active review link was included. Ask the system administrator to regenerate the Department Head approval invitation.</p>'}<p style="font-size:12px;color:#667085;line-height:1.5">For your security, these buttons only open the review page. Check the request and confirm your choice there. A returned request goes back to the requestor for correction. If your link is expired or already used, sign in to your Department Head workspace or contact the administrator for a new invitation.</p>`,
         `Review required for ${request.rfp_number}`,
       ),
     };
