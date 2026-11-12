@@ -33,7 +33,10 @@
     "preview:capture": "node --env-file=.env --import tsx scripts/verification/capture-previews.ts",
     "verify:live-admin": "node --experimental-strip-types scripts/verification/verify-live-admin.ts",
     "verify:live-branding": "node --experimental-strip-types scripts/verification/verify-live-branding.ts",
-    "verify:live-responsive": "node --env-file=.env --experimental-strip-types scripts/verification/verify-live-responsive.ts"
+    "verify:live-responsive": "node --env-file=.env --experimental-strip-types scripts/verification/verify-live-responsive.ts",
+    "verify:theme-sandbox": "node --experimental-strip-types scripts/verification/verify-theme-sandbox.ts",
+    "verify:live-department-review": "node --env-file=.env --experimental-strip-types scripts/verification/verify-live-department-review.ts",
+    "verify:live-uat-smoke": "node --env-file=.env --experimental-strip-types scripts/verification/verify-live-uat-smoke.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

@@ -5,7 +5,12 @@ type Theme = 'light' | 'dark';
 const storageKey = 'rfp-theme';
 
 function preferredTheme(): Theme {
-  const saved = localStorage.getItem(storageKey);
+  let saved: string | null = null;
+  try {
+    saved = localStorage.getItem(storageKey);
+  } catch {
+    // Sandboxed previews can intentionally deny Web Storage.
+  }
   if (saved === 'light' || saved === 'dark') return saved;
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
@@ -16,7 +21,11 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
-    localStorage.setItem(storageKey, theme);
+    try {
+      localStorage.setItem(storageKey, theme);
+    } catch {
+      // Theme still applies for this document when persistence is unavailable.
+    }
   }, [theme]);
   const dark = theme === 'dark';
   return (

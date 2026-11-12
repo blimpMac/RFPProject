@@ -54,6 +54,8 @@ type StartResult = {
 };
 export function RequestPage({ embedded = false }: { embedded?: boolean }) {
   const { identity } = useAuth();
+  const identityEmail = identity?.email;
+  const identityFullName = identity?.fullName;
   const PageBody = embedded ? 'section' : 'main';
   const [form, setForm] = useState(initial);
   const [files, setFiles] = useState<File[]>([]);
@@ -84,15 +86,15 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
   // Prefill verified signed-in contact details, but do not overwrite user edits.
   // The public form must remain unchanged and unauthenticated.
   useEffect(() => {
-    if (!embedded || !identity) return;
-    const fullName = identity.fullName.trim();
+    if (!embedded || !identityEmail || !identityFullName) return;
+    const fullName = identityFullName.trim();
     const hasFirstLast = fullName.split(/\s+/u).length >= 2;
     setForm((current) => ({
       ...current,
       requestorName: current.requestorName || (hasFirstLast ? fullName : ''),
-      requestorEmail: current.requestorEmail || identity.email,
+      requestorEmail: current.requestorEmail || identityEmail,
     }));
-  }, [embedded, identity?.email, identity?.fullName]);
+  }, [embedded, identityEmail, identityFullName]);
   useEffect(() => {
     const timer = window.setInterval(() => setClock(Date.now()), 30_000);
     return () => window.clearInterval(timer);

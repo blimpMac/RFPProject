@@ -10,7 +10,12 @@
     <title>RFP Monitoring System</title>
     <script>
       (() => {
-        const saved = localStorage.getItem('rfp-theme');
+        let saved = null;
+        try {
+          saved = localStorage.getItem('rfp-theme');
+        } catch {
+          // Sandboxed previews can intentionally deny Web Storage.
+        }
         const theme = saved === 'light' || saved === 'dark' ? saved : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         document.documentElement.classList.toggle('dark', theme === 'dark');
         document.documentElement.dataset.theme = theme;

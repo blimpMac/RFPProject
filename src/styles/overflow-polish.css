@@ -519,7 +519,6 @@
   }
 }
 
-
 /* Responsive Finance filters use actual available content width. The sidebar
    may be expanded while the browser remains wide, so viewport breakpoints
    alone cannot prevent input crowding. */

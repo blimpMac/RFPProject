@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Printer, Plus, Trash2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { get, post } from '../lib/api';
@@ -87,6 +87,7 @@ export function TrackPage() {
   const [corrections, setCorrections] = useState<Corrections>(emptyCorrections);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [busy, setBusy] = useState(false);
+  const initializedRequestId = useRef<string | undefined>(undefined);
   const load = useCallback(
     () =>
       get<Tracking>(`track/${encodeURIComponent(token)}`)
@@ -106,7 +107,8 @@ export function TrackPage() {
   // not overwrite a requestor's unsaved corrections or expense lines.
   useEffect(() => {
     const r = data?.request;
-    if (!r) return;
+    if (!r || initializedRequestId.current === r.id) return;
+    initializedRequestId.current = r.id;
     setCorrections({
       projectClass: r.project_class,
       supplierPayee: r.supplier_payee,
@@ -121,7 +123,7 @@ export function TrackPage() {
         amount: String(expense.amount),
       })),
     );
-  }, [data?.request.id]); // only the request identity, not each background refresh
+  }, [data]);
 
   const updateCorrections = <K extends keyof Corrections>(key: K, value: Corrections[K]) =>
     setCorrections((current) => ({ ...current, [key]: value }));

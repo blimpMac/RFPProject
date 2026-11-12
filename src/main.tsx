@@ -12,7 +12,12 @@ import './styles/rf-liquidation-editor.css';
 import './styles/rf-print-a4.css';
 
 const themeStorageKey = 'rfp-theme';
-const savedTheme = localStorage.getItem(themeStorageKey);
+let savedTheme: string | null = null;
+try {
+  savedTheme = localStorage.getItem(themeStorageKey);
+} catch {
+  // Sandboxed previews can intentionally deny Web Storage.
+}
 const initialTheme =
   savedTheme === 'light' || savedTheme === 'dark'
     ? savedTheme
