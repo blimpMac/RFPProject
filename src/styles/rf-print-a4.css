@@ -356,6 +356,22 @@
   color: #42566a;
 }
 
+/* The RFP receipt remains page 1 of a continuous print packet. */
+.digital-rfp-primary-page .digital-rfp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3mm;
+}
+.rf-primary-page-number {
+  color: #163b5c;
+  font-size: 7.6pt;
+  font-weight: 850;
+  white-space: nowrap;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 @media print {
   @page { size: A4 portrait; margin: 6mm; }
   /* The receipt stays as the first sheet, then each completed RF form starts
@@ -369,6 +385,33 @@
     border: 0 !important;
     box-shadow: none !important;
     break-inside: auto !important;
+  }
+  .digital-rfp-sheet:has(.rf-print-bundle) > .digital-rfp-primary-page {
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 285mm !important;
+    min-height: 285mm !important;
+    padding-bottom: 9mm !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    background: #fff !important;
+  }
+  .digital-rfp-sheet:has(.rf-print-bundle) .digital-rfp-primary-page > .digital-rfp-footer {
+    position: absolute !important;
+    bottom: 3mm !important;
+    left: 3.4mm !important;
+    right: 3.4mm !important;
+    display: flex !important;
+    align-items: end !important;
+    justify-content: space-between !important;
+    text-align: left !important;
+    margin: 0 !important;
+    padding-top: 1mm !important;
+    min-height: 5.5mm !important;
+    border-top: .6px solid #bac6d2 !important;
   }
   .rf-print-bundle {
     width: 100% !important;
