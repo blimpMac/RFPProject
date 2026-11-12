@@ -207,7 +207,7 @@ export function AdminLayout() {
           </div>
 
           <nav
-            className="min-h-0 flex-1 overflow-hidden px-3 pb-3 pt-4"
+            className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-3 pt-4"
             aria-label="Staff navigation"
           >
             {(['Workspace', 'Administration'] as const).map((group) => {
