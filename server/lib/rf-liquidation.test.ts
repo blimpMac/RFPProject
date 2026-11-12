@@ -179,4 +179,5 @@ test('RF print stylesheet keeps the enlarged readable form scale', () => {
   assert.match(stylesheet, /\.rf-workbook-header img\s*\{[\s\S]*?width: 75mm;/);
   assert.match(stylesheet, /\.rf-workbook-header img\s*\{[\s\S]*?height: 22mm;/);
   assert.match(stylesheet, /\.rf-workbook-expense-total,[\s\S]*?font-size: 11px;/);
+  assert.match(stylesheet, /\.rf-form-gpi \.rf-workbook-expenses tbody td\s*\{\s*height: 3\.3mm;/);
 });

@@ -109,10 +109,12 @@
 
 .rf-workbook-table th,
 .rf-workbook-table td {
-  height: 4mm;
-  padding: 0.4mm 0.8mm;
+  box-sizing: border-box;
+  height: 3.3mm;
+  padding: 0 0.8mm;
   overflow: hidden;
   border: 0.25mm solid #000;
+  line-height: 1;
   vertical-align: middle;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -124,11 +126,11 @@
 }
 
 .rf-form-gpi .rf-workbook-expenses tbody td {
-  height: 3.65mm;
+  height: 3.3mm;
 }
 
 .rf-form-gemcor .rf-workbook-expenses tbody td {
-  height: 4.25mm;
+  height: 3.7mm;
 }
 
 .rf-col-date {
