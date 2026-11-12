@@ -266,51 +266,6 @@
   height: 4.6mm;
 }
 
-.rf-form-tally {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  margin: 0 0 1.3mm;
-  border-top: 0.6px solid #aebbc8;
-  border-left: 0.6px solid #aebbc8;
-}
-.rf-form-tally > div {
-  box-sizing: border-box;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1mm;
-  min-width: 0;
-  min-height: 4.7mm;
-  padding: 0.7mm 1.4mm;
-  border-right: 0.6px solid #aebbc8;
-  border-bottom: 0.6px solid #aebbc8;
-}
-.rf-form-tally dt {
-  font-size: 5.8pt;
-  color: #46596b;
-  font-weight: 700;
-}
-.rf-form-tally dd {
-  margin: 0;
-  font-size: 6.8pt;
-  font-weight: 800;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.rf-form-tally .rf-form-cash-on-hand {
-  grid-column: 1 / -1;
-  background: #e5eff8;
-}
-.rf-form-tally .rf-form-cash-on-hand dt {
-  color: #163b5c;
-  font-size: 6.5pt;
-}
-.rf-form-tally .rf-form-cash-on-hand dd {
-  color: #163b5c;
-  font-size: 8pt;
-}
-
 .rf-form-signatures {
   box-sizing: border-box;
   display: grid;
