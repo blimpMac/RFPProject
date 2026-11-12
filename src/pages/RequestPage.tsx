@@ -512,15 +512,15 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
                 <div className="mt-4 space-y-3">
                   {liquidationExpenses.map((expense, index) => (
                     <div
-                      className="grid gap-2 rounded-lg border bg-white p-3 sm:grid-cols-[1fr_2fr_1fr_auto]"
+                      className="grid min-w-0 gap-3 rounded-lg border bg-white p-3 sm:grid-cols-2 2xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_auto]"
                       key={index}
                     >
-                      <label className="text-xs font-medium">
+                      <label className="min-w-0 text-xs font-medium">
                         Expense date
                         <input
                           required
                           type="date"
-                          className="input mt-1 w-full"
+                          className="input mt-1 min-w-0 w-full"
                           value={expense.date}
                           onChange={(e) =>
                             setLiquidationExpenses((rows) =>
@@ -531,11 +531,11 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
                           }
                         />
                       </label>
-                      <label className="text-xs font-medium">
+                      <label className="min-w-0 text-xs font-medium">
                         Description
                         <input
                           required
-                          className="input mt-1 w-full"
+                          className="input mt-1 min-w-0 w-full"
                           maxLength={280}
                           placeholder="Purpose of expense"
                           value={expense.description}
@@ -548,12 +548,12 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
                           }
                         />
                       </label>
-                      <label className="text-xs font-medium">
+                      <label className="min-w-0 text-xs font-medium">
                         Amount (PHP)
                         <input
                           required
                           type="number"
-                          className="input mt-1 w-full"
+                          className="input mt-1 min-w-0 w-full"
                           min="0.01"
                           step="0.01"
                           value={expense.amount}
