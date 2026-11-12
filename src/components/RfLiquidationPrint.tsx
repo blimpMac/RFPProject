@@ -1,6 +1,6 @@
 import { companyBrand } from '../../shared/contracts/digital-rfp';
 import { RF_UNLIQUIDATED_ROWS_PER_COPY, rfTotals, sumRfAmounts, type RfLiquidation } from '../../shared/utils/rf-liquidation';
-import { RF_SUMMARY_COPIES_PER_PAGE, rfPrintPages, type RfPrintPage } from '../../shared/utils/rf-print-pages';
+import { RF_SUMMARY_COPIES_PER_PAGE, rfPrintPages, type RfPrintPage } from '../../shared/utils/rf-liquidation';
 import { manilaDate, php } from '../lib/format';
 
 type CopyPage = Extract<RfPrintPage, { kind: 'copy' }>;
