@@ -1,5 +1,5 @@
 begin;
-select plan(20);
+select plan(23);
 select has_table('public','rfp_requests','rfp_requests exists');
 select has_table('public','form_responses','form_responses exists');
 select has_table('public','migration_source_snapshots','immutable snapshots exist');
@@ -13,6 +13,9 @@ select col_is_unique('public','rfp_requests','rfp_number','human RFP number is u
 select policies_are('public','rfp_requests',array['requests_admin_read','requests_finance_read','requests_department_read'],'request access policies are explicit');
 select policies_are('public','user_roles',array['roles_staff_read','roles_super_admin_write'],'roles cannot be self-granted');
 select results_eq($$select public.next_rfp_number() ~ '^RFP-[0-9]{4,}$'$$,array[true],'RFP format is preserved');
+select results_eq($$select public.next_rfp_number('Cash Advance (CA)') ~ '^CA-[0-9]{4,}$'$$,array[true],'CA format is supported');
+select results_eq($$select public.next_rfp_number('Revolving Fund (RF)') ~ '^RF-[0-9]{4,}$'$$,array[true],'RF format is supported');
+select results_eq($$select public.next_rfp_number('RF Liquidation') ~ '^RF-[0-9]{4,}$'$$,array[true],'RF liquidation uses the RF sequence');
 select is((select delete_rule from information_schema.referential_constraints where constraint_schema='public' and constraint_name='approval_logs_actor_user_id_fkey'),'SET NULL','approval log actors do not block user deletion');
 select is((select delete_rule from information_schema.referential_constraints where constraint_schema='public' and constraint_name='department_approving_heads_created_by_fkey'),'SET NULL','department roster creator history does not block user deletion');
 select is((select delete_rule from information_schema.referential_constraints where constraint_schema='public' and constraint_name='migration_batches_created_by_fkey'),'SET NULL','migration creator history does not block user deletion');
