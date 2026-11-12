@@ -6,6 +6,8 @@ import {
   rfTotals,
   sumRfAmounts,
   type RfLiquidation,
+  rfPrintPages,
+  RF_SUMMARY_COPIES_PER_PAGE,
 } from '../../shared/utils/rf-liquidation.ts';
 import { requestSchema } from './validation.ts';
 import {
@@ -166,4 +168,53 @@ test('editing last completed row does not create another form when a trailing bl
   assert.equal(rows.length, 2);
   rows = updateRfExpenseRow(rows, 1, 'date', '2026-11-07');
   assert.equal(rows.length, 2);
+});
+
+test('GPI RF printout has full 49-row A4 copy plus final summary with bottom-right numbering', () => {
+  const pages = rfPrintPages(base, 'Greenlight Power Inc.');
+  assert.deepEqual(pages.map((page) => page.pageNumber), [1, 2]);
+  assert.equal(pages[0].totalPages, 2);
+  assert.equal(pages[0].kind, 'copy');
+  if (pages[0].kind !== 'copy') throw new Error('Expected printed copy');
+  assert.equal(pages[0].expenseRowSlots, 49);
+  assert.equal(pages[0].copy.expenseTotal, 1250);
+  assert.equal(pages[1].kind, 'summary');
+  if (pages[1].kind !== 'summary') throw new Error('Expected final summary');
+  assert.equal(pages[1].isFinalSummary, true);
+});
+
+test('GEMCOR RF copies retain 35 expense rows per A4 page and consecutive numbering', () => {
+  const form = { ...base, expenses: Array.from({ length: 71 }, (_, i) => expense(i + 1, 1.25)) };
+  const pages = rfPrintPages(form, 'GEMCOR');
+  assert.deepEqual(pages.map((page) => page.pageNumber), [1, 2, 3, 4]);
+  assert.deepEqual(pages.filter((page) => page.kind === 'copy').map((page) => page.expenseRowSlots), [35, 35, 35]);
+  assert.equal(pages.at(-1)?.kind, 'summary');
+  assert.ok(pages.every((page) => page.totalPages === 4));
+  assert.equal(rfTotals(form).expenses, 88.75);
+});
+
+test('long RF liquidation creates multiple paginated summary sheets and totals on the last', () => {
+  const count = (RF_SUMMARY_COPIES_PER_PAGE + 1) * 35;
+  const form = { ...base, expenses: Array.from({ length: count }, (_, i) => expense(i + 1, 0.10)) };
+  const pages = rfPrintPages(form, 'GEMCOR');
+  const copyPages = pages.filter((page) => page.kind === 'copy');
+  const summaries = pages.filter((page) => page.kind === 'summary');
+  assert.equal(copyPages.length, RF_SUMMARY_COPIES_PER_PAGE + 1);
+  assert.equal(summaries.length, 2);
+  assert.equal(summaries[0].kind, 'summary');
+  if (summaries[0].kind !== 'summary' || summaries[1].kind !== 'summary')
+    throw new Error('Summary pages were lost');
+  assert.equal(summaries[0].copies.length, RF_SUMMARY_COPIES_PER_PAGE);
+  assert.equal(summaries[0].isFinalSummary, false);
+  assert.equal(summaries[1].copies.length, 1);
+  assert.equal(summaries[1].isFinalSummary, true);
+  assert.equal(pages.at(-1)?.pageNumber, pages.length);
+  assert.ok(pages.every((page) => page.totalPages === pages.length));
+  assert.equal(
+    summaries.reduce(
+      (total, page) => total + page.copies.reduce((subtotal, copy) => subtotal + copy.expenseTotal, 0),
+      0,
+    ),
+    rfTotals(form).expenses,
+  );
 });
