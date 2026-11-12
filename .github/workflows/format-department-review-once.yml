@@ -1,0 +1,33 @@
+name: One-time Department Review email fix validation and formatting
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/format-department-review-once.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Format and run all code-quality checks
+        run: |
+          npm run format
+          npm run check
+      - name: Commit tested formatting fixes
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -u
+            git commit -m "Format and verify Department Approver email action fixes"
+            git push origin HEAD:main
+          fi
