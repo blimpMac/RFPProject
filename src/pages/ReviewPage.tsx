@@ -41,10 +41,18 @@ export function ReviewPage() {
   const [error, setError] = useState('');
   const [done, setDone] = useState('');
   useEffect(() => {
+    setSelectedAction(
+      preferredAction === 'approve' || preferredAction === 'reject' || preferredAction === 'return'
+        ? preferredAction : null,
+    );
+    setError('');
+    setDone('');
+    let current = true;
     api<Review>(`review/${encodeURIComponent(token)}`)
-      .then(setData)
-      .catch((e) => setError(e.message));
-  }, [token]);
+      .then((review) => { if (current) setData(review); })
+      .catch((e) => { if (current) setError(e instanceof Error ? e.message : 'Review could not be loaded.'); });
+    return () => { current = false; };
+  }, [token, preferredAction]);
   const decide = async () => {
     if (!selectedAction) {
       setError('Select Approve, Reject or Return for Correction first.');
