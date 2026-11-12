@@ -139,8 +139,12 @@ export function ApprovalsPage() {
             .includes(query)) &&
         matchesQueueFocus(request) &&
         (view === 'pending'
-          ? !/paid|liquidation complete|returned to requestor/i.test(request.final_status)
-          : /paid|liquidation complete|returned to requestor/i.test(request.final_status)),
+          ? !/paid|liquidation complete|returned to requestor|department rejected/i.test(
+              request.final_status,
+            )
+          : /paid|liquidation complete|returned to requestor|department rejected/i.test(
+              request.final_status,
+            )),
     );
   }, [
     company,
@@ -181,7 +185,10 @@ export function ApprovalsPage() {
   const statusOptions = [...new Set(rows.map((request) => request.final_status))].sort();
   const queueCounts = useMemo(() => {
     const activeRows = rows.filter(
-      (request) => !/paid|liquidation complete|returned to requestor/i.test(request.final_status),
+      (request) =>
+        !/paid|liquidation complete|returned to requestor|department rejected/i.test(
+          request.final_status,
+        ),
     );
     return {
       member: activeRows.filter((request) =>

@@ -61,3 +61,24 @@ test('review links are correctly normalized without double slash', () => {
   const email = renderEmail('supervisor_review', request, { reviewToken: 'a+b/c' }, url, []);
   assert.match(email.html, /\/review\/a%2Bb%2Fc\?action=approve/);
 });
+
+test('reject and return notifications clearly describe different outcomes', () => {
+  const rejected = renderEmail(
+    'department_rejected',
+    request,
+    { remarks: 'Outside policy' },
+    url,
+    [],
+  );
+  const returned = renderEmail(
+    'department_returned',
+    request,
+    { remarks: 'Correct the invoice number' },
+    url,
+    [],
+  );
+  assert.match(rejected.html, /not approved/i);
+  assert.doesNotMatch(rejected.html, /resubmit it using the same RFP number/i);
+  assert.match(returned.html, /returned for correction/i);
+  assert.match(returned.html, /resubmit it using the same RFP number/i);
+});

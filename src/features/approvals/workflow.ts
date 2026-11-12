@@ -36,7 +36,7 @@ export const processingOverdue = (request: RfpRequest, now: number) => {
   return Boolean(
     dueAt &&
     new Date(dueAt).getTime() < now &&
-    !/paid|returned to requestor|liquidation/i.test(request.final_status),
+    !/paid|returned to requestor|department rejected|liquidation/i.test(request.final_status),
   );
 };
 
@@ -51,7 +51,10 @@ function elapsedDays(value: string | null, now: number) {
 export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
   const status = request.final_status;
   const processingDue = financeWorkflow(request).processing_due_at;
-  if (processingDue && !/paid|returned to requestor|liquidation/i.test(status)) {
+  if (
+    processingDue &&
+    !/paid|returned to requestor|department rejected|liquidation/i.test(status)
+  ) {
     const processingStart =
       financeWorkflow(request).processing_started_at || request.submitted_at || now;
     const schedule = manilaReceiptSchedule(processingStart);
@@ -135,6 +138,13 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
       label: 'Returned for action',
       detail: 'Waiting for correction or re-review',
       tone: 'warning',
+    };
+  }
+  if (status === 'Department Rejected') {
+    return {
+      label: 'Rejected by Department Head',
+      detail: 'This request is closed and cannot be resubmitted',
+      tone: 'danger',
     };
   }
   if (/paid/i.test(status)) {

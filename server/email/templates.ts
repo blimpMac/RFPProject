@@ -5,6 +5,7 @@ export const emailTemplateKeys = [
   'supervisor_review',
   'department_approved',
   'department_rejected',
+  'department_returned',
   'finance_review_required',
   'finance_head_review_required',
   'finance_head_rejected',
@@ -112,6 +113,14 @@ export function renderEmail(
       html: shell(
         `${rfp} not approved`,
         `<p>Your request is not approved. Please provide the requested documentation or clarify the reason.</p>${summary(request)}${remarks}`,
+      ),
+    };
+  if (template === 'department_returned')
+    return {
+      subject: `${request.rfp_number} returned for correction`,
+      html: shell(
+        `${rfp} returned for correction`,
+        `<p>Your Department Head returned this request for correction. Update the request through your private tracking link, then resubmit it using the same RFP number.</p>${summary(request)}${remarks}`,
       ),
     };
   if (template === 'finance_review_required')

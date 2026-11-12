@@ -168,7 +168,12 @@ async function decide(
     },
   );
   assert.equal(result.request.id, requestId);
-  const expected = decision === 'approve' ? 'Pending Finance Review' : 'Returned to Requestor';
+  const expected =
+    decision === 'approve'
+      ? 'Pending Finance Review'
+      : decision === 'reject'
+        ? 'Department Rejected'
+        : 'Returned to Requestor';
   assert.equal(result.request.final_status, expected);
   const tracked = await api<{ request: { final_status: string; rfp_number: string } }>(
     `track/${encodeURIComponent(trackingToken)}`,
