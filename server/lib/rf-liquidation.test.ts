@@ -218,3 +218,10 @@ test('long RF liquidation creates multiple paginated summary sheets and totals o
     rfTotals(form).expenses,
   );
 });
+
+test('RF page numbers continue after the RFP first sheet', () => {
+  const pages = rfPrintPages(base, 'Greenlight Power Inc.', 1);
+  assert.deepEqual(pages.map((page) => page.pageNumber), [2, 3]);
+  assert.ok(pages.every((page) => page.totalPages === 3));
+  assert.equal(pages.at(-1)?.kind, 'summary');
+});
