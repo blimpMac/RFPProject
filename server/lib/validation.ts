@@ -124,7 +124,7 @@ export const completeAttachmentSchema = z.object({
 export const finalizeSchema = z.object({ requestId: z.uuid(), trackingToken: z.string().min(20) });
 export const decisionSchema = z.object({
   token: z.string().min(20),
-  decision: z.enum(['approve', 'reject']),
+  decision: z.enum(['approve', 'reject', 'return']),
   remarks: z.string().trim().max(1500).default(''),
 });
 export const financeSchema = z.object({
