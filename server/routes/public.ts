@@ -481,11 +481,18 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
 
   if (event.httpMethod === 'POST') {
     const input = decisionSchema.parse({ ...(readJson(event) as object), token });
+    if ((input.decision === 'reject' || input.decision === 'return') && !input.remarks.trim())
+      throw new HttpError(400, 'Remarks are required when rejecting or returning a request.');
     await assertCurrentDepartmentReviewToken(db, sha256(input.token));
+    // The existing atomic DB workflow sends both declined and correction-
+    // required requests back to the requestor without changing their RFP no.
+    // Distinguish a correction return in its audit remarks.
     const decision = await db.rpc('consume_department_review', {
       p_token_hash: sha256(input.token),
-      p_decision: input.decision,
-      p_remarks: input.remarks,
+      p_decision: input.decision === 'return' ? 'reject' : input.decision,
+      p_remarks: input.decision === 'return'
+        ? `Return for correction: ${input.remarks.trim()}`
+        : input.remarks.trim(),
     });
     if (decision.error) throw new HttpError(409, decision.error.message);
     await cancelPendingDepartmentReview(db, decision.data.id);
