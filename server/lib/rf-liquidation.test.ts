@@ -172,7 +172,10 @@ test('editing last completed row does not create another form when a trailing bl
 
 test('GPI RF printout has full 49-row A4 copy plus final summary with bottom-right numbering', () => {
   const pages = rfPrintPages(base, 'Greenlight Power Inc.');
-  assert.deepEqual(pages.map((page) => page.pageNumber), [1, 2]);
+  assert.deepEqual(
+    pages.map((page) => page.pageNumber),
+    [1, 2],
+  );
   assert.equal(pages[0].totalPages, 2);
   assert.equal(pages[0].kind, 'copy');
   if (pages[0].kind !== 'copy') throw new Error('Expected printed copy');
@@ -186,8 +189,14 @@ test('GPI RF printout has full 49-row A4 copy plus final summary with bottom-rig
 test('GEMCOR RF copies retain 35 expense rows per A4 page and consecutive numbering', () => {
   const form = { ...base, expenses: Array.from({ length: 71 }, (_, i) => expense(i + 1, 1.25)) };
   const pages = rfPrintPages(form, 'GEMCOR');
-  assert.deepEqual(pages.map((page) => page.pageNumber), [1, 2, 3, 4]);
-  assert.deepEqual(pages.filter((page) => page.kind === 'copy').map((page) => page.expenseRowSlots), [35, 35, 35]);
+  assert.deepEqual(
+    pages.map((page) => page.pageNumber),
+    [1, 2, 3, 4],
+  );
+  assert.deepEqual(
+    pages.filter((page) => page.kind === 'copy').map((page) => page.expenseRowSlots),
+    [35, 35, 35],
+  );
   assert.equal(pages.at(-1)?.kind, 'summary');
   assert.ok(pages.every((page) => page.totalPages === 4));
   assert.equal(rfTotals(form).expenses, 88.75);
@@ -195,7 +204,7 @@ test('GEMCOR RF copies retain 35 expense rows per A4 page and consecutive number
 
 test('long RF liquidation creates multiple paginated summary sheets and totals on the last', () => {
   const count = (RF_SUMMARY_COPIES_PER_PAGE + 1) * 35;
-  const form = { ...base, expenses: Array.from({ length: count }, (_, i) => expense(i + 1, 0.10)) };
+  const form = { ...base, expenses: Array.from({ length: count }, (_, i) => expense(i + 1, 0.1)) };
   const pages = rfPrintPages(form, 'GEMCOR');
   const copyPages = pages.filter((page) => page.kind === 'copy');
   const summaries = pages.filter((page) => page.kind === 'summary');
@@ -212,7 +221,8 @@ test('long RF liquidation creates multiple paginated summary sheets and totals o
   assert.ok(pages.every((page) => page.totalPages === pages.length));
   assert.equal(
     summaries.reduce(
-      (total, page) => total + page.copies.reduce((subtotal, copy) => subtotal + copy.expenseTotal, 0),
+      (total, page) =>
+        total + page.copies.reduce((subtotal, copy) => subtotal + copy.expenseTotal, 0),
       0,
     ),
     rfTotals(form).expenses,
@@ -221,7 +231,10 @@ test('long RF liquidation creates multiple paginated summary sheets and totals o
 
 test('RF page numbers continue after the RFP first sheet', () => {
   const pages = rfPrintPages(base, 'Greenlight Power Inc.', 1);
-  assert.deepEqual(pages.map((page) => page.pageNumber), [2, 3]);
+  assert.deepEqual(
+    pages.map((page) => page.pageNumber),
+    [2, 3],
+  );
   assert.ok(pages.every((page) => page.totalPages === 3));
   assert.equal(pages.at(-1)?.kind, 'summary');
 });

@@ -1,13 +1,26 @@
 import { companyBrand } from '../../shared/contracts/digital-rfp';
-import { RF_UNLIQUIDATED_ROWS_PER_COPY, rfTotals, sumRfAmounts, type RfLiquidation } from '../../shared/utils/rf-liquidation';
-import { RF_SUMMARY_COPIES_PER_PAGE, rfPrintPages, type RfPrintPage } from '../../shared/utils/rf-liquidation';
+import {
+  RF_UNLIQUIDATED_ROWS_PER_COPY,
+  rfTotals,
+  sumRfAmounts,
+  type RfLiquidation,
+} from '../../shared/utils/rf-liquidation';
+import {
+  RF_SUMMARY_COPIES_PER_PAGE,
+  rfPrintPages,
+  type RfPrintPage,
+} from '../../shared/utils/rf-liquidation';
 import { manilaDate, php } from '../lib/format';
 
 type CopyPage = Extract<RfPrintPage, { kind: 'copy' }>;
 type SummaryPage = Extract<RfPrintPage, { kind: 'summary' }>;
 type Brand = ReturnType<typeof companyBrand>;
 
-function PageHeader({ brand, reference, summary = false }: {
+function PageHeader({
+  brand,
+  reference,
+  summary = false,
+}: {
   brand: Brand;
   reference: string;
   summary?: boolean;
@@ -20,7 +33,9 @@ function PageHeader({ brand, reference, summary = false }: {
       </div>
       <div className="rf-form-heading-center">
         <h2>REVOLVING FUND LIQUIDATION</h2>
-        <span>{summary ? 'CONSOLIDATED SUMMARY OF EXPENSES' : 'FOR REPLENISHMENT / CLOSE-OUT'}</span>
+        <span>
+          {summary ? 'CONSOLIDATED SUMMARY OF EXPENSES' : 'FOR REPLENISHMENT / CLOSE-OUT'}
+        </span>
       </div>
       <div className="rf-form-reference">
         <span>REFERENCE NO.</span>
@@ -30,7 +45,11 @@ function PageHeader({ brand, reference, summary = false }: {
   );
 }
 
-function PageFooter({ pageNumber, totalPages, reference }: {
+function PageFooter({
+  pageNumber,
+  totalPages,
+  reference,
+}: {
   pageNumber: number;
   totalPages: number;
   reference: string;
@@ -38,7 +57,9 @@ function PageFooter({ pageNumber, totalPages, reference }: {
   return (
     <footer className="rf-form-page-footer">
       <span>RF Liquidation · {reference}</span>
-      <strong>Page {pageNumber} of {totalPages}</strong>
+      <strong>
+        Page {pageNumber} of {totalPages}
+      </strong>
     </footer>
   );
 }
@@ -46,14 +67,30 @@ function PageFooter({ pageNumber, totalPages, reference }: {
 function Signatures({ custodian }: { custodian: string }) {
   return (
     <div className="rf-form-signatures">
-      <div><strong>{custodian}</strong><span>Prepared by / Fund Custodian</span></div>
-      <div><strong>&nbsp;</strong><span>Checked by / Department Head</span></div>
-      <div><strong>&nbsp;</strong><span>Approved by / Finance</span></div>
+      <div>
+        <strong>{custodian}</strong>
+        <span>Prepared by / Fund Custodian</span>
+      </div>
+      <div>
+        <strong>&nbsp;</strong>
+        <span>Checked by / Department Head</span>
+      </div>
+      <div>
+        <strong>&nbsp;</strong>
+        <span>Approved by / Finance</span>
+      </div>
     </div>
   );
 }
 
-function CopySheet({ page, form, company, brand, department, reference }: {
+function CopySheet({
+  page,
+  form,
+  company,
+  brand,
+  department,
+  reference,
+}: {
   page: CopyPage;
   form: RfLiquidation;
   company: string;
@@ -75,10 +112,22 @@ function CopySheet({ page, form, company, brand, department, reference }: {
         <span>{expenseRowSlots} expense rows per copy</span>
       </div>
       <dl className="rf-form-metadata">
-        <div><dt>NAME / CUSTODIAN</dt><dd>{form.custodianName}</dd></div>
-        <div><dt>PERIOD COVERED</dt><dd>{form.periodCovered}</dd></div>
-        <div><dt>DEPARTMENT</dt><dd>{department}</dd></div>
-        <div><dt>PROJECT / SOF</dt><dd>{form.projectSof}</dd></div>
+        <div>
+          <dt>NAME / CUSTODIAN</dt>
+          <dd>{form.custodianName}</dd>
+        </div>
+        <div>
+          <dt>PERIOD COVERED</dt>
+          <dd>{form.periodCovered}</dd>
+        </div>
+        <div>
+          <dt>DEPARTMENT</dt>
+          <dd>{department}</dd>
+        </div>
+        <div>
+          <dt>PROJECT / SOF</dt>
+          <dd>{form.projectSof}</dd>
+        </div>
       </dl>
 
       <table className="rf-form-table rf-form-expenses">
@@ -116,14 +165,24 @@ function CopySheet({ page, form, company, brand, department, reference }: {
           })}
         </tbody>
         <tfoot>
-          <tr><th scope="row" colSpan={5}>TOTAL EXPENSES — COPY {copy.number}</th><td>{php.format(copy.expenseTotal)}</td></tr>
+          <tr>
+            <th scope="row" colSpan={5}>
+              TOTAL EXPENSES — COPY {copy.number}
+            </th>
+            <td>{php.format(copy.expenseTotal)}</td>
+          </tr>
         </tfoot>
       </table>
 
       <div className="rf-form-subsection">UNLIQUIDATED CASH ADVANCE FROM RF</div>
       <table className="rf-form-table rf-form-advances">
         <thead>
-          <tr><th scope="col">DATE</th><th scope="col">NAME</th><th scope="col">PURPOSE</th><th scope="col">AMOUNT (PHP)</th></tr>
+          <tr>
+            <th scope="col">DATE</th>
+            <th scope="col">NAME</th>
+            <th scope="col">PURPOSE</th>
+            <th scope="col">AMOUNT (PHP)</th>
+          </tr>
         </thead>
         <tbody>
           {Array.from({ length: RF_UNLIQUIDATED_ROWS_PER_COPY }, (_, i) => {
@@ -138,14 +197,33 @@ function CopySheet({ page, form, company, brand, department, reference }: {
             );
           })}
         </tbody>
-        <tfoot><tr><th scope="row" colSpan={3}>TOTAL UNLIQUIDATED CA — COPY {copy.number}</th><td>{php.format(copy.advanceTotal)}</td></tr></tfoot>
+        <tfoot>
+          <tr>
+            <th scope="row" colSpan={3}>
+              TOTAL UNLIQUIDATED CA — COPY {copy.number}
+            </th>
+            <td>{php.format(copy.advanceTotal)}</td>
+          </tr>
+        </tfoot>
       </table>
 
       <dl className="rf-form-tally">
-        <div><dt>REVOLVING FUND AMOUNT</dt><dd>{php.format(totals.revolvingFundAmount)}</dd></div>
-        <div><dt>FOR REPLENISHMENT · ALL COPIES</dt><dd>{php.format(totals.expenses)}</dd></div>
-        <div><dt>PREVIOUS REPLENISHMENT (NOT RECEIVED)</dt><dd>{php.format(totals.previousReplenishment)}</dd></div>
-        <div><dt>UNLIQUIDATED CA · ALL COPIES</dt><dd>{php.format(totals.unliquidatedAdvances)}</dd></div>
+        <div>
+          <dt>REVOLVING FUND AMOUNT</dt>
+          <dd>{php.format(totals.revolvingFundAmount)}</dd>
+        </div>
+        <div>
+          <dt>FOR REPLENISHMENT · ALL COPIES</dt>
+          <dd>{php.format(totals.expenses)}</dd>
+        </div>
+        <div>
+          <dt>PREVIOUS REPLENISHMENT (NOT RECEIVED)</dt>
+          <dd>{php.format(totals.previousReplenishment)}</dd>
+        </div>
+        <div>
+          <dt>UNLIQUIDATED CA · ALL COPIES</dt>
+          <dd>{php.format(totals.unliquidatedAdvances)}</dd>
+        </div>
         <div className="rf-form-cash-on-hand">
           <dt>ACTUAL CASH ON HAND AS OF {manilaDate(form.cashOnHandAsOf)}</dt>
           <dd>{php.format(totals.cashOnHand)}</dd>
@@ -158,7 +236,13 @@ function CopySheet({ page, form, company, brand, department, reference }: {
   );
 }
 
-function SummarySheet({ page, form, brand, department, reference }: {
+function SummarySheet({
+  page,
+  form,
+  brand,
+  department,
+  reference,
+}: {
   page: SummaryPage;
   form: RfLiquidation;
   brand: Brand;
@@ -169,21 +253,45 @@ function SummarySheet({ page, form, brand, department, reference }: {
   const subtotal = sumRfAmounts(page.copies.map((copy) => ({ amount: copy.expenseTotal })));
   const advanceSubtotal = sumRfAmounts(page.copies.map((copy) => ({ amount: copy.advanceTotal })));
   return (
-    <section className="rf-form-page rf-form-summary-page"
-      aria-label={`RF liquidation reconciliation page ${page.pageNumber} of ${page.totalPages}`}>
+    <section
+      className="rf-form-page rf-form-summary-page"
+      aria-label={`RF liquidation reconciliation page ${page.pageNumber} of ${page.totalPages}`}
+    >
       <PageHeader brand={brand} reference={reference} summary />
       <div className="rf-form-document-line">
-        <span>RECONCILIATION · {page.summaryPageNumber} OF {page.summaryPageCount}</span>
-        <span>{page.isFinalSummary ? 'FINAL CONSOLIDATED TOTALS' : 'CONTINUED ON NEXT SUMMARY PAGE'}</span>
+        <span>
+          RECONCILIATION · {page.summaryPageNumber} OF {page.summaryPageCount}
+        </span>
+        <span>
+          {page.isFinalSummary ? 'FINAL CONSOLIDATED TOTALS' : 'CONTINUED ON NEXT SUMMARY PAGE'}
+        </span>
       </div>
       <dl className="rf-form-metadata">
-        <div><dt>NAME / CUSTODIAN</dt><dd>{form.custodianName}</dd></div>
-        <div><dt>PERIOD COVERED</dt><dd>{form.periodCovered}</dd></div>
-        <div><dt>DEPARTMENT</dt><dd>{department}</dd></div>
-        <div><dt>PROJECT / SOF</dt><dd>{form.projectSof}</dd></div>
+        <div>
+          <dt>NAME / CUSTODIAN</dt>
+          <dd>{form.custodianName}</dd>
+        </div>
+        <div>
+          <dt>PERIOD COVERED</dt>
+          <dd>{form.periodCovered}</dd>
+        </div>
+        <div>
+          <dt>DEPARTMENT</dt>
+          <dd>{department}</dd>
+        </div>
+        <div>
+          <dt>PROJECT / SOF</dt>
+          <dd>{form.projectSof}</dd>
+        </div>
       </dl>
       <table className="rf-form-table rf-form-summary-table">
-        <thead><tr><th scope="col">RF FORM COPY</th><th scope="col">EXPENSES (PHP)</th><th scope="col">UNLIQUIDATED CA (PHP)</th></tr></thead>
+        <thead>
+          <tr>
+            <th scope="col">RF FORM COPY</th>
+            <th scope="col">EXPENSES (PHP)</th>
+            <th scope="col">UNLIQUIDATED CA (PHP)</th>
+          </tr>
+        </thead>
         <tbody>
           {Array.from({ length: RF_SUMMARY_COPIES_PER_PAGE }, (_, i) => {
             const copy = page.copies[i];
@@ -197,15 +305,31 @@ function SummarySheet({ page, form, brand, department, reference }: {
           })}
         </tbody>
         <tfoot>
-          <tr><th scope="row">SUBTOTAL — THIS SUMMARY PAGE</th><td>{php.format(subtotal)}</td><td>{php.format(advanceSubtotal)}</td></tr>
+          <tr>
+            <th scope="row">SUBTOTAL — THIS SUMMARY PAGE</th>
+            <td>{php.format(subtotal)}</td>
+            <td>{php.format(advanceSubtotal)}</td>
+          </tr>
         </tfoot>
       </table>
       {page.isFinalSummary ? (
         <dl className="rf-form-grand-totals">
-          <div><dt>REVOLVING FUND AMOUNT</dt><dd>{php.format(totals.revolvingFundAmount)}</dd></div>
-          <div><dt>COMBINED EXPENSES · FOR REPLENISHMENT</dt><dd>{php.format(totals.expenses)}</dd></div>
-          <div><dt>ALL UNLIQUIDATED CASH ADVANCES</dt><dd>{php.format(totals.unliquidatedAdvances)}</dd></div>
-          <div><dt>PREVIOUS REPLENISHMENT (NOT RECEIVED) · FOR REFERENCE</dt><dd>{php.format(totals.previousReplenishment)}</dd></div>
+          <div>
+            <dt>REVOLVING FUND AMOUNT</dt>
+            <dd>{php.format(totals.revolvingFundAmount)}</dd>
+          </div>
+          <div>
+            <dt>COMBINED EXPENSES · FOR REPLENISHMENT</dt>
+            <dd>{php.format(totals.expenses)}</dd>
+          </div>
+          <div>
+            <dt>ALL UNLIQUIDATED CASH ADVANCES</dt>
+            <dd>{php.format(totals.unliquidatedAdvances)}</dd>
+          </div>
+          <div>
+            <dt>PREVIOUS REPLENISHMENT (NOT RECEIVED) · FOR REFERENCE</dt>
+            <dd>{php.format(totals.previousReplenishment)}</dd>
+          </div>
           <div className="rf-form-grand-cash">
             <dt>ACTUAL CASH ON HAND AS OF {manilaDate(form.cashOnHandAsOf)}</dt>
             <dd>{php.format(totals.cashOnHand)}</dd>
@@ -216,7 +340,10 @@ function SummarySheet({ page, form, brand, department, reference }: {
           </div>
         </dl>
       ) : (
-        <p className="rf-form-continued">Remaining RF form copies are itemized on the next reconciliation page. The consolidated totals appear only on the final page.</p>
+        <p className="rf-form-continued">
+          Remaining RF form copies are itemized on the next reconciliation page. The consolidated
+          totals appear only on the final page.
+        </p>
       )}
       <Signatures custodian={form.custodianName} />
       <PageFooter pageNumber={page.pageNumber} totalPages={page.totalPages} reference={reference} />
@@ -224,7 +351,12 @@ function SummarySheet({ page, form, brand, department, reference }: {
   );
 }
 
-export function RfLiquidationPrint({ form, company, department, reference }: {
+export function RfLiquidationPrint({
+  form,
+  company,
+  department,
+  reference,
+}: {
   form: RfLiquidation;
   company: string;
   department: string;
