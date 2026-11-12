@@ -17,7 +17,7 @@ type Diagnostics = {
   status: string;
   notifications: EmailJob[];
 };
-type RetryResult = { reference: string; sent: number; retrying: number; failed: number };
+type RetryResult = { reference: string; sent: number; retrying: number; failed: number; regeneratedReview?: boolean };
 
 export function EmailQueueDiagnostics() {
   const [reference, setReference] = useState('');
@@ -41,15 +41,18 @@ export function EmailQueueDiagnostics() {
       setLoading(false);
     }
   }
-  async function retry() {
+  async function retry(regenerateDepartmentReview = false) {
     if (!results) return;
     setLoading(true);
     setError('');
     setNotice('');
     try {
-      const result = await post<RetryResult>('email-queue', { rfpNumber: results.reference });
+      const result = await post<RetryResult>('email-queue', {
+        rfpNumber: results.reference,
+        regenerateDepartmentReview,
+      });
       setNotice(
-        `Delivery attempts finished: ${result.sent} accepted, ${result.retrying} queued for retry, ${result.failed} failed. Check recipient inbox/spam after provider acceptance.`,
+        `${result.regeneratedReview ? 'A fresh secure Department Head invitation was issued. ' : ''}Delivery attempts finished: ${result.sent} accepted, ${result.retrying} queued for retry, ${result.failed} failed. Check recipient inbox/spam after provider acceptance.`,
       );
       setResults(
         await get<Diagnostics>(`email-queue?rfpNumber=${encodeURIComponent(results.reference)}`),
@@ -87,6 +90,11 @@ export function EmailQueueDiagnostics() {
           {results && (
             <Button variant="secondary" onClick={() => void retry()} disabled={loading}>
               <Send size={16} /> Retry pending
+            </Button>
+          )}
+          {results?.status === 'Pending Department Approval' && (
+            <Button variant="secondary" onClick={() => void retry(true)} disabled={loading}>
+              <MailCheck size={16} /> Regenerate Department Head link
             </Button>
           )}
         </div>
