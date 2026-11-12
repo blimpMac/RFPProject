@@ -100,7 +100,6 @@ function CopySheet({
 }) {
   const { copy, expenseRowSlots } = page;
   const isGemcor = /gemcor|greenmetal/i.test(company);
-  const totals = rfTotals(form);
   return (
     <section
       className={`rf-form-page rf-form-${isGemcor ? 'gemcor' : 'gpi'}`}
@@ -206,29 +205,6 @@ function CopySheet({
           </tr>
         </tfoot>
       </table>
-
-      <dl className="rf-form-tally">
-        <div>
-          <dt>REVOLVING FUND AMOUNT</dt>
-          <dd>{php.format(totals.revolvingFundAmount)}</dd>
-        </div>
-        <div>
-          <dt>FOR REPLENISHMENT · ALL COPIES</dt>
-          <dd>{php.format(totals.expenses)}</dd>
-        </div>
-        <div>
-          <dt>PREVIOUS REPLENISHMENT (NOT RECEIVED)</dt>
-          <dd>{php.format(totals.previousReplenishment)}</dd>
-        </div>
-        <div>
-          <dt>UNLIQUIDATED CA · ALL COPIES</dt>
-          <dd>{php.format(totals.unliquidatedAdvances)}</dd>
-        </div>
-        <div className="rf-form-cash-on-hand">
-          <dt>ACTUAL CASH ON HAND AS OF {manilaDate(form.cashOnHandAsOf)}</dt>
-          <dd>{php.format(totals.cashOnHand)}</dd>
-        </div>
-      </dl>
 
       <Signatures custodian={form.custodianName} />
       <PageFooter pageNumber={page.pageNumber} totalPages={page.totalPages} reference={reference} />
