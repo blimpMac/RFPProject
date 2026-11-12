@@ -58,6 +58,32 @@
   text-align: center;
 }
 
+.rf-workbook-reference {
+  position: absolute;
+  right: 0;
+  min-width: 27mm;
+  padding: 1.2mm 1.8mm;
+  border: 0.25mm solid #000;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.rf-workbook-reference span,
+.rf-workbook-reference strong {
+  display: block;
+}
+
+.rf-workbook-reference span {
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.rf-workbook-reference strong {
+  margin-top: 0.5mm;
+  font-size: 10px;
+}
+
 .rf-workbook-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;

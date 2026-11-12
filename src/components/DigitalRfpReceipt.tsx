@@ -153,6 +153,7 @@ export function DigitalRfpReceipt({
           form={rfLiquidation}
           company={request.company || ''}
           department={request.department}
+          reference={request.rfp_number}
         />
       </article>
     );

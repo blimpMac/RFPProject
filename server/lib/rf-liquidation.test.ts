@@ -158,6 +158,8 @@ test('print source contains workbook labels and no invented packet sections', ()
     'Prepared by Custodian:',
     'Checked by Head of Department',
     'Approved by Finance',
+    'RF No.',
+    'reference',
   ])
     assert.match(source, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   for (const invented of ['REFERENCE NO.', 'RF FORM COPY', 'CONSOLIDATED SUMMARY', 'Page {']) {

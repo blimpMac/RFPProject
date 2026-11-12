@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { companyBrand, normalizeFinanceReceipt } from '../../shared/contracts/digital-rfp.ts';
 
@@ -48,4 +49,14 @@ test('reuses legacy operations and workflow fields while preferring receipt meta
 test('maps the supported company names to the correct logos', () => {
   assert.equal(companyBrand('Greenlight Power Inc.').logo, '/brands/greenlight-power.png');
   assert.equal(companyBrand('Greenmetal Electric Manufacturing Corp.').logo, '/brands/gemcor.png');
+});
+
+test('prints CA and RF references in the upper-right number block', () => {
+  const receipt = readFileSync('src/components/DigitalRfpReceipt.tsx', 'utf8');
+  const rfForm = readFileSync('src/components/RfLiquidationPrint.tsx', 'utf8');
+  assert.match(receipt, /reference\.startsWith\('CA-'\).*'CA No\.'/);
+  assert.match(receipt, /reference\.startsWith\('RF-'\).*'RF No\.'/);
+  assert.match(receipt, /reference=\{request\.rfp_number\}/);
+  assert.match(rfForm, /className="rf-workbook-reference"/);
+  assert.match(rfForm, /<strong>\{reference\}<\/strong>/);
 });

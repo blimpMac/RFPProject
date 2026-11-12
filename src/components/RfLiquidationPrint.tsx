@@ -18,10 +18,12 @@ export function RfLiquidationPrint({
   form,
   company,
   department,
+  reference,
 }: {
   form: RfLiquidation;
   company: string;
   department: string;
+  reference: string;
 }) {
   const brand = companyBrand(company);
   const totals = rfTotals(form);
@@ -36,6 +38,10 @@ export function RfLiquidationPrint({
       <header className="rf-workbook-header">
         <img src={brand.logo} alt={`${brand.name} logo`} />
         <h1>Revolving Fund Liquidation for Replenishment/Close-out</h1>
+        <div className="rf-workbook-reference" aria-label={`Request number ${reference}`}>
+          <span>{reference.startsWith('CA-') ? 'CA No.' : 'RF No.'}</span>
+          <strong>{reference}</strong>
+        </div>
       </header>
 
       <dl className="rf-workbook-fields">
