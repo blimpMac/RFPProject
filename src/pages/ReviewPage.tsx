@@ -33,7 +33,8 @@ export function ReviewPage() {
   const preferredAction = searchParams.get('action');
   const [selectedAction, setSelectedAction] = useState<'approve' | 'reject' | 'return' | null>(
     preferredAction === 'approve' || preferredAction === 'reject' || preferredAction === 'return'
-      ? preferredAction : null,
+      ? preferredAction
+      : null,
   );
   const [data, setData] = useState<Review>();
   const [remarks, setRemarks] = useState('');
@@ -43,15 +44,22 @@ export function ReviewPage() {
   useEffect(() => {
     setSelectedAction(
       preferredAction === 'approve' || preferredAction === 'reject' || preferredAction === 'return'
-        ? preferredAction : null,
+        ? preferredAction
+        : null,
     );
     setError('');
     setDone('');
     let current = true;
     api<Review>(`review/${encodeURIComponent(token)}`)
-      .then((review) => { if (current) setData(review); })
-      .catch((e) => { if (current) setError(e instanceof Error ? e.message : 'Review could not be loaded.'); });
-    return () => { current = false; };
+      .then((review) => {
+        if (current) setData(review);
+      })
+      .catch((e) => {
+        if (current) setError(e instanceof Error ? e.message : 'Review could not be loaded.');
+      });
+    return () => {
+      current = false;
+    };
   }, [token, preferredAction]);
   const decide = async () => {
     if (!selectedAction) {
@@ -107,10 +115,13 @@ export function ReviewPage() {
           <h1 className="text-xl font-semibold">Review link unavailable</h1>
           <p className="mt-2 text-slate-500">{error}</p>
           <p className="mt-4 text-sm text-slate-600">
-            The link may be expired, already used, or no longer assigned to the current Department Approver.
-            Sign in to your workspace to check the request, or ask an administrator to issue a new invitation.
+            The link may be expired, already used, or no longer assigned to the current Department
+            Approver. Sign in to your workspace to check the request, or ask an administrator to
+            issue a new invitation.
           </p>
-          <Link to="/admin/login" className="btn btn-primary mt-5">Open Department Head sign in</Link>
+          <Link to="/admin/login" className="btn btn-primary mt-5">
+            Open Department Head sign in
+          </Link>
         </div>
       </div>
     );
@@ -150,24 +161,35 @@ export function ReviewPage() {
         <div className="mt-5 border-t bg-slate-50 p-6">
           <h2 className="text-base font-semibold text-slate-900">Department Head decision</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Choose an action, review the details, then confirm. Email links never submit decisions automatically.
+            Choose an action, review the details, then confirm. Email links never submit decisions
+            automatically.
           </p>
-          <div role="group" aria-label="Choose Department Head decision"
-            className="mt-4 grid gap-2 sm:grid-cols-3">
-            {([
-              { value: 'approve', label: 'Approve', note: 'Forward to Finance' },
-              { value: 'reject', label: 'Reject', note: 'Decline the request' },
-              { value: 'return', label: 'Return for Correction', note: 'Request changes' },
-            ] as const).map((item) => (
+          <div
+            role="group"
+            aria-label="Choose Department Head decision"
+            className="mt-4 grid gap-2 sm:grid-cols-3"
+          >
+            {(
+              [
+                { value: 'approve', label: 'Approve', note: 'Forward to Finance' },
+                { value: 'reject', label: 'Reject', note: 'Decline the request' },
+                { value: 'return', label: 'Return for Correction', note: 'Request changes' },
+              ] as const
+            ).map((item) => (
               <button
                 type="button"
                 key={item.value}
                 aria-pressed={selectedAction === item.value}
                 disabled={busy}
-                onClick={() => { setSelectedAction(item.value); setError(''); }}
-                className={`min-h-20 rounded-lg border p-3 text-left transition focus-visible:outline-offset-2 ${selectedAction === item.value
-                  ? 'border-[#315c93] bg-[#edf4fb] ring-2 ring-[#315c93]/25'
-                  : 'border-slate-300 bg-white hover:border-[#315c93]'}`}
+                onClick={() => {
+                  setSelectedAction(item.value);
+                  setError('');
+                }}
+                className={`min-h-20 rounded-lg border p-3 text-left transition focus-visible:outline-offset-2 ${
+                  selectedAction === item.value
+                    ? 'border-[#315c93] bg-[#edf4fb] ring-2 ring-[#315c93]/25'
+                    : 'border-slate-300 bg-white hover:border-[#315c93]'
+                }`}
               >
                 <span className="block text-sm font-semibold text-slate-900">{item.label}</span>
                 <span className="mt-1 block text-xs text-slate-600">{item.note}</span>
@@ -175,7 +197,8 @@ export function ReviewPage() {
             ))}
           </div>
           <label className="mt-4 block text-sm font-semibold" htmlFor="review-remarks">
-            Remarks <span className="font-normal text-slate-500">
+            Remarks{' '}
+            <span className="font-normal text-slate-500">
               ({selectedAction === 'approve' ? 'optional' : 'required for Reject / Return'})
             </span>
           </label>
@@ -187,13 +210,23 @@ export function ReviewPage() {
             maxLength={1500}
             placeholder="Explain the decision or required corrections"
           />
-          {error && <p className="mt-2 error" role="alert">{error}</p>}
+          {error && (
+            <p className="mt-2 error" role="alert">
+              {error}
+            </p>
+          )}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <span className="text-xs text-slate-600">
-              {selectedAction ? `Selected: ${selectedAction === 'return' ? 'Return for Correction' : selectedAction === 'approve' ? 'Approve' : 'Reject'}` : 'Select an action above'}
+              {selectedAction
+                ? `Selected: ${selectedAction === 'return' ? 'Return for Correction' : selectedAction === 'approve' ? 'Approve' : 'Reject'}`
+                : 'Select an action above'}
             </span>
-            <Button disabled={busy || !selectedAction || (selectedAction !== 'approve' && !remarks.trim())}
-              onClick={() => void decide()}>
+            <Button
+              disabled={
+                busy || !selectedAction || (selectedAction !== 'approve' && !remarks.trim())
+              }
+              onClick={() => void decide()}
+            >
               {busy ? <Spinner label="Saving decision" /> : 'Confirm decision'}
             </Button>
           </div>

@@ -82,31 +82,46 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
       });
     }
     if (event.httpMethod === 'POST') {
-      const input = z.object({
-        rfpNumber: z.string(),
-        regenerateDepartmentReview: z.boolean().optional(),
-      }).parse(readJson(event));
+      const input = z
+        .object({
+          rfpNumber: z.string(),
+          regenerateDepartmentReview: z.boolean().optional(),
+        })
+        .parse(readJson(event));
       let regeneratedReview = false;
       if (request.data.final_status === 'Pending Department Approval') {
-        const active = await db.from('approval_tokens').select('id')
+        const active = await db
+          .from('approval_tokens')
+          .select('id')
           .eq('request_id', request.data.id)
-          .is('used_at', null).is('revoked_at', null)
+          .is('used_at', null)
+          .is('revoked_at', null)
           .gt('expires_at', new Date().toISOString())
-          .limit(1).maybeSingle();
+          .limit(1)
+          .maybeSingle();
         if (active.error) throw active.error;
         // An administrator can explicitly reissue an invitation. A normal retry
         // also repairs a missing/expired token instead of resending a dead link.
         if (input.regenerateDepartmentReview || !active.data) {
           const refreshed = await refreshPendingDepartmentReviews(
-            db, [request.data.normalized_department], config.REVIEW_TOKEN_HOURS, [request.data.id],
+            db,
+            [request.data.normalized_department],
+            config.REVIEW_TOKEN_HOURS,
+            [request.data.id],
           );
           if (!refreshed.includes(request.data.id)) {
-            throw new HttpError(409, 'Could not regenerate the current Department Head review link.');
+            throw new HttpError(
+              409,
+              'Could not regenerate the current Department Head review link.',
+            );
           }
           regeneratedReview = true;
         }
       } else if (input.regenerateDepartmentReview) {
-        throw new HttpError(409, 'Only requests awaiting Department Head approval can get a new review link.');
+        throw new HttpError(
+          409,
+          'Only requests awaiting Department Head approval can get a new review link.',
+        );
       }
       if (request.data.final_status !== 'Pending Department Approval') {
         // An obsolete supervisor-review URL must never be reissued after its decision.

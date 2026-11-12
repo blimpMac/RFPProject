@@ -490,9 +490,10 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     const decision = await db.rpc('consume_department_review', {
       p_token_hash: sha256(input.token),
       p_decision: input.decision === 'return' ? 'reject' : input.decision,
-      p_remarks: input.decision === 'return'
-        ? `Return for correction: ${input.remarks.trim()}`
-        : input.remarks.trim(),
+      p_remarks:
+        input.decision === 'return'
+          ? `Return for correction: ${input.remarks.trim()}`
+          : input.remarks.trim(),
     });
     if (decision.error) throw new HttpError(409, decision.error.message);
     await cancelPendingDepartmentReview(db, decision.data.id);

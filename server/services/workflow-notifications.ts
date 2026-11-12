@@ -138,13 +138,24 @@ export async function refreshPendingDepartmentReviews(
       : { data: null, error: null };
     if (profile.error) throw profile.error;
     if (requestIds?.length && !profile.data?.email) {
-      throw new HttpError(409, 'Assign an active Department Head before regenerating the review link.');
+      throw new HttpError(
+        409,
+        'Assign an active Department Head before regenerating the review link.',
+      );
     }
     if (requestIds?.length && profile.data?.id) {
-      const role = await db.from('user_roles').select('role')
-        .eq('user_id', profile.data.id).eq('role', 'department_approver').maybeSingle();
+      const role = await db
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', profile.data.id)
+        .eq('role', 'department_approver')
+        .maybeSingle();
       if (role.error) throw role.error;
-      if (!role.data) throw new HttpError(409, 'The assigned Department Head needs the Department Approver role.');
+      if (!role.data)
+        throw new HttpError(
+          409,
+          'The assigned Department Head needs the Department Approver role.',
+        );
     }
     let pendingQuery = db
       .from('rfp_requests')

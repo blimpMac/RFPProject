@@ -76,10 +76,12 @@ export function renderEmail(
     const reviewToken = typeof payload.reviewToken === 'string' ? payload.reviewToken.trim() : '';
     // Each email action opens the review page with that choice selected.
     // Never execute an approval over GET: the approver confirms via POST.
-    const reviewPath = !previewOnly && reviewToken ? `/review/${encodeURIComponent(reviewToken)}` : '';
-    const reviewUrl = reviewPath ? new URL(reviewPath, `${siteUrl.replace(/\/$/, '')}/`).toString() : '';
-    const actionUrl = (action: 'approve' | 'reject' | 'return') =>
-      `${reviewUrl}?action=${action}`;
+    const reviewPath =
+      !previewOnly && reviewToken ? `/review/${encodeURIComponent(reviewToken)}` : '';
+    const reviewUrl = reviewPath
+      ? new URL(reviewPath, `${siteUrl.replace(/\/$/, '')}/`).toString()
+      : '';
+    const actionUrl = (action: 'approve' | 'reject' | 'return') => `${reviewUrl}?action=${action}`;
     const documents = attachmentLinks.length
       ? `<h2 style="font-size:16px;margin-top:24px;color:#102a43">Supporting documents</h2>${attachmentLinks.map((attachment) => `<div style="margin:14px 0 24px">${attachment.cid ? `<img src="cid:${attachment.cid}" alt="${escape(attachment.name)}" style="width:100%;max-width:540px;max-height:720px;object-fit:contain;display:block;margin:8px auto;border:1px solid #dfe4ea;border-radius:8px">` : ''}<div style="margin-top:8px;font-size:13px;text-align:center">${attachment.url ? `<a href="${escape(attachment.url)}" style="color:#315c93">${escape(attachment.name)}</a>` : escape(attachment.name)}</div></div>`).join('')}`
       : '';

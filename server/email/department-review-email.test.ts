@@ -27,9 +27,12 @@ test('real department approval messages display three secure action links, not o
     [],
   );
   for (const action of ['approve', 'reject', 'return']) {
-    assert.ok(email.html.includes(
-      `https://greenlight-rfp.vercel.app/review/secure-department-token?action=${action}`,
-    ), `Missing review button ${action}`);
+    assert.ok(
+      email.html.includes(
+        `https://greenlight-rfp.vercel.app/review/secure-department-token?action=${action}`,
+      ),
+      `Missing review button ${action}`,
+    );
   }
   assert.match(email.html, />Approve<\/a>/);
   assert.match(email.html, />Reject<\/a>/);

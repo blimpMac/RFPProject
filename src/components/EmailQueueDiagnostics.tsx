@@ -17,7 +17,13 @@ type Diagnostics = {
   status: string;
   notifications: EmailJob[];
 };
-type RetryResult = { reference: string; sent: number; retrying: number; failed: number; regeneratedReview?: boolean };
+type RetryResult = {
+  reference: string;
+  sent: number;
+  retrying: number;
+  failed: number;
+  regeneratedReview?: boolean;
+};
 
 export function EmailQueueDiagnostics() {
   const [reference, setReference] = useState('');
