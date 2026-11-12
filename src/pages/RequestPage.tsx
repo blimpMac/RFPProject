@@ -142,7 +142,7 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
       return;
     }
     if (isRfLiquidation) {
-      const rfError = validateRfDraft(rfDraft);
+      const rfError = validateRfDraft(rfDraft, form.company);
       if (rfError) {
         setError(rfError);
         return;

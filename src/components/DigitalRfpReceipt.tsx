@@ -6,7 +6,7 @@ import {
 } from '../../shared/contracts/digital-rfp';
 import { manilaDate, php } from '../lib/format';
 import { RfLiquidationPrint } from './RfLiquidationPrint';
-import { rfPrintPages, type RfLiquidation } from '../../shared/utils/rf-liquidation';
+import type { RfLiquidation } from '../../shared/utils/rf-liquidation';
 
 export type DigitalRfpWorkflow = {
   member_status?: string | null;
@@ -88,6 +88,12 @@ function statusClass(status?: string | null) {
   return 'is-pending';
 }
 
+function requestNumberLabel(reference: string) {
+  if (reference.startsWith('CA-')) return 'CA No.';
+  if (reference.startsWith('RF-')) return 'RF No.';
+  return 'RFP No.';
+}
+
 export function DigitalRfpReceipt({
   request,
   attachments,
@@ -133,10 +139,6 @@ export function DigitalRfpReceipt({
     request.rfp_type,
   );
   const isRfLiquidation = request.rfp_type === 'RF Liquidation' && !!rfLiquidation;
-  const printPacketTotalPages =
-    isRfLiquidation && rfLiquidation
-      ? rfPrintPages(rfLiquidation, request.company || '', 1)[0]?.totalPages
-      : null;
   const showExpensePrint =
     !isRfLiquidation && isFundRequest && /paid|liquidation/i.test(request.final_status);
   const expenses = liquidationExpenses.length
@@ -144,9 +146,21 @@ export function DigitalRfpReceipt({
     : request.raw_record?.liquidation_expenses || [];
   const expenseTotal = expenses.reduce((sum, row) => sum + Number(row.amount || 0), 0);
 
+  if (isRfLiquidation && rfLiquidation) {
+    return (
+      <article className="digital-rfp-sheet rf-liquidation-sheet">
+        <RfLiquidationPrint
+          form={rfLiquidation}
+          company={request.company || ''}
+          department={request.department}
+        />
+      </article>
+    );
+  }
+
   return (
     <article className="digital-rfp-sheet" aria-label={`Digital RFP ${request.rfp_number}`}>
-      <div className={printPacketTotalPages ? 'digital-rfp-primary-page' : undefined}>
+      <div>
         <header className="digital-rfp-header">
           <div className="digital-rfp-brand">
             <img src={brand.logo} alt={`${brand.name} logo`} />
@@ -157,7 +171,7 @@ export function DigitalRfpReceipt({
           </div>
           <div className="digital-rfp-number-block">
             <div className="digital-rfp-number">
-              <span>RFP No.</span>
+              <span>{requestNumberLabel(request.rfp_number)}</span>
               <strong>{request.rfp_number}</strong>
             </div>
             <div className="digital-rfp-view-badge">
@@ -339,19 +353,8 @@ export function DigitalRfpReceipt({
             System-generated record · {brand.name} · Printed{' '}
             {manilaDate(new Date().toISOString(), true)}
           </span>
-          {printPacketTotalPages && (
-            <strong className="rf-primary-page-number">Page 1 of {printPacketTotalPages}</strong>
-          )}
         </footer>
       </div>
-      {isRfLiquidation && rfLiquidation && (
-        <RfLiquidationPrint
-          form={rfLiquidation}
-          company={request.company || ''}
-          department={request.department}
-          reference={request.rfp_number}
-        />
-      )}
     </article>
   );
 }

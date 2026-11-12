@@ -15,8 +15,8 @@ export type RfAdvanceDraftRow = {
   purpose: string;
   amount: string;
 };
-export const RF_MAX_EXPENSE_ROWS = 2000;
-export const RF_MAX_ADVANCE_ROWS = 200;
+export const RF_MAX_EXPENSE_ROWS = 49;
+export const RF_MAX_ADVANCE_ROWS = 2;
 export const blankRfExpense = (): RfExpenseDraftRow => ({
   date: '',
   invoiceOrNo: '',
@@ -74,10 +74,11 @@ export function updateRfExpenseRow(
   index: number,
   field: keyof RfExpenseDraftRow,
   value: string,
+  maximum = RF_MAX_EXPENSE_ROWS,
 ): RfExpenseDraftRow[] {
   if (index < 0 || index >= rows.length) return rows;
   const updated = rows.map((row, i) => (i === index ? { ...row, [field]: value } : row));
-  return insertFollowingBlank(updated, index, rfExpenseRowComplete, blankRfExpense, RF_MAX_EXPENSE_ROWS);
+  return insertFollowingBlank(updated, index, rfExpenseRowComplete, blankRfExpense, maximum);
 }
 export function updateRfAdvanceRow(
   rows: RfAdvanceDraftRow[],
@@ -89,10 +90,14 @@ export function updateRfAdvanceRow(
   const updated = rows.map((row, i) => (i === index ? { ...row, [field]: value } : row));
   return insertFollowingBlank(updated, index, rfAdvanceRowComplete, blankRfAdvance, RF_MAX_ADVANCE_ROWS);
 }
-export function removeRfExpenseRow(rows: RfExpenseDraftRow[], index: number): RfExpenseDraftRow[] {
+export function removeRfExpenseRow(
+  rows: RfExpenseDraftRow[],
+  index: number,
+  maximum = RF_MAX_EXPENSE_ROWS,
+): RfExpenseDraftRow[] {
   const remaining = rows.filter((_, i) => i !== index);
   if (!remaining.length) return [blankRfExpense()];
-  if (rfExpenseRowComplete(remaining[remaining.length - 1]) && remaining.length < RF_MAX_EXPENSE_ROWS) {
+  if (rfExpenseRowComplete(remaining[remaining.length - 1]) && remaining.length < maximum) {
     return [...remaining, blankRfExpense()];
   }
   return remaining;

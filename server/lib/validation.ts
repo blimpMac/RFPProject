@@ -1,5 +1,6 @@
 import { z } from 'zod';
 const toCentavos = (amount: number) => Math.round(amount * 100);
+const rfExpenseRowsPerForm = (company: string) => (/greenmetal|gemcor/i.test(company) ? 35 : 49);
 
 const companies = ['Greenlight Power Inc.', 'Greenmetal Electric Manufacturing Corp.'] as const;
 
@@ -45,8 +46,8 @@ export const rfLiquidationSchema = z.object({
   revolvingFundAmount: money.positive(),
   previousReplenishment: money,
   cashOnHandAsOf: z.iso.date(),
-  expenses: z.array(rfExpenseSchema).min(1).max(2000),
-  unliquidatedAdvances: z.array(rfUnliquidatedAdvanceSchema).max(200).default([]),
+  expenses: z.array(rfExpenseSchema).min(1).max(49),
+  unliquidatedAdvances: z.array(rfUnliquidatedAdvanceSchema).max(2).default([]),
 });
 
 export const requestSchema = z
@@ -94,6 +95,14 @@ export const requestSchema = z
       });
       return;
     }
+    const expenseLimit = rfExpenseRowsPerForm(request.company);
+    if (request.rfLiquidation.expenses.length > expenseLimit) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['rfLiquidation', 'expenses'],
+        message: `${request.company} RF forms allow at most ${expenseLimit} expense rows.`,
+      });
+    }
     const expensesTotal =
       request.rfLiquidation.expenses.reduce((total, row) => total + toCentavos(row.amount), 0) /
       100;
@@ -101,8 +110,7 @@ export const requestSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['amount'],
-        message:
-          'RF request amount must equal the combined expense total across all RF form copies.',
+        message: 'RF request amount must equal the RF form expense total.',
       });
     }
   });

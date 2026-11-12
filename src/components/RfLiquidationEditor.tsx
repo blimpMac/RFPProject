@@ -1,7 +1,6 @@
-import { CheckCircle2, FileStack, Info, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, FileText, Info, Plus, Trash2 } from 'lucide-react';
 import {
-  rfCopies,
-  rfExpenseRowsPerCopy,
+  rfExpenseRowsPerForm,
   rfTotals,
   sumRfAmounts,
   toCentavos,
@@ -17,7 +16,6 @@ import {
   updateRfAdvanceRow,
   removeRfExpenseRow,
   removeRfAdvanceRow,
-  RF_MAX_EXPENSE_ROWS,
   RF_MAX_ADVANCE_ROWS,
   type RfExpenseDraftRow,
   type RfAdvanceDraftRow,
@@ -74,7 +72,7 @@ export function normalizeRfDraft(draft: RfLiquidationDraft): RfLiquidation {
   };
 }
 
-export function validateRfDraft(draft: RfLiquidationDraft): string | null {
+export function validateRfDraft(draft: RfLiquidationDraft, company = ''): string | null {
   const v = normalizeRfDraft(draft);
   if (!v.custodianName || v.custodianName.split(/\s+/).length < 2)
     return 'RF form: Enter the full first and last name of the custodian.';
@@ -112,7 +110,7 @@ export function validateRfDraft(draft: RfLiquidationDraft): string | null {
     }
   }
   if (
-    v.expenses.length > RF_MAX_EXPENSE_ROWS ||
+    v.expenses.length > rfExpenseRowsPerForm(company) ||
     v.unliquidatedAdvances.length > RF_MAX_ADVANCE_ROWS
   )
     return 'The RF liquidation exceeds the maximum supported number of entries.';
@@ -206,14 +204,8 @@ export function RfLiquidationEditor({
   department: string;
   requestorName: string;
 }) {
-  const capacity = rfExpenseRowsPerCopy(company);
-  const pageCount = Math.max(
-    1,
-    Math.ceil(value.expenses.length / capacity),
-    Math.ceil(value.unliquidatedAdvances.length / 2),
-  );
+  const capacity = rfExpenseRowsPerForm(company);
   const numeric = normalizeRfDraft(value);
-  const usedCopies = rfCopies(numeric, company).length;
   const totals = rfTotals(numeric);
   const completeExpenseCount = value.expenses.filter(rfExpenseRowComplete).length;
   const completeAdvanceCount = value.unliquidatedAdvances.filter(rfAdvanceRowComplete).length;
@@ -234,9 +226,8 @@ export function RfLiquidationEditor({
           </p>
         </div>
         <span className="rf-editor-copy-counter">
-          <FileStack size={17} aria-hidden="true" />
-          {usedCopies} {usedCopies === 1 ? 'form used' : 'forms used'}
-          {pageCount > usedCopies ? ' · Next ready' : ''}
+          <FileText size={17} aria-hidden="true" />
+          {completeExpenseCount} / {capacity} expense entries
         </span>
       </div>
 
@@ -294,9 +285,9 @@ export function RfLiquidationEditor({
         </div>
       </div>
 
-      {Array.from({ length: pageCount }, (_, pageIndex) => {
-        const expenseRows = value.expenses.slice(pageIndex * capacity, (pageIndex + 1) * capacity);
-        const advanceRows = value.unliquidatedAdvances.slice(pageIndex * 2, (pageIndex + 1) * 2);
+      {[0].map((pageIndex) => {
+        const expenseRows = value.expenses.slice(0, capacity);
+        const advanceRows = value.unliquidatedAdvances.slice(0, 2);
         const expenseTotal = sumRfAmounts(expenseRows.map((row) => ({ amount: num(row.amount) })));
         const advanceTotal = sumRfAmounts(advanceRows.map((row) => ({ amount: num(row.amount) })));
         return (
@@ -307,10 +298,10 @@ export function RfLiquidationEditor({
                   {String(pageIndex + 1).padStart(2, '0')}
                 </span>
                 <div>
-                  <h4>RF Form · Copy {pageIndex + 1}</h4>
+                  <h4>Revolving Fund Liquidation Form</h4>
                   <p>
-                    {isGemcor ? 'GEMCOR' : 'Greenlight'} template · {capacity} expense entries per
-                    copy
+                    {isGemcor ? 'GEMCOR' : 'Greenlight'} workbook template · {capacity} expense
+                    entries
                   </p>
                 </div>
               </div>
@@ -346,7 +337,9 @@ export function RfLiquidationEditor({
                           type="button"
                           className="rf-entry-remove"
                           aria-label={`Remove expense row ${index + 1}`}
-                          onClick={() => set('expenses', removeRfExpenseRow(value.expenses, index))}
+                          onClick={() =>
+                            set('expenses', removeRfExpenseRow(value.expenses, index, capacity))
+                          }
                         >
                           <Trash2 size={15} aria-hidden="true" />
                         </button>
@@ -363,7 +356,7 @@ export function RfLiquidationEditor({
                             onChange={(next) =>
                               set(
                                 'expenses',
-                                updateRfExpenseRow(value.expenses, index, field, next),
+                                updateRfExpenseRow(value.expenses, index, field, next, capacity),
                               )
                             }
                           />
@@ -373,9 +366,9 @@ export function RfLiquidationEditor({
                   );
                 })}
               </div>
-              {value.expenses.length >= RF_MAX_EXPENSE_ROWS && pageIndex === pageCount - 1 && (
+              {value.expenses.length >= capacity && (
                 <p className="rf-editor-limit">
-                  Maximum {RF_MAX_EXPENSE_ROWS} expense lines reached.
+                  Maximum {capacity} expense lines reached for this company form.
                 </p>
               )}
               {pageIndex === 0 && completeExpenseCount === 0 && (
@@ -385,14 +378,14 @@ export function RfLiquidationEditor({
                 </p>
               )}
               <div className="rf-editor-copy-subtotal">
-                <span>Copy {pageIndex + 1} · expense subtotal</span>
+                <span>Total Expenses/For Replenishment</span>
                 <strong>{php(expenseTotal)}</strong>
               </div>
 
               <div className="rf-editor-advance-section">
                 <div className="rf-editor-subheading">
                   <h5>Unliquidated cash advances</h5>
-                  <span>Optional · 2 entries per copy</span>
+                  <span>Optional · maximum 2 entries</span>
                 </div>
                 <div className="rf-entry-list">
                   {advanceRows.map((row, indexOnPage) => {
@@ -456,7 +449,7 @@ export function RfLiquidationEditor({
                     );
                   })}
                 </div>
-                {pageIndex === pageCount - 1 && !value.unliquidatedAdvances.length && (
+                {!value.unliquidatedAdvances.length && (
                   <button
                     type="button"
                     className="btn btn-secondary rf-entry-add"
@@ -466,7 +459,7 @@ export function RfLiquidationEditor({
                   </button>
                 )}
                 <div className="rf-editor-copy-subtotal">
-                  <span>Copy {pageIndex + 1} · unliquidated CA</span>
+                  <span>Total Unliquidated</span>
                   <strong>{php(advanceTotal)}</strong>
                 </div>
               </div>
@@ -479,14 +472,11 @@ export function RfLiquidationEditor({
         <div className="rf-editor-final-heading">
           <div>
             <span className="rf-editor-eyebrow">Automatically calculated</span>
-            <h4>Consolidated RF liquidation summary</h4>
-            <p>
-              Includes {usedCopies} completed RF {usedCopies === 1 ? 'form copy' : 'form copies'}.
-              The total expenses flow into the main request amount automatically.
-            </p>
+            <h4>RF liquidation totals</h4>
+            <p>The total expenses flow into the main request amount automatically.</p>
           </div>
           <span className="rf-editor-summary-icon">
-            <FileStack size={19} aria-hidden="true" />
+            <FileText size={19} aria-hidden="true" />
           </span>
         </div>
         <div className="rf-editor-previous">

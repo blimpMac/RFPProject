@@ -1,24 +1,23 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
-  rfExpenseRowsPerCopy,
-  rfCopies,
+  RF_UNLIQUIDATED_ROWS_PER_FORM,
+  rfExpenseRowsPerForm,
   rfTotals,
   sumRfAmounts,
   type RfLiquidation,
-  rfPrintPages,
-  RF_SUMMARY_COPIES_PER_PAGE,
 } from '../../shared/utils/rf-liquidation.ts';
-import { requestSchema } from './validation.ts';
 import {
-  blankRfExpense,
   blankRfAdvance,
-  rfExpenseRowComplete,
-  rfAdvanceRowComplete,
-  updateRfExpenseRow,
-  updateRfAdvanceRow,
+  blankRfExpense,
   removeRfExpenseRow,
+  rfAdvanceRowComplete,
+  rfExpenseRowComplete,
+  updateRfAdvanceRow,
+  updateRfExpenseRow,
 } from '../../shared/utils/rf-entry-rows.ts';
+import { requestSchema } from './validation.ts';
 
 const expense = (i: number, amount = 0.1) => ({
   date: '2026-11-06',
@@ -28,9 +27,10 @@ const expense = (i: number, amount = 0.1) => ({
   account: 'Operations',
   amount,
 });
+
 const base: RfLiquidation = {
   custodianName: 'Juan Dela Cruz',
-  periodCovered: 'Nov 1–15, 2026',
+  periodCovered: 'Nov 1-15, 2026',
   projectSof: 'SOF-123',
   revolvingFundAmount: 10000,
   previousReplenishment: 350,
@@ -40,72 +40,37 @@ const base: RfLiquidation = {
     { date: '2026-11-05', name: 'Maria Santos', purpose: 'Advance for site', amount: 200 },
   ],
 };
+
 const request = {
   requestorName: 'Juan Dela Cruz',
   requestorEmail: 'juan@example.com',
-  company: 'Greenlight Power Inc.',
+  company: 'Greenlight Power Inc.' as const,
   department: 'Finance',
   projectClass: 'Operations',
   rfpType: 'RF Liquidation',
-  requestType: 'Regular',
+  requestType: 'Regular' as const,
   supplierPayee: 'Revolving Fund',
   purposeDescription: 'Replenishment for completed site expenses.',
   amount: 1250,
   requiredPaymentDate: '2026-11-10',
   approvingHead: 'Maria Santos',
 };
-test('template limits are GPI 49, GEMCOR 35 expense lines', () => {
-  assert.equal(rfExpenseRowsPerCopy('Greenlight Power Inc.'), 49);
-  assert.equal(rfExpenseRowsPerCopy('Greenmetal Electric Manufacturing Corp.'), 35);
+
+test('workbook row limits are GPI 49, GEMCOR 35, and two advances', () => {
+  assert.equal(rfExpenseRowsPerForm('Greenlight Power Inc.'), 49);
+  assert.equal(rfExpenseRowsPerForm('Greenmetal Electric Manufacturing Corp.'), 35);
+  assert.equal(RF_UNLIQUIDATED_ROWS_PER_FORM, 2);
 });
-test('GPI expense 50 produces two copies and preserves all totals', () => {
-  const form = { ...base, expenses: Array.from({ length: 50 }, (_, i) => expense(i + 1, 1.25)) };
-  const copies = rfCopies(form, 'Greenlight Power Inc.');
-  assert.deepEqual(
-    copies.map((x) => x.expenses.length),
-    [49, 1],
-  );
-  assert.equal(
-    copies.reduce((t, x) => t + x.expenseTotal, 0),
-    62.5,
-  );
-  assert.equal(rfTotals(form).expenses, 62.5);
-});
-test('GEMCOR 71 expenses produces 35 + 35 + 1 copies', () => {
-  const form = { ...base, expenses: Array.from({ length: 71 }, (_, i) => expense(i + 1, 2)) };
-  const copies = rfCopies(form, 'GEMCOR');
-  assert.deepEqual(
-    copies.map((x) => x.expenses.length),
-    [35, 35, 1],
-  );
-  assert.equal(rfTotals(form).expenses, 142);
-});
-test('unliquidated CA lines also generate copies without losing entries', () => {
-  const form = {
-    ...base,
-    expenses: [expense(1, 2)],
-    unliquidatedAdvances: Array.from({ length: 5 }, (_, i) => ({
-      date: '2026-11-05',
-      name: 'Jan Doe',
-      purpose: `Advance ${i}`,
-      amount: 10,
-    })),
-  };
-  const copies = rfCopies(form, 'GEMCOR');
-  assert.deepEqual(
-    copies.map((x) => x.unliquidatedAdvances.length),
-    [2, 2, 1],
-  );
-  assert.equal(rfTotals(form).unliquidatedAdvances, 50);
-});
-test('centavo-safe calculation and cash-on-hand reconciliation', () => {
+
+test('centavo-safe calculation matches workbook reconciliation', () => {
   assert.equal(sumRfAmounts([{ amount: 0.1 }, { amount: 0.2 }]), 0.3);
   const totals = rfTotals(base);
   assert.equal(totals.expenses, 1250);
   assert.equal(totals.unliquidatedAdvances, 200);
   assert.equal(totals.cashOnHand, 8550);
 });
-test('RF Liquidation cannot be submitted without RF form or with mismatched total', () => {
+
+test('RF submission requires the form and an amount matching its expense total', () => {
   assert.equal(requestSchema.safeParse(request).success, false);
   assert.equal(
     requestSchema.safeParse({ ...request, rfLiquidation: base, amount: 1251 }).success,
@@ -114,8 +79,41 @@ test('RF Liquidation cannot be submitted without RF form or with mismatched tota
   assert.equal(requestSchema.safeParse({ ...request, rfLiquidation: base }).success, true);
 });
 
-test('expense editor creates exactly one new row as soon as last row is complete', () => {
-  const base = blankRfExpense();
+test('validation rejects data beyond the single workbook sheet', () => {
+  const tooManyGpi = { ...base, expenses: Array.from({ length: 50 }, (_, i) => expense(i + 1)) };
+  assert.equal(
+    requestSchema.safeParse({ ...request, rfLiquidation: tooManyGpi, amount: 5 }).success,
+    false,
+  );
+  const tooManyGemcor = {
+    ...base,
+    expenses: Array.from({ length: 36 }, (_, i) => expense(i + 1)),
+  };
+  assert.equal(
+    requestSchema.safeParse({
+      ...request,
+      company: 'Greenmetal Electric Manufacturing Corp.',
+      rfLiquidation: tooManyGemcor,
+      amount: 3.6,
+    }).success,
+    false,
+  );
+  const tooManyAdvances = {
+    ...base,
+    unliquidatedAdvances: Array.from({ length: 3 }, (_, i) => ({
+      date: '2026-11-05',
+      name: 'Maria Santos',
+      purpose: `Advance ${i + 1}`,
+      amount: 10,
+    })),
+  };
+  assert.equal(
+    requestSchema.safeParse({ ...request, rfLiquidation: tooManyAdvances }).success,
+    false,
+  );
+});
+
+test('expense editor adds one blank row and obeys a company-specific limit', () => {
   const entries = [
     ['date', '2026-11-06'],
     ['invoiceOrNo', 'OR-0082'],
@@ -124,117 +122,45 @@ test('expense editor creates exactly one new row as soon as last row is complete
     ['account', 'Site Expenses'],
     ['amount', '157.25'],
   ] as const;
-  let rows = [base];
-  for (const [field, value] of entries) {
-    rows = updateRfExpenseRow(rows, 0, field, value);
-  }
+  let rows = [blankRfExpense()];
+  for (const [field, value] of entries) rows = updateRfExpenseRow(rows, 0, field, value, 2);
   assert.equal(rows.length, 2);
   assert.equal(rfExpenseRowComplete(rows[0]), true);
-  assert.deepEqual(rows[1], blankRfExpense());
-  assert.equal(rfExpenseRowComplete(rows[1]), false);
-  rows = updateRfExpenseRow(rows, 0, 'account', 'Repairs and Maintenance');
-  assert.equal(rows.length, 2, 'editing completed prior row must not create duplicates');
-  rows = removeRfExpenseRow(rows, 0);
-  assert.equal(rows.length, 1, 'removing row preserves one blank editing row');
+  for (const [field, value] of entries) rows = updateRfExpenseRow(rows, 1, field, value, 2);
+  assert.equal(rows.length, 2, 'the form must not create a third row');
+  rows = removeRfExpenseRow(rows, 0, 2);
+  assert.equal(rows.length, 2, 'removal preserves a blank entry row within the limit');
 });
 
-test('advance editor automatically inserts the next row and rejects incomplete amount', () => {
-  let rows = [blankRfAdvance()];
+test('advance editor permits exactly two complete form rows', () => {
   const fields = [
     ['date', '2026-11-06'],
     ['name', 'Juan Santos'],
     ['purpose', 'Site transfer'],
-    ['amount', '55.555'],
+    ['amount', '55.55'],
   ] as const;
+  let rows = [blankRfAdvance()];
   for (const [field, value] of fields) rows = updateRfAdvanceRow(rows, 0, field, value);
-  assert.equal(rows.length, 1, 'non-centavo amounts are not complete');
-  rows = updateRfAdvanceRow(rows, 0, 'amount', '55.55');
+  assert.equal(rows.length, 2);
   assert.equal(rfAdvanceRowComplete(rows[0]), true);
-  assert.equal(rows.length, 2);
-  assert.deepEqual(rows[1], blankRfAdvance());
-});
-
-test('editing last completed row does not create another form when a trailing blank already exists', () => {
-  const original = {
-    date: '2026-11-06',
-    invoiceOrNo: 'OR-18',
-    name: 'Vendor',
-    itemDescription: 'Expense',
-    account: 'Operations',
-    amount: '12.34',
-  };
-  let rows = [original];
-  rows = updateRfExpenseRow(rows, 0, 'amount', '12.34');
-  assert.equal(rows.length, 2);
-  rows = updateRfExpenseRow(rows, 1, 'date', '2026-11-07');
+  for (const [field, value] of fields) rows = updateRfAdvanceRow(rows, 1, field, value);
   assert.equal(rows.length, 2);
 });
 
-test('GPI RF printout has full 49-row A4 copy plus final summary with bottom-right numbering', () => {
-  const pages = rfPrintPages(base, 'Greenlight Power Inc.');
-  assert.deepEqual(
-    pages.map((page) => page.pageNumber),
-    [1, 2],
-  );
-  assert.equal(pages[0].totalPages, 2);
-  assert.equal(pages[0].kind, 'copy');
-  if (pages[0].kind !== 'copy') throw new Error('Expected printed copy');
-  assert.equal(pages[0].expenseRowSlots, 49);
-  assert.equal(pages[0].copy.expenseTotal, 1250);
-  assert.equal(pages[1].kind, 'summary');
-  if (pages[1].kind !== 'summary') throw new Error('Expected final summary');
-  assert.equal(pages[1].isFinalSummary, true);
-});
-
-test('GEMCOR RF copies retain 35 expense rows per A4 page and consecutive numbering', () => {
-  const form = { ...base, expenses: Array.from({ length: 71 }, (_, i) => expense(i + 1, 1.25)) };
-  const pages = rfPrintPages(form, 'GEMCOR');
-  assert.deepEqual(
-    pages.map((page) => page.pageNumber),
-    [1, 2, 3, 4],
-  );
-  assert.deepEqual(
-    pages.filter((page) => page.kind === 'copy').map((page) => page.expenseRowSlots),
-    [35, 35, 35],
-  );
-  assert.equal(pages.at(-1)?.kind, 'summary');
-  assert.ok(pages.every((page) => page.totalPages === 4));
-  assert.equal(rfTotals(form).expenses, 88.75);
-});
-
-test('long RF liquidation creates multiple paginated summary sheets and totals on the last', () => {
-  const count = (RF_SUMMARY_COPIES_PER_PAGE + 1) * 35;
-  const form = { ...base, expenses: Array.from({ length: count }, (_, i) => expense(i + 1, 0.1)) };
-  const pages = rfPrintPages(form, 'GEMCOR');
-  const copyPages = pages.filter((page) => page.kind === 'copy');
-  const summaries = pages.filter((page) => page.kind === 'summary');
-  assert.equal(copyPages.length, RF_SUMMARY_COPIES_PER_PAGE + 1);
-  assert.equal(summaries.length, 2);
-  assert.equal(summaries[0].kind, 'summary');
-  if (summaries[0].kind !== 'summary' || summaries[1].kind !== 'summary')
-    throw new Error('Summary pages were lost');
-  assert.equal(summaries[0].copies.length, RF_SUMMARY_COPIES_PER_PAGE);
-  assert.equal(summaries[0].isFinalSummary, false);
-  assert.equal(summaries[1].copies.length, 1);
-  assert.equal(summaries[1].isFinalSummary, true);
-  assert.equal(pages.at(-1)?.pageNumber, pages.length);
-  assert.ok(pages.every((page) => page.totalPages === pages.length));
-  assert.equal(
-    summaries.reduce(
-      (total, page) =>
-        total + page.copies.reduce((subtotal, copy) => subtotal + copy.expenseTotal, 0),
-      0,
-    ),
-    rfTotals(form).expenses,
-  );
-});
-
-test('RF page numbers continue after the RFP first sheet', () => {
-  const pages = rfPrintPages(base, 'Greenlight Power Inc.', 1);
-  assert.deepEqual(
-    pages.map((page) => page.pageNumber),
-    [2, 3],
-  );
-  assert.ok(pages.every((page) => page.totalPages === 3));
-  assert.equal(pages.at(-1)?.kind, 'summary');
+test('print source contains workbook labels and no invented packet sections', () => {
+  const source = readFileSync('src/components/RfLiquidationPrint.tsx', 'utf8');
+  for (const label of [
+    'Revolving Fund Liquidation for Replenishment/Close-out',
+    'Invoice/OR No.',
+    'Total Expenses/For Replenishment',
+    'Unliquidated Cash Advance from RF',
+    'Previous Replenishment (not yet received)',
+    'Prepared by Custodian:',
+    'Checked by Head of Department',
+    'Approved by Finance',
+  ])
+    assert.match(source, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  for (const invented of ['REFERENCE NO.', 'RF FORM COPY', 'CONSOLIDATED SUMMARY', 'Page {']) {
+    assert.equal(source.includes(invented), false);
+  }
 });

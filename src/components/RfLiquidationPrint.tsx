@@ -1,164 +1,92 @@
 import { companyBrand } from '../../shared/contracts/digital-rfp';
 import {
-  RF_UNLIQUIDATED_ROWS_PER_COPY,
+  RF_UNLIQUIDATED_ROWS_PER_FORM,
+  rfExpenseRowsPerForm,
   rfTotals,
-  sumRfAmounts,
   type RfLiquidation,
 } from '../../shared/utils/rf-liquidation';
-import {
-  RF_SUMMARY_COPIES_PER_PAGE,
-  rfPrintPages,
-  type RfPrintPage,
-} from '../../shared/utils/rf-liquidation';
-import { manilaDate, php } from '../lib/format';
+import { manilaDate } from '../lib/format';
 
-type CopyPage = Extract<RfPrintPage, { kind: 'copy' }>;
-type SummaryPage = Extract<RfPrintPage, { kind: 'summary' }>;
-type Brand = ReturnType<typeof companyBrand>;
+const accounting = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
-function PageHeader({
-  brand,
-  reference,
-  summary = false,
-}: {
-  brand: Brand;
-  reference: string;
-  summary?: boolean;
-}) {
-  return (
-    <header className="rf-form-heading">
-      <div className="rf-form-brand">
-        <img src={brand.logo} alt={`${brand.name} logo`} />
-        <strong>{brand.name}</strong>
-      </div>
-      <div className="rf-form-heading-center">
-        <h2>REVOLVING FUND LIQUIDATION</h2>
-        <span>
-          {summary ? 'CONSOLIDATED SUMMARY OF EXPENSES' : 'FOR REPLENISHMENT / CLOSE-OUT'}
-        </span>
-      </div>
-      <div className="rf-form-reference">
-        <span>REFERENCE NO.</span>
-        <strong>{reference}</strong>
-      </div>
-    </header>
-  );
-}
+const amount = (value: number) => accounting.format(value);
 
-function PageFooter({
-  pageNumber,
-  totalPages,
-  reference,
-}: {
-  pageNumber: number;
-  totalPages: number;
-  reference: string;
-}) {
-  return (
-    <footer className="rf-form-page-footer">
-      <span>RF Liquidation · {reference}</span>
-      <strong>
-        Page {pageNumber} of {totalPages}
-      </strong>
-    </footer>
-  );
-}
-
-function Signatures({ custodian }: { custodian: string }) {
-  return (
-    <div className="rf-form-signatures">
-      <div>
-        <strong>{custodian}</strong>
-        <span>Prepared by / Fund Custodian</span>
-      </div>
-      <div>
-        <strong>&nbsp;</strong>
-        <span>Checked by / Department Head</span>
-      </div>
-      <div>
-        <strong>&nbsp;</strong>
-        <span>Approved by / Finance</span>
-      </div>
-    </div>
-  );
-}
-
-function CopySheet({
-  page,
+export function RfLiquidationPrint({
   form,
   company,
-  brand,
   department,
-  reference,
 }: {
-  page: CopyPage;
   form: RfLiquidation;
   company: string;
-  brand: Brand;
   department: string;
-  reference: string;
 }) {
-  const { copy, expenseRowSlots } = page;
-  const isGemcor = /gemcor|greenmetal/i.test(company);
+  const brand = companyBrand(company);
+  const totals = rfTotals(form);
+  const expenseRows = rfExpenseRowsPerForm(company);
+  const isGemcor = /greenmetal|gemcor/i.test(company);
+
   return (
     <section
       className={`rf-form-page rf-form-${isGemcor ? 'gemcor' : 'gpi'}`}
-      aria-label={`RF form copy ${copy.number}, page ${page.pageNumber} of ${page.totalPages}`}
+      aria-label="Revolving Fund Liquidation for Replenishment or Close-out"
     >
-      <PageHeader brand={brand} reference={reference} />
-      <div className="rf-form-document-line">
-        <span>RF FORM · COPY {copy.number}</span>
-        <span>{expenseRowSlots} expense rows per copy</span>
-      </div>
-      <dl className="rf-form-metadata">
+      <header className="rf-workbook-header">
+        <img src={brand.logo} alt={`${brand.name} logo`} />
+        <h1>Revolving Fund Liquidation for Replenishment/Close-out</h1>
+      </header>
+
+      <dl className="rf-workbook-fields">
         <div>
-          <dt>NAME / CUSTODIAN</dt>
+          <dt>Name/Custodian:</dt>
           <dd>{form.custodianName}</dd>
         </div>
         <div>
-          <dt>PERIOD COVERED</dt>
+          <dt>Period Covered:</dt>
           <dd>{form.periodCovered}</dd>
         </div>
         <div>
-          <dt>DEPARTMENT</dt>
+          <dt>Department:</dt>
           <dd>{department}</dd>
         </div>
         <div>
-          <dt>PROJECT / SOF</dt>
+          <dt>Project/SOF:</dt>
           <dd>{form.projectSof}</dd>
         </div>
       </dl>
 
-      <table className="rf-form-table rf-form-expenses">
+      <table className="rf-workbook-table rf-workbook-expenses">
         <colgroup>
-          <col className="rf-form-col-date" />
-          <col className="rf-form-col-invoice" />
-          <col className="rf-form-col-name" />
-          <col className="rf-form-col-description" />
-          <col className="rf-form-col-account" />
-          <col className="rf-form-col-amount" />
+          <col className="rf-col-date" />
+          <col className="rf-col-invoice" />
+          <col className="rf-col-name" />
+          <col className="rf-col-description" />
+          <col className="rf-col-account" />
+          <col className="rf-col-amount" />
         </colgroup>
         <thead>
           <tr>
-            <th scope="col">DATE</th>
-            <th scope="col">INVOICE / OR NO.</th>
-            <th scope="col">NAME / PAYEE</th>
-            <th scope="col">ITEM DESCRIPTION</th>
-            <th scope="col">ACCOUNT</th>
-            <th scope="col">AMOUNT (PHP)</th>
+            <th scope="col">Date</th>
+            <th scope="col">Invoice/OR No.</th>
+            <th scope="col">Name</th>
+            <th scope="col">Item Description</th>
+            <th scope="col">Account</th>
+            <th scope="col">Amount</th>
           </tr>
         </thead>
         <tbody>
-          {Array.from({ length: expenseRowSlots }, (_, i) => {
-            const entry = copy.expenses[i];
+          {Array.from({ length: expenseRows }, (_, index) => {
+            const entry = form.expenses[index];
             return (
-              <tr key={i} className={entry ? 'rf-form-filled-row' : 'rf-form-empty-row'}>
+              <tr key={index}>
                 <td>{entry ? manilaDate(entry.date) : '\u00a0'}</td>
                 <td>{entry?.invoiceOrNo || '\u00a0'}</td>
                 <td>{entry?.name || '\u00a0'}</td>
                 <td>{entry?.itemDescription || '\u00a0'}</td>
                 <td>{entry?.account || '\u00a0'}</td>
-                <td>{entry ? php.format(entry.amount) : '\u00a0'}</td>
+                <td className="rf-workbook-money">{entry ? amount(entry.amount) : '\u00a0'}</td>
               </tr>
             );
           })}
@@ -166,32 +94,37 @@ function CopySheet({
         <tfoot>
           <tr>
             <th scope="row" colSpan={5}>
-              TOTAL EXPENSES — COPY {copy.number}
+              TOTAL
             </th>
-            <td>{php.format(copy.expenseTotal)}</td>
+            <td className="rf-workbook-money">{amount(totals.expenses)}</td>
           </tr>
         </tfoot>
       </table>
 
-      <div className="rf-form-subsection">UNLIQUIDATED CASH ADVANCE FROM RF</div>
-      <table className="rf-form-table rf-form-advances">
+      <div className="rf-workbook-expense-total">
+        <strong>Total Expenses/For Replenishment</strong>
+        <span>{amount(totals.expenses)}</span>
+      </div>
+
+      <h2 className="rf-workbook-subtitle">Unliquidated Cash Advance from RF</h2>
+      <table className="rf-workbook-table rf-workbook-advances">
         <thead>
           <tr>
-            <th scope="col">DATE</th>
-            <th scope="col">NAME</th>
-            <th scope="col">PURPOSE</th>
-            <th scope="col">AMOUNT (PHP)</th>
+            <th scope="col">Date</th>
+            <th scope="col">Name</th>
+            <th scope="col">Purpose</th>
+            <th scope="col">Amount</th>
           </tr>
         </thead>
         <tbody>
-          {Array.from({ length: RF_UNLIQUIDATED_ROWS_PER_COPY }, (_, i) => {
-            const entry = copy.unliquidatedAdvances[i];
+          {Array.from({ length: RF_UNLIQUIDATED_ROWS_PER_FORM }, (_, index) => {
+            const entry = form.unliquidatedAdvances[index];
             return (
-              <tr key={i} className={entry ? 'rf-form-filled-row' : 'rf-form-empty-row'}>
+              <tr key={index}>
                 <td>{entry ? manilaDate(entry.date) : '\u00a0'}</td>
                 <td>{entry?.name || '\u00a0'}</td>
                 <td>{entry?.purpose || '\u00a0'}</td>
-                <td>{entry ? php.format(entry.amount) : '\u00a0'}</td>
+                <td className="rf-workbook-money">{entry ? amount(entry.amount) : '\u00a0'}</td>
               </tr>
             );
           })}
@@ -199,171 +132,55 @@ function CopySheet({
         <tfoot>
           <tr>
             <th scope="row" colSpan={3}>
-              TOTAL UNLIQUIDATED CA — COPY {copy.number}
+              TOTAL
             </th>
-            <td>{php.format(copy.advanceTotal)}</td>
+            <td className="rf-workbook-money">{amount(totals.unliquidatedAdvances)}</td>
           </tr>
         </tfoot>
       </table>
 
-      <Signatures custodian={form.custodianName} />
-      <PageFooter pageNumber={page.pageNumber} totalPages={page.totalPages} reference={reference} />
-    </section>
-  );
-}
-
-function SummarySheet({
-  page,
-  form,
-  brand,
-  department,
-  reference,
-}: {
-  page: SummaryPage;
-  form: RfLiquidation;
-  brand: Brand;
-  department: string;
-  reference: string;
-}) {
-  const totals = rfTotals(form);
-  const subtotal = sumRfAmounts(page.copies.map((copy) => ({ amount: copy.expenseTotal })));
-  const advanceSubtotal = sumRfAmounts(page.copies.map((copy) => ({ amount: copy.advanceTotal })));
-  return (
-    <section
-      className="rf-form-page rf-form-summary-page"
-      aria-label={`RF liquidation reconciliation page ${page.pageNumber} of ${page.totalPages}`}
-    >
-      <PageHeader brand={brand} reference={reference} summary />
-      <div className="rf-form-document-line">
-        <span>
-          RECONCILIATION · {page.summaryPageNumber} OF {page.summaryPageCount}
-        </span>
-        <span>
-          {page.isFinalSummary ? 'FINAL CONSOLIDATED TOTALS' : 'CONTINUED ON NEXT SUMMARY PAGE'}
-        </span>
+      <div className="rf-workbook-advance-total">
+        <strong>Total Unliquidated</strong>
+        <span>{amount(totals.unliquidatedAdvances)}</span>
       </div>
-      <dl className="rf-form-metadata">
+
+      <dl className="rf-workbook-reconciliation">
         <div>
-          <dt>NAME / CUSTODIAN</dt>
-          <dd>{form.custodianName}</dd>
+          <dt>Revolving Fund Amount</dt>
+          <dd>{amount(totals.revolvingFundAmount)}</dd>
         </div>
         <div>
-          <dt>PERIOD COVERED</dt>
-          <dd>{form.periodCovered}</dd>
+          <dt>Less: Total Expenses</dt>
+          <dd>{amount(totals.expenses)}</dd>
         </div>
         <div>
-          <dt>DEPARTMENT</dt>
-          <dd>{department}</dd>
+          <dt>Total Unliquidated CA</dt>
+          <dd>{amount(totals.unliquidatedAdvances)}</dd>
         </div>
         <div>
-          <dt>PROJECT / SOF</dt>
-          <dd>{form.projectSof}</dd>
+          <dt>Previous Replenishment (not yet received)</dt>
+          <dd>{amount(totals.previousReplenishment)}</dd>
+        </div>
+        <div className="rf-workbook-cash">
+          <dt>ACTUAL CASH ON HAND as of {manilaDate(form.cashOnHandAsOf)}</dt>
+          <dd>{amount(totals.cashOnHand)}</dd>
         </div>
       </dl>
-      <table className="rf-form-table rf-form-summary-table">
-        <thead>
-          <tr>
-            <th scope="col">RF FORM COPY</th>
-            <th scope="col">EXPENSES (PHP)</th>
-            <th scope="col">UNLIQUIDATED CA (PHP)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: RF_SUMMARY_COPIES_PER_PAGE }, (_, i) => {
-            const copy = page.copies[i];
-            return (
-              <tr key={i} className={copy ? 'rf-form-filled-row' : 'rf-form-empty-row'}>
-                <td>{copy ? `RF Form Copy ${copy.number}` : '\u00a0'}</td>
-                <td>{copy ? php.format(copy.expenseTotal) : '\u00a0'}</td>
-                <td>{copy ? php.format(copy.advanceTotal) : '\u00a0'}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-        <tfoot>
-          <tr>
-            <th scope="row">SUBTOTAL — THIS SUMMARY PAGE</th>
-            <td>{php.format(subtotal)}</td>
-            <td>{php.format(advanceSubtotal)}</td>
-          </tr>
-        </tfoot>
-      </table>
-      {page.isFinalSummary ? (
-        <dl className="rf-form-grand-totals">
-          <div>
-            <dt>REVOLVING FUND AMOUNT</dt>
-            <dd>{php.format(totals.revolvingFundAmount)}</dd>
-          </div>
-          <div>
-            <dt>COMBINED EXPENSES · FOR REPLENISHMENT</dt>
-            <dd>{php.format(totals.expenses)}</dd>
-          </div>
-          <div>
-            <dt>ALL UNLIQUIDATED CASH ADVANCES</dt>
-            <dd>{php.format(totals.unliquidatedAdvances)}</dd>
-          </div>
-          <div>
-            <dt>PREVIOUS REPLENISHMENT (NOT RECEIVED) · FOR REFERENCE</dt>
-            <dd>{php.format(totals.previousReplenishment)}</dd>
-          </div>
-          <div className="rf-form-grand-cash">
-            <dt>ACTUAL CASH ON HAND AS OF {manilaDate(form.cashOnHandAsOf)}</dt>
-            <dd>{php.format(totals.cashOnHand)}</dd>
-          </div>
-          <div className="rf-form-grand-request">
-            <dt>RF LIQUIDATION REQUEST AMOUNT · TOTAL OF ALL COPIES</dt>
-            <dd>{php.format(totals.expenses)}</dd>
-          </div>
-        </dl>
-      ) : (
-        <p className="rf-form-continued">
-          Remaining RF form copies are itemized on the next reconciliation page. The consolidated
-          totals appear only on the final page.
-        </p>
-      )}
-      <Signatures custodian={form.custodianName} />
-      <PageFooter pageNumber={page.pageNumber} totalPages={page.totalPages} reference={reference} />
-    </section>
-  );
-}
 
-export function RfLiquidationPrint({
-  form,
-  company,
-  department,
-  reference,
-}: {
-  form: RfLiquidation;
-  company: string;
-  department: string;
-  reference: string;
-}) {
-  const pages = rfPrintPages(form, company, 1);
-  const brand = companyBrand(company);
-  return (
-    <div className="rf-print-bundle" aria-label="A4 RF liquidation forms and final reconciliation">
-      {pages.map((page) =>
-        page.kind === 'copy' ? (
-          <CopySheet
-            key={page.pageNumber}
-            page={page}
-            form={form}
-            company={company}
-            brand={brand}
-            department={department}
-            reference={reference}
-          />
-        ) : (
-          <SummarySheet
-            key={page.pageNumber}
-            page={page}
-            form={form}
-            brand={brand}
-            department={department}
-            reference={reference}
-          />
-        ),
-      )}
-    </div>
+      <div className="rf-workbook-signatures">
+        <div>
+          <span />
+          Prepared by Custodian:
+        </div>
+        <div>
+          <span />
+          Checked by Head of Department
+        </div>
+        <div>
+          <span />
+          Approved by Finance
+        </div>
+      </div>
+    </section>
   );
 }
