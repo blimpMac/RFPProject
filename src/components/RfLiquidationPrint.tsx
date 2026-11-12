@@ -67,7 +67,7 @@ function CopySheet({ page, form, company, brand, department, reference }: {
   return (
     <section
       className={`rf-form-page rf-form-${isGemcor ? 'gemcor' : 'gpi'}`}
-      aria-label={`Filled out RF form copy ${copy.number} of ${page.totalPages}`}
+      aria-label={`RF form copy ${copy.number}, page ${page.pageNumber} of ${page.totalPages}`}
     >
       <PageHeader brand={brand} reference={reference} />
       <div className="rf-form-document-line">
@@ -230,7 +230,7 @@ export function RfLiquidationPrint({ form, company, department, reference }: {
   department: string;
   reference: string;
 }) {
-  const pages = rfPrintPages(form, company);
+  const pages = rfPrintPages(form, company, 1);
   const brand = companyBrand(company);
   return (
     <div className="rf-print-bundle" aria-label="A4 RF liquidation forms and final reconciliation">
