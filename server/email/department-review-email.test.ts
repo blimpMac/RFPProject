@@ -40,8 +40,8 @@ test('real department approval messages display three secure action links, not o
   assert.doesNotMatch(email.html, />Open secure review<\/a>/);
   assert.match(email.html, /confirm your choice/i);
   // Mobile email clients cannot fit three action buttons in one table row.
-  assert.match(email.html, />Approve<\\/a><\\/td><\\/tr><tr>/);
-  assert.match(email.html, />Reject<\\/a><\\/td><\\/tr><tr>/);
+  assert.ok(email.html.includes('>Approve</a></td></tr><tr>'));
+  assert.ok(email.html.includes('>Reject</a></td></tr><tr>'));
 });
 
 test('empty review token does not generate a fake approval link', () => {
