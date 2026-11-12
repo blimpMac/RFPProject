@@ -5,6 +5,7 @@ import { emailTemplateKeys, renderEmailPreview } from '../email/templates.js';
 import { requireStaff } from '../lib/auth.js';
 import { HttpError, json, readJson } from '../lib/http.js';
 import { getApprovingHeadOverview } from '../services/approving-heads.js';
+import { refreshPendingDepartmentReviews } from '../services/workflow-notifications.js';
 import { handleAccountAdministrationRoutes } from './administration/accounts.js';
 import type { RouteHandler } from './context.js';
 
@@ -62,7 +63,7 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
         : validateRfp.parse(z.object({ rfpNumber: z.string() }).parse(readJson(event)).rfpNumber);
     const request = await db
       .from('rfp_requests')
-      .select('id,rfp_number,final_status')
+      .select('id,rfp_number,final_status,normalized_department')
       .eq('rfp_number', rfpNumber)
       .single();
     if (request.error || !request.data) throw new HttpError(404, 'Request reference not found.');
@@ -81,6 +82,32 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
       });
     }
     if (event.httpMethod === 'POST') {
+      const input = z.object({
+        rfpNumber: z.string(),
+        regenerateDepartmentReview: z.boolean().optional(),
+      }).parse(readJson(event));
+      let regeneratedReview = false;
+      if (request.data.final_status === 'Pending Department Approval') {
+        const active = await db.from('approval_tokens').select('id')
+          .eq('request_id', request.data.id)
+          .is('used_at', null).is('revoked_at', null)
+          .gt('expires_at', new Date().toISOString())
+          .limit(1).maybeSingle();
+        if (active.error) throw active.error;
+        // An administrator can explicitly reissue an invitation. A normal retry
+        // also repairs a missing/expired token instead of resending a dead link.
+        if (input.regenerateDepartmentReview || !active.data) {
+          const refreshed = await refreshPendingDepartmentReviews(
+            db, [request.data.normalized_department], config.REVIEW_TOKEN_HOURS, [request.data.id],
+          );
+          if (!refreshed.includes(request.data.id)) {
+            throw new HttpError(409, 'Could not regenerate the current Department Head review link.');
+          }
+          regeneratedReview = true;
+        }
+      } else if (input.regenerateDepartmentReview) {
+        throw new HttpError(409, 'Only requests awaiting Department Head approval can get a new review link.');
+      }
       if (request.data.final_status !== 'Pending Department Approval') {
         // An obsolete supervisor-review URL must never be reissued after its decision.
         await db
@@ -113,6 +140,7 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
         ok: true,
         reference: rfpNumber,
         attempts,
+        regeneratedReview,
         sent: attempts.filter((row) => row.status === 'sent').length,
         retrying: attempts.filter((row) => row.status === 'retry').length,
         failed: attempts.filter((row) => row.status === 'failed').length,
