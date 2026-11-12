@@ -76,7 +76,7 @@ export function renderEmail(
     // Each email action opens the review page with that choice selected.
     // Never execute an approval over GET: the approver confirms via POST.
     const reviewPath = reviewToken ? `/review/${encodeURIComponent(reviewToken)}` : '';
-    const reviewUrl = reviewPath ? new URL(reviewPath, `${siteUrl.replace(/\\/$/, '')}/`).toString() : '';
+    const reviewUrl = reviewPath ? new URL(reviewPath, `${siteUrl.replace(/\/$/, '')}/`).toString() : '';
     const actionUrl = (action: 'approve' | 'reject' | 'return') =>
       `${reviewUrl}?action=${action}`;
     const documents = attachmentLinks.length
