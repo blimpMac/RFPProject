@@ -43,7 +43,7 @@ export async function cancelPendingDepartmentReview(db: DatabaseClient, requestI
     })
     .eq('request_id', requestId)
     .eq('template_key', 'supervisor_review')
-    .in('status', ['queued', 'retry']);
+    .in('status', ['queued', 'retry', 'failed']);
   if (cancelled.error) throw cancelled.error;
   const revoked = await db
     .from('approval_tokens')
@@ -116,6 +116,7 @@ export async function refreshPendingDepartmentReviews(
   db: DatabaseClient,
   departmentKeys: string[],
   reviewTokenHours: number,
+  requestIds?: string[],
 ) {
   const keys = [...new Set(departmentKeys.filter(Boolean))];
   const refreshed: string[] = [];
@@ -136,11 +137,23 @@ export async function refreshPendingDepartmentReviews(
           .maybeSingle()
       : { data: null, error: null };
     if (profile.error) throw profile.error;
-    const requests = await db
+    if (requestIds?.length && !profile.data?.email) {
+      throw new HttpError(409, 'Assign an active Department Head before regenerating the review link.');
+    }
+    if (requestIds?.length && profile.data?.id) {
+      const role = await db.from('user_roles').select('role')
+        .eq('user_id', profile.data.id).eq('role', 'department_approver').maybeSingle();
+      if (role.error) throw role.error;
+      if (!role.data) throw new HttpError(409, 'The assigned Department Head needs the Department Approver role.');
+    }
+    let pendingQuery = db
       .from('rfp_requests')
       .select('id,rfp_number,version')
       .eq('normalized_department', departmentKey)
       .eq('final_status', 'Pending Department Approval');
+    // Only rotate the requested RFP's token in the administrator retry tool.
+    if (requestIds?.length) pendingQuery = pendingQuery.in('id', requestIds);
+    const requests = await pendingQuery;
     if (requests.error) throw requests.error;
     for (const request of requests.data || []) {
       await cancelPendingDepartmentReview(db, request.id);
