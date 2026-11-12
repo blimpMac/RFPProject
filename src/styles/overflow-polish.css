@@ -518,3 +518,81 @@
     break-inside: avoid-page;
   }
 }
+
+
+/* Responsive Finance filters use actual available content width. The sidebar
+   may be expanded while the browser remains wide, so viewport breakpoints
+   alone cannot prevent input crowding. */
+.approval-filter-panel {
+  container-type: inline-size;
+}
+
+@container (max-width: 68rem) {
+  .approval-filter-fields,
+  .approval-filter-fields.has-clear,
+  .approval-filter-fields.has-request-type,
+  .approval-filter-fields.has-request-type.has-clear {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .approval-filter-fields > .approval-clear {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    white-space: normal;
+  }
+}
+
+@container (max-width: 44rem) {
+  .approval-filter-fields,
+  .approval-filter-fields.has-clear,
+  .approval-filter-fields.has-request-type,
+  .approval-filter-fields.has-request-type.has-clear {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .approval-filter-primary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .approval-filter-primary .approval-view-toggle,
+  .approval-filter-primary .approval-search {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+}
+
+@container (max-width: 29rem) {
+  .approval-filter-fields,
+  .approval-filter-fields.has-clear,
+  .approval-filter-fields.has-request-type,
+  .approval-filter-fields.has-request-type.has-clear {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .approval-filter-fields > .approval-clear {
+    grid-column: 1;
+  }
+
+  .approval-filter-primary .approval-view-toggle {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Prevent expense summary tables from expanding past the receipt in a phone
+   preview. This is screen-only; print keeps the full A4 table. */
+@media screen {
+  .digital-rfp-expense-summary {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .digital-rfp-expense-summary table {
+    min-width: 28rem;
+  }
+  .digital-rfp-expense-summary th,
+  .digital-rfp-expense-summary td {
+    max-width: 32rem;
+    overflow-wrap: anywhere;
+  }
+}
