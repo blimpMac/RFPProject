@@ -1,0 +1,40 @@
+name: Sidebar zoom and navigation regression
+on:
+  pull_request:
+    paths:
+      - src/layouts/AdminLayout.tsx
+      - src/styles/admin-shell-polish.css
+      - scripts/verification/verify-sidebar-zoom.ts
+      - .github/workflows/sidebar-zoom-regression.yml
+  push:
+    branches: [main]
+    paths:
+      - src/layouts/AdminLayout.tsx
+      - src/styles/admin-shell-polish.css
+      - scripts/verification/verify-sidebar-zoom.ts
+      - .github/workflows/sidebar-zoom-regression.yml
+permissions:
+  contents: read
+jobs:
+  sidebar-regression:
+    name: Browser navigation visibility at zoom and breakpoint widths
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Node 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Build production CSS and app
+        run: npm run build
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Check burger and sidebar at responsive widths and 150 percent zoom
+        run: node --experimental-strip-types scripts/verification/verify-sidebar-zoom.ts
