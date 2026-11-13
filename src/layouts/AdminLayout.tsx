@@ -282,7 +282,13 @@ export function AdminLayout() {
                 ? 'Close navigation'
                 : 'Open navigation'
           }
-          title={desktopNavigation ? (collapsed ? 'Keep sidebar open' : 'Collapse sidebar') : 'Navigation'}
+          title={
+            desktopNavigation
+              ? collapsed
+                ? 'Keep sidebar open'
+                : 'Collapse sidebar'
+              : 'Navigation'
+          }
           aria-expanded={desktopNavigation ? navigationExpanded : open}
           aria-controls="staff-sidebar"
         >

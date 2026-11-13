@@ -150,38 +150,56 @@ try {
     await page.setContent(markup());
     await page.addStyleTag({ content: stylesheet });
     const collapsed = await inspect(page);
-    assert.ok(collapsed.visible, `Burger is not visible at CSS width ${width}: ${JSON.stringify(collapsed)}`);
+    assert.ok(
+      collapsed.visible,
+      `Burger is not visible at CSS width ${width}: ${JSON.stringify(collapsed)}`,
+    );
     assert.ok(collapsed.hitTest, `Burger is blocked by another element at width ${width}`);
-    assert.ok(collapsed.documentWidth <= collapsed.viewportWidth + 2,
-      `Horizontal overflow at width ${width}: ${JSON.stringify(collapsed)}`);
+    assert.ok(
+      collapsed.documentWidth <= collapsed.viewportWidth + 2,
+      `Horizontal overflow at width ${width}: ${JSON.stringify(collapsed)}`,
+    );
 
     await page.evaluate('window.scrollTo(0, 520)');
     const scrolled = await inspect(page);
-    assert.ok(scrolled.visible && scrolled.hitTest,
-      `Burger disappears when scrolled at width ${width}: ${JSON.stringify(scrolled)}`);
+    assert.ok(
+      scrolled.visible && scrolled.hitTest,
+      `Burger disappears when scrolled at width ${width}: ${JSON.stringify(scrolled)}`,
+    );
     await page.evaluate('window.scrollTo(0, 0)');
 
     if (width >= 1280) {
-      assert.ok(collapsed.navIconVisible, `Compact sidebar icons are not available at width ${width}`);
+      assert.ok(
+        collapsed.navIconVisible,
+        `Compact sidebar icons are not available at width ${width}`,
+      );
       assert.ok(!collapsed.labelVisible, `Compact sidebar shows crowded labels at width ${width}`);
       await page.locator('#staff-sidebar').hover({ position: { x: 40, y: 180 } });
       const hovered = await inspect(page);
-      assert.ok(hovered.sidebarWidth > 200 && hovered.labelVisible,
-        `Hover did not expose navigation at width ${width}: ${JSON.stringify(hovered)}`);
+      assert.ok(
+        hovered.sidebarWidth > 200 && hovered.labelVisible,
+        `Hover did not expose navigation at width ${width}: ${JSON.stringify(hovered)}`,
+      );
       await page.mouse.move(Math.min(width - 20, 700), 350);
       await page.getByRole('button', { name: 'Open navigation' }).click();
       const pinned = await inspect(page);
-      assert.ok(pinned.sidebarWidth > 200 && pinned.labelVisible,
-        `Click did not pin sidebar at width ${width}: ${JSON.stringify(pinned)}`);
+      assert.ok(
+        pinned.sidebarWidth > 200 && pinned.labelVisible,
+        `Click did not pin sidebar at width ${width}: ${JSON.stringify(pinned)}`,
+      );
     } else {
       await page.getByRole('button', { name: 'Open navigation' }).click();
       const opened = await inspect(page);
-      assert.ok(opened.navIconVisible && opened.labelVisible,
-        `Mobile/tablet drawer not visible at width ${width}: ${JSON.stringify(opened)}`);
+      assert.ok(
+        opened.navIconVisible && opened.labelVisible,
+        `Mobile/tablet drawer not visible at width ${width}: ${JSON.stringify(opened)}`,
+      );
       const aside = page.locator('#staff-sidebar');
       const box = await aside.boundingBox();
-      assert.ok(box && box.x >= -1 && box.x < width,
-        `Drawer is outside viewport at width ${width}`);
+      assert.ok(
+        box && box.x >= -1 && box.x < width,
+        `Drawer is outside viewport at width ${width}`,
+      );
     }
 
     const zoomTest = await browser.newPage({ viewport: { width, height: 850 } });
@@ -189,13 +207,23 @@ try {
     await zoomTest.addStyleTag({ content: stylesheet });
     await zoomTest.evaluate("document.body.style.zoom = '1.5'");
     const zoomed = await inspect(zoomTest);
-    assert.ok(zoomed.visible && zoomed.hitTest,
-      `Burger is missing after 150% visual zoom at width ${width}: ${JSON.stringify(zoomed)}`);
-    console.log(JSON.stringify({ cssWidth: width, collapsed, zoomed: { visible: zoomed.visible, hitTest: zoomed.hitTest } }));
+    assert.ok(
+      zoomed.visible && zoomed.hitTest,
+      `Burger is missing after 150% visual zoom at width ${width}: ${JSON.stringify(zoomed)}`,
+    );
+    console.log(
+      JSON.stringify({
+        cssWidth: width,
+        collapsed,
+        zoomed: { visible: zoomed.visible, hitTest: zoomed.hitTest },
+      }),
+    );
     await page.close();
     await zoomTest.close();
   }
 } finally {
   await browser.close();
 }
-console.log('PASS: navigation icon, hover choices, click/pin, scroll and 150% zoom at all tested widths.');
+console.log(
+  'PASS: navigation icon, hover choices, click/pin, scroll and 150% zoom at all tested widths.',
+);

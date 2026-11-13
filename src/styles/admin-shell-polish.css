@@ -287,7 +287,9 @@
   }
 
   .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within) .admin-nav-label,
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within) .admin-sidebar-link > span:not(.admin-nav-icon) {
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+    .admin-sidebar-link
+    > span:not(.admin-nav-icon) {
     display: none;
   }
 
@@ -302,8 +304,10 @@
     padding-right: 0.2rem;
   }
 
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within) .admin-sidebar-navigation,
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within) .admin-sidebar-footer {
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+    .admin-sidebar-navigation,
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+    .admin-sidebar-footer {
     padding-left: 0.55rem;
     padding-right: 0.55rem;
   }
