@@ -1,0 +1,35 @@
+name: Format Finance Email Checklist Once
+on:
+  push:
+    branches:
+      - feat/finance-email-type-checklist-20261113
+permissions:
+  contents: write
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+      - name: Install Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Apply repository formatting
+        run: npx prettier --write shared/constants/finance-email-types.ts shared/contracts/accounts.ts src/features/accounts/FinanceEmailChecklist.tsx src/features/accounts/AccountManagementForms.tsx src/pages/SettingsPage.tsx server/routes/administration/accounts.ts server/email/service.ts server/email/finance-email-preferences.test.ts package.json
+      - name: Commit formatting
+        run: |
+          if git diff --quiet; then
+            echo "Formatting is already clean."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add shared/constants/finance-email-types.ts shared/contracts/accounts.ts src/features/accounts/FinanceEmailChecklist.tsx src/features/accounts/AccountManagementForms.tsx src/pages/SettingsPage.tsx server/routes/administration/accounts.ts server/email/service.ts server/email/finance-email-preferences.test.ts package.json
+          git commit -m "style: format Finance notification preferences"
+          git push origin HEAD:feat/finance-email-type-checklist-20261113
