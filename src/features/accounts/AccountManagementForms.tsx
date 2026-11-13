@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Trash2 } from 'lucide-react';
+import { BellRing, Mail, Trash2 } from 'lucide-react';
 import type { AccessLevel, StaffUser } from '../../../shared/contracts/accounts';
 import { Button, Modal, Spinner, StatusBadge } from '../../components/ui';
 import { patch, post } from '../../lib/api';
@@ -16,12 +16,14 @@ export function AccountRow({
   busy,
   onEdit,
   onEmail,
+  onNotifications,
   onRemove,
 }: {
   user: StaffUser;
   busy: boolean;
   onEdit: () => void;
   onEmail: () => void;
+  onNotifications: () => void;
   onRemove: () => void;
 }) {
   const isSuperAdministrator = user.roles.includes('super_administrator');
@@ -47,8 +49,25 @@ export function AccountRow({
               ? ` · ${user.department}`
               : ''}
         </p>
+        {user.accessLevel === 'staff' && !isSuperAdministrator && (
+          <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+            Request email alerts: {user.financeNotificationTypes === null
+              ? 'All types (default)'
+              : user.financeNotificationTypes.length === 0
+                ? 'None'
+                : user.financeNotificationTypes.length === 1 && user.financeNotificationTypes[0] === 'revolving_fund'
+                  ? 'RF only (including liquidation)'
+                  : `${user.financeNotificationTypes.length} selected type(s)`}
+          </p>
+        )>
       </div>
       <div className="flex flex-wrap gap-2">
+        {user.accessLevel === 'staff' && !isSuperAdministrator && (
+          <Button variant="secondary" disabled={busy} onClick={onNotifications}>
+            <BellRing size={16} />
+            Email checklist
+          </Button>
+        )}
         {!isSuperAdministrator && !user.protected && user.accessLevel && (
           <Button variant="secondary" disabled={busy} onClick={onEmail}>
             <Mail size={16} />
