@@ -59,7 +59,7 @@ export function AccountRow({
                   ? 'RF only (including liquidation)'
                   : `${user.financeNotificationTypes.length} selected type(s)`}
           </p>
-        )>
+        )}
       </div>
       <div className="flex flex-wrap gap-2">
         {user.accessLevel === 'staff' && !isSuperAdministrator && (
