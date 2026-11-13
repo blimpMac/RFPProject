@@ -395,7 +395,9 @@ export function AdminLayout() {
                   {isIT ? 'IT Technical Manual' : 'User Manual'}
                 </strong>
                 <small className="block truncate">
-                  {isIT ? 'Systems, access and troubleshooting' : 'Guides, FAQs and troubleshooting'}
+                  {isIT
+                    ? 'Systems, access and troubleshooting'
+                    : 'Guides, FAQs and troubleshooting'}
                 </small>
               </span>
             </NavLink>

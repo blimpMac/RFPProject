@@ -37,7 +37,7 @@ test('IT can update only its own profile and receives a technical manual', () =>
   assert.match(profile, /\.eq\('id', staff\.user\.id\)/);
   const manual = read('src/pages/ManualPage.tsx');
   assert.ok(manual.includes("roles.includes('it_administrator')"));
-  assert.ok(manual.includes("IT Technical Manual"));
+  assert.ok(manual.includes('IT Technical Manual'));
   assert.equal(manual.includes('to="/admin/new-request"'), false);
   assert.equal(manual.includes('to="/admin/preview-forms"'), false);
 });

@@ -407,7 +407,6 @@ export function ManualPage() {
               : 'Submission, Department approval, Finance processing, troubleshooting and maintenance in one place.'}
           </p>
         </div>
-
       </section>
       <section className="card p-4 sm:p-5">
         <label className="mb-2 block text-sm font-semibold" htmlFor="manual-search">
