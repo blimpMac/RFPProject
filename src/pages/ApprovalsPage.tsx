@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Eye, Pencil, Printer, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button, Modal, Spinner, StatusBadge } from '../components/ui';
 import { useAuth } from '../components/AuthProvider';
 import { get, post } from '../lib/api';
@@ -24,16 +25,9 @@ import {
   type QueueFocus,
 } from '../features/approvals/workflow';
 import { AttachmentPreviewSection } from '../components/AttachmentPreviewSection';
-import {
-  DigitalRfpReceipt,
-  type DigitalRfpAttachment,
-  type DigitalRfpOperations,
-  type DigitalRfpWorkflow,
-} from '../components/DigitalRfpReceipt';
 import { normalizeFinanceReceipt } from '../../shared/contracts/digital-rfp';
 
 type Result = { rows: RfpRequest[] };
-type ReceiptData = { request: RfpRequest; attachments: DigitalRfpAttachment[] };
 type ModalMode = 'view' | 'edit';
 
 export function ApprovalsPage() {
@@ -66,8 +60,6 @@ export function ApprovalsPage() {
   const [processingStatus, setProcessingStatus] = useState('');
   const [lateDocuments, setLateDocuments] = useState('');
   const [modalMode, setModalMode] = useState<ModalMode>('view');
-  const [receiptData, setReceiptData] = useState<ReceiptData>();
-  const [receiptLoading, setReceiptLoading] = useState(false);
   const [updateBusy, setUpdateBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const load = useCallback(
@@ -237,7 +229,6 @@ export function ApprovalsPage() {
     });
     setSelected(request);
     setModalMode(mode);
-    setReceiptData(undefined);
     setAction('');
     setRemarks('');
     setCheckDate(request.planned_check_date || '');
@@ -257,13 +248,6 @@ export function ApprovalsPage() {
     setLateDocuments(receipt.lateDocuments.join('\n'));
     setNotice('');
     setError('');
-    if (finance || mode === 'view') {
-      setReceiptLoading(true);
-      get<ReceiptData>(`digital-rfp/${encodeURIComponent(request.id)}`)
-        .then((result) => setReceiptData(result))
-        .catch((cause) => setError(cause.message))
-        .finally(() => setReceiptLoading(false));
-    }
   };
   const departmentReturn = selected?.final_status === 'Returned to Department Approver';
   const departmentPending = selected?.final_status === 'Pending Department Approval';
@@ -531,124 +515,22 @@ export function ApprovalsPage() {
             </p>
           )}
           {modalMode === 'view' && finance ? (
-            receiptLoading ? (
-              <div className="grid min-h-64 place-items-center">
-                <Spinner label="Loading receipt" />
+            <div className="card mt-5 space-y-3 p-5">
+              <h3 className="font-semibold">Digital RFP form</h3>
+              <p className="text-sm leading-6 text-slate-500">
+                Open this RFP in its own print view instead of displaying a nested form preview
+                inside the approval queue. Use Preview Forms in the sidebar for sample layouts.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Link to={`/admin/rfp/${selected.id}/print`} target="_blank" rel="noreferrer" className="btn btn-primary">
+                  <Eye size={16} /> Open RFP form
+                </Link>
+                <Link to="/admin/preview-forms" className="btn btn-secondary">
+                  Preview Forms
+                </Link>
               </div>
-            ) : receiptData ? (
-              <div className="finance-receipt-preview">
-                <DigitalRfpReceipt
-                  request={receiptData.request}
-                  attachments={receiptData.attachments}
-                  workflow={
-                    (receiptData.request.raw_record?.finance_workflow || {}) as DigitalRfpWorkflow
-                  }
-                  financeOperations={
-                    (receiptData.request.raw_record?.finance_operations ||
-                      {}) as DigitalRfpOperations
-                  }
-                  financeReceipt={normalizeFinanceReceipt(receiptData.request.raw_record, {
-                    finalStatus: receiptData.request.final_status,
-                    plannedCheckDate: receiptData.request.planned_check_date,
-                  })}
-                  submissionChecklist={receiptData.request.raw_record?.submission_checklist || []}
-                />
-              </div>
-            ) : null
+              <AttachmentPreviewSection requestId={selected.id} />
+            </div>
           ) : (
             <>
               <h3 className="finance-section-title">Request overview</h3>
-              <div className="finance-detail-grid finance-detail-grid-compact">
-                {[
-                  ['Requestor', selected.requestor_name],
-                  ['Department', selected.department],
-                  ['Requestor email', selected.requestor_email],
-                  ['RFP type', selected.rfp_type],
-                  ['Type of request', String(selected.raw_record?.request_type || 'Not recorded')],
-                  ['Supplier / Payee', selected.supplier_payee],
-                  ['Amount', php.format(selected.amount)],
-                  ['Project / Class', selected.project_class],
-                  ['Required date', manilaDate(selected.required_payment_date)],
-                  ['Submitted date', manilaDate(selected.submitted_at, true)],
-                  ['Target release', manilaDate(selected.planned_check_date)],
-                  ['SLA position', getSlaInfo(selected, now).label],
-                  ['Current stage', displayStatus(selected, now)],
-                  ['Approving heads', selected.approving_head],
-                  ['Department approval', selected.department_approval],
-                  ['Department remarks', selected.department_approval_remarks || '—'],
-                  [
-                    'Finance member review',
-                    financeWorkflow(selected).member_status || selected.finance_review,
-                  ],
-                  ['Finance head review', financeWorkflow(selected).head_status || 'Pending'],
-                  ['Hard-copy approval', financeWorkflow(selected).hard_copy_status || 'Pending'],
-                  [
-                    '3-day processing due',
-                    manilaDate(financeWorkflow(selected).processing_due_at || null, true),
-                  ],
-                  ['Finance remarks', selected.finance_remarks || '—'],
-                  ['Purpose', selected.purpose_description],
-                ].map(([key, value]) => (
-                  <div
-                    key={key}
-                    className={
-                      [
-                        'Purpose',
-                        'Approving heads',
-                        'Department remarks',
-                        'Finance remarks',
-                      ].includes(key)
-                        ? 'finance-detail-wide'
-                        : ''
-                    }
-                  >
-                    <p>{key}</p>
-                    <strong>{value}</strong>
-                  </div>
-                ))}
-              </div>
-              <AttachmentPreviewSection requestId={selected.id} />
-            </>
-          )}
-          {finance && modalMode === 'edit' && (
-            <FinanceUpdateForm
-              request={selected}
-              originalsDate={originalsDate}
-              documentVerification={documentVerification}
-              verificationRemarks={verificationRemarks}
-              checkDate={checkDate}
-              reason={reason}
-              processingStatus={processingStatus}
-              lateDocuments={lateDocuments}
-              financeNotes={financeNotes}
-              busy={updateBusy}
-              onOriginalsDateChange={setOriginalsDate}
-              onDocumentVerificationChange={setDocumentVerification}
-              onVerificationRemarksChange={setVerificationRemarks}
-              onCheckDateChange={setCheckDate}
-              onReasonChange={setReason}
-              onProcessingStatusChange={setProcessingStatus}
-              onLateDocumentsChange={setLateDocuments}
-              onFinanceNotesChange={setFinanceNotes}
-              onSave={() => void saveFinanceUpdates()}
-            />
-          )}
-          {modalMode === 'edit' && (
-            <WorkflowActionPanel
-              choices={choices}
-              action={action}
-              remarks={remarks}
-              departmentAction={departmentAction}
-              busy={busy}
-              finance={finance}
-              department={department}
-              onActionChange={setAction}
-              onRemarksChange={setRemarks}
-              onSave={() => void save()}
-            />
-          )}
-        </Modal>
-      )}
-    </div>
-  );
-}
