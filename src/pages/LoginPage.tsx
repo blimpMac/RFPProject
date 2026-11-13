@@ -76,15 +76,7 @@ export function LoginPage() {
               />
             </div>
             <div className="field">
-              <div className="flex items-center justify-between gap-3">
-                <label htmlFor="password">Password</label>
-                <Link
-                  to="/admin/forgot-password"
-                  className="text-sm font-bold text-[#23558a] hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
+              <label htmlFor="password">Password</label>
               <div className="relative">
                 <input
                   className="input pr-12"
@@ -128,6 +120,14 @@ export function LoginPage() {
           <Button className="mt-5 w-full" disabled={busy}>
             {busy ? <Spinner label="Signing in" /> : 'Sign in'}
           </Button>
+          <div className="mt-4 text-center">
+            <Link
+              to="/admin/forgot-password"
+              className="focus-ring inline-block rounded-md text-sm font-bold text-[#23558a] hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
         </form>
       </section>
 
