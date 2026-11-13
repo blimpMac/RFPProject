@@ -25,30 +25,15 @@ const isValidSecret = (text: string) =>
 const passwordSchema = z.string().min(14).max(128).refine(isValidSecret, {
   message: 'Use at least 14 characters, with uppercase, lowercase, a number and a symbol.',
 });
-const smtpSchema = z.object({
-  host: z
-    .string()
-    .trim()
-    .min(3)
-    .max(120)
-    .regex(/^[a-zA-Z0-9.-]+$/),
-  port: z.coerce
-    .number()
-    .int()
-    .refine((port) => [465, 587].includes(port)),
-  secure: z.boolean(),
-  user: z.email().max(160),
-  password: z.string().min(8).max(256),
-  fromEmail: z.email().max(160),
-  senderName: z
-    .string()
-    .trim()
-    .min(2)
-    .max(70)
-    .regex(/^[^<>\r\n]+$/),
-  operatorPassword: z.string().min(1),
-  confirmation: z.literal('APPLY SMTP'),
-});
+const smtpSchema = z
+  .object({
+    user: z.email().max(160),
+    password: z.string().min(8).max(256),
+    fromEmail: z.email().max(160),
+    operatorPassword: z.string().min(1),
+    confirmation: z.literal('APPLY SMTP'),
+  })
+  .strict();
 
 function sessionHash(event: { headers: Record<string, string | undefined> }, secret: string) {
   const jwt = event.headers.authorization?.replace(/^Bearer\s+/i, '') || '';
@@ -250,16 +235,11 @@ export const handleITRoutes: RouteHandler = async ({ event, route, db, config })
     const input = smtpSchema.parse(readJson(event));
     await confirmITPassword(db, staff, input.operatorPassword);
     const result = await applySMTPToVercelAndRedeploy({
-      host: input.host,
-      port: input.port,
-      secure: input.secure,
       user: input.user,
       password: input.password,
       fromEmail: input.fromEmail,
-      senderName: input.senderName,
     });
     await writeEvent(db, staff, 'SMTP_CONFIG_UPDATED', undefined, {
-      smtpHost: input.host,
       sender: input.fromEmail,
       deploymentStarted: result.redeployStarted,
     });
