@@ -60,6 +60,7 @@ const profile = await db.from('profiles').upsert(
     full_name: fullName,
     department: 'IT',
     active: true,
+    protected_account: true,
   },
   { onConflict: 'id' },
 );
