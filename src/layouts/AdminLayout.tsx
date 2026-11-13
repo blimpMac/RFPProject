@@ -232,7 +232,11 @@ export function AdminLayout() {
       ) || availableItems[0];
   const primaryRole = roles[0];
   const pageTitle =
-    location.pathname === '/admin/manual' ? 'User Manual' : currentItem?.label || 'RFP workspace';
+    location.pathname === '/admin/manual'
+      ? isIT
+        ? 'IT Technical Manual'
+        : 'User Manual'
+      : currentItem?.label || 'RFP workspace';
 
   if (loading)
     return (
@@ -387,8 +391,14 @@ export function AdminLayout() {
                 <BookOpen size={18} />
               </span>
               <span className="min-w-0">
-                <strong className="block truncate">User Manual</strong>
-                <small className="block truncate">Guides, FAQs and troubleshooting</small>
+                <strong className="block truncate">
+                  {isIT ? 'IT Technical Manual' : 'User Manual'}
+                </strong>
+                <small className="block truncate">
+                  {isIT
+                    ? 'Systems, access and troubleshooting'
+                    : 'Guides, FAQs and troubleshooting'}
+                </small>
               </span>
             </NavLink>
           </div>
