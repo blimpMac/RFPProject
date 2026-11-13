@@ -41,3 +41,23 @@ test('IT can update only its own profile and receives a technical manual', () =>
   assert.equal(manual.includes('to="/admin/new-request"'), false);
   assert.equal(manual.includes('to="/admin/preview-forms"'), false);
 });
+
+test('staff sign-out redirects immediately without stale auth state or blocked presence logging', () => {
+  const auth = read('src/components/AuthProvider.tsx');
+  const layout = read('src/layouts/AdminLayout.tsx');
+
+  // Supabase auth callbacks cannot re-enter getSession while the auth lock is held.
+  assert.ok(auth.includes('onAuthStateChange((_event, nextSession) => {'));
+  assert.ok(auth.includes('window.setTimeout(() => {'));
+  assert.equal(auth.includes('onAuthStateChange(() => void refresh())'), false);
+  assert.match(auth, /if \(!nextSession\) \{[\s\S]*?clearSession\(\);/);
+
+  // Stale /api/me results must not reinstate a user after they sign out.
+  assert.ok(auth.includes('version !== sessionVersion.current'));
+
+  // Presence tracking must never hold the user on the dashboard.
+  assert.ok(layout.includes('keepalive: true'));
+  assert.ok(layout.includes("supabase.auth.signOut({ scope: 'local' })"));
+  assert.ok(layout.includes("navigate('/admin/login', { replace: true })"));
+  assert.equal(layout.includes("await post('presence', { action: 'logout'"), false);
+});
