@@ -175,6 +175,9 @@ try {
       );
       assert.ok(!collapsed.labelVisible, `Compact sidebar shows crowded labels at width ${width}`);
       await page.locator('#staff-sidebar').hover({ position: { x: 40, y: 180 } });
+      await page.waitForFunction(
+        "document.querySelector('#staff-sidebar').getBoundingClientRect().width > 200",
+      );
       const hovered = await inspect(page);
       assert.ok(
         hovered.sidebarWidth > 200 && hovered.labelVisible,
@@ -189,6 +192,9 @@ try {
       );
     } else {
       await page.getByRole('button', { name: 'Open navigation' }).click();
+      await page.waitForFunction(
+        "document.querySelector('#staff-sidebar').getBoundingClientRect().left >= -1",
+      );
       const opened = await inspect(page);
       assert.ok(
         opened.navIconVisible && opened.labelVisible,
