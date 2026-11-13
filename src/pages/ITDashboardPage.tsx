@@ -97,13 +97,9 @@ export function ITDashboardPage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [operatorPassword, setOperatorPassword] = useState('');
   const [smtp, setSmtp] = useState({
-    host: 'smtp.gmail.com',
-    port: '465',
-    secure: true,
     user: '',
-    fromEmail: '',
-    senderName: 'RFP Monitoring System',
     password: '',
+    fromEmail: '',
   });
   const [smtpOperatorPassword, setSmtpOperatorPassword] = useState('');
   const isIT = roles.includes('it_administrator');
@@ -203,13 +199,9 @@ export function ITDashboardPage() {
       const result = await post<{ saved: boolean; redeployStarted: boolean; note: string }>(
         'it/smtp',
         {
-          host: smtp.host,
-          port: Number(smtp.port),
-          secure: smtp.secure,
           user: smtp.user,
           password: smtp.password,
           fromEmail: smtp.fromEmail,
-          senderName: smtp.senderName,
           operatorPassword: smtpOperatorPassword,
           confirmation: 'APPLY SMTP',
         },
@@ -496,9 +488,10 @@ export function ITDashboardPage() {
                 <Settings2 size={20} /> Configure RFP notification sender
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-                Writes only six SMTP environment variables to the designated RFP Vercel project and
-                requests a production rebuild. Credentials are not stored in the browser after
-                submission or returned from the server.
+                Change only the notification email, its SMTP password, and the From email.
+                The SMTP host, port and security mode are managed separately by IT and cannot
+                be changed here. Saving updates the RFP project's settings and requests a
+                production redeployment. Secret values are never returned by the server.
               </p>
               {smtpStatus && !smtpStatus.ready && (
                 <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -518,30 +511,8 @@ export function ITDashboardPage() {
                 onSubmit={(e) => void configureSMTP(e)}
                 className="mt-5 grid max-w-3xl gap-4 sm:grid-cols-2"
               >
-                <label className="field">
-                  <span>SMTP host</span>
-                  <input
-                    className="input"
-                    value={smtp.host}
-                    required
-                    onChange={(e) => setSmtp({ ...smtp, host: e.target.value })}
-                  />
-                </label>
-                <label className="field">
-                  <span>SMTP port</span>
-                  <select
-                    className="input"
-                    value={smtp.port}
-                    onChange={(e) =>
-                      setSmtp({ ...smtp, port: e.target.value, secure: e.target.value === '465' })
-                    }
-                  >
-                    <option value="465">465 (TLS)</option>
-                    <option value="587">587 (STARTTLS)</option>
-                  </select>
-                </label>
-                <label className="field">
-                  <span>SMTP login email</span>
+                <label className="field sm:col-span-2">
+                  <span>Email (SMTP username)</span>
                   <input
                     className="input"
                     type="email"
@@ -549,29 +520,11 @@ export function ITDashboardPage() {
                     required
                     value={smtp.user}
                     onChange={(e) => setSmtp({ ...smtp, user: e.target.value })}
+                    placeholder="rfp.notifications@yourcompany.com"
                   />
                 </label>
-                <label className="field">
-                  <span>From email</span>
-                  <input
-                    className="input"
-                    type="email"
-                    required
-                    value={smtp.fromEmail}
-                    onChange={(e) => setSmtp({ ...smtp, fromEmail: e.target.value })}
-                  />
-                </label>
-                <label className="field">
-                  <span>Sender display name</span>
-                  <input
-                    className="input"
-                    required
-                    value={smtp.senderName}
-                    onChange={(e) => setSmtp({ ...smtp, senderName: e.target.value })}
-                  />
-                </label>
-                <label className="field">
-                  <span>SMTP app password</span>
+                <label className="field sm:col-span-2">
+                  <span>SMTP Password (app password)</span>
                   <input
                     className="input"
                     type="password"
@@ -579,19 +532,40 @@ export function ITDashboardPage() {
                     required
                     value={smtp.password}
                     onChange={(e) => setSmtp({ ...smtp, password: e.target.value })}
+                    placeholder="Enter SMTP app password"
                   />
                 </label>
                 <label className="field sm:col-span-2">
-                  <span>Confirm your IT login password</span>
+                  <span>SMTP From Email</span>
                   <input
                     className="input"
-                    type="password"
-                    autoComplete="current-password"
+                    type="email"
                     required
-                    value={smtpOperatorPassword}
-                    onChange={(e) => setSmtpOperatorPassword(e.target.value)}
+                    value={smtp.fromEmail}
+                    onChange={(e) => setSmtp({ ...smtp, fromEmail: e.target.value })}
+                    placeholder="rfp.notifications@yourcompany.com"
                   />
+                  <span className="text-xs text-slate-500">
+                    The From email should be authorized by your email provider for this SMTP account.
+                  </span>
                 </label>
+                <div className="sm:col-span-2 border-t pt-4">
+                  <p className="mb-2 text-sm font-semibold">Security confirmation</p>
+                  <label className="field">
+                    <span>Confirm your IT account password</span>
+                    <input
+                      className="input"
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      value={smtpOperatorPassword}
+                      onChange={(e) => setSmtpOperatorPassword(e.target.value)}
+                    />
+                  </label>
+                  <p className="mt-2 text-xs text-slate-500">
+                    This verifies permission to change production settings. It is not an SMTP setting.
+                  </p>
+                </div>
                 <div className="sm:col-span-2">
                   <Button disabled={busy || !smtpStatus?.ready}>
                     {busy ? (
