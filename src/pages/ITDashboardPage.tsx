@@ -3,6 +3,7 @@ import { Activity, BookOpen, CheckCircle2, CircleAlert, Clock3, History, LockKey
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
 import { Button, Spinner } from '../components/ui';
+import { EmailQueueDiagnostics } from '../components/EmailQueueDiagnostics';
 import { get, post } from '../lib/api';
 
 type ITUser = {
@@ -194,6 +195,7 @@ export function ITDashboardPage() {
               <h3 className="font-semibold">Recent notification queue (latest 1,000 jobs)</h3>
               <div className="mt-3 flex flex-wrap gap-3">{Object.entries(data?.summary.emailCounts || {}).map(([status, count]) => <span key={status} className="rounded-lg border px-3 py-2 text-sm">{status}: <strong>{count}</strong></span>)}</div>
               <p className="mt-3 text-xs text-slate-500">Queue statistics are a recent sample, not the entire database. Daily processing and upload-cleanup jobs are configured in Vercel.</p>
+              <div className="mt-4"><EmailQueueDiagnostics /></div>
             </div>
           </div>}
           {tab === 'logins' && <section className="card overflow-hidden">
