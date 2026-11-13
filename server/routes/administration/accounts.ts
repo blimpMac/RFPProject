@@ -19,6 +19,23 @@ async function refreshDepartmentReviewers(requestIds: string[]) {
   for (const requestId of requestIds) await flushEmailQueueForRequest(requestId);
 }
 
+async function assertNotITAccount(
+  db: import('../context.js').DatabaseClient,
+  userId: string,
+) {
+  const result = await db
+    .from('it_administrators')
+    .select('active')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (result.error && !['42P01', 'PGRST205', 'PGRST116'].includes(result.error.code)) {
+    throw result.error;
+  }
+  if (result.data?.active) {
+    throw new HttpError(403, 'IT administrator accounts are managed separately from Finance.');
+  }
+}
+
 const staffAccountSchema = z.discriminatedUnion('accessLevel', [
   z.object({
     email: z.email(),
@@ -54,6 +71,8 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
         'Use the protected administrator recovery process to change your own email.',
       );
     }
+
+    await assertNotITAccount(db, input.userId);
 
     const [target, profile, targetRoles] = await Promise.all([
       db.auth.admin.getUserById(input.userId),
@@ -134,14 +153,19 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
     if (event.httpMethod === 'GET') {
       const listed = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
       if (listed.error) throw listed.error;
-      const [roleResult, profileResult, headResult] = await Promise.all([
+      const [roleResult, profileResult, headResult, itResult] = await Promise.all([
         db.from('user_roles').select('user_id,role'),
         db.from('profiles').select('*'),
         db.from('department_approving_heads').select('user_id,department').order('position'),
+        db.from('it_administrators').select('user_id').eq('active', true),
       ]);
       if (roleResult.error) throw roleResult.error;
       if (profileResult.error) throw profileResult.error;
       if (headResult.error) throw headResult.error;
+      if (itResult.error && !['42P01', 'PGRST205', 'PGRST116'].includes(itResult.error.code)) {
+        throw itResult.error;
+      }
+      const itIds = new Set((itResult.data || []).map((row) => row.user_id));
 
       const rolesByUser = new Map<string, string[]>();
       for (const row of roleResult.data || []) {
@@ -157,7 +181,7 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
         departmentsByUser.set(row.user_id, departments);
       }
 
-      const users: StaffUser[] = listed.data.users.map((user) => {
+      const users: StaffUser[] = listed.data.users.filter((user) => !itIds.has(user.id)).map((user) => {
         const roles = rolesByUser.get(user.id) || [];
         const profile = profilesById.get(user.id);
         return {
@@ -259,6 +283,7 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
           path: ['department'],
         })
         .parse(readJson(event));
+      await assertNotITAccount(db, input.userId);
       const [existing, target] = await Promise.all([
         db.from('user_roles').select('role').eq('user_id', input.userId),
         db.auth.admin.getUserById(input.userId),
@@ -311,6 +336,7 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
       const input = z.object({ userId: z.uuid() }).parse(readJson(event));
       if (input.userId === staff.user.id)
         throw new HttpError(409, 'You cannot remove your own account.');
+      await assertNotITAccount(db, input.userId);
       const [target, profile, targetRoles] = await Promise.all([
         db.auth.admin.getUserById(input.userId),
         db.from('profiles').select('*').eq('id', input.userId).maybeSingle(),
