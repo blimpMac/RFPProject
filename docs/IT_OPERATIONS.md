@@ -6,9 +6,14 @@ The IT workspace at `/admin/it` is for IT operations, not Finance approval.
 It provides user overview, service monitoring, login presence records, audit trail, direct
 password resets without email OTP, and SMTP sender configuration through Vercel's API.
 
-The existing login page `/admin/login` is used by all staff. IT accounts are granted
-through a separate `public.it_administrators` table, **not** through Finance Head
-`user_roles`. When the IT flag is active, its login receives only the IT role.
+All authorized staff use one login page: `/admin/login`. After authentication,
+the server identifies the account's assigned role. The application routes IT
+administrators to `/admin/it` and Finance/Department staff to their authorized
+dashboard. There is **no separate IT login page**.
+
+IT accounts are granted through a separate `public.it_administrators` table,
+**not** through Finance Head `user_roles`. When the IT flag is active, its
+login receives only the IT role.
 
 The Audit Trail is now restricted to IT and visible in the IT sidebar. The Finance Head
 Account Management screen no longer exposes a reset-password button or email queue diagnostics.
@@ -83,12 +88,18 @@ Mark the token sensitive. Do not place it in source code, a form accessible to
 other staff roles, browser variables, logging systems or GitHub commits.
 
 Redeploy the RFP app once to make the new variables available to server
-functions. Thereafter, IT can open **IT Dashboard → SMTP sender**, enter a new
-SMTP account and sender, confirm its own IT password and click **Save SMTP and
-request redeploy**. The server updates only:
+functions. Thereafter, IT can open **IT Dashboard → SMTP sender**, configure only
+these three fields, then confirm its own IT login password and click **Save SMTP
+and request redeploy**:
 
-`SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`,
-`SMTP_PASSWORD`, `SMTP_FROM_EMAIL`.
+- **Email** — the SMTP account username (`SMTP_USER`)
+- **SMTP Password** — the authorized app password (`SMTP_PASSWORD`)
+- **SMTP From Email** — the visible sender address (`SMTP_FROM_EMAIL`)
+
+The server updates only these three Vercel environment variables.
+`SMTP_HOST`, `SMTP_PORT`, and `SMTP_SECURE` remain managed in the
+server environment and are never editable from the website. The IT login
+password confirmation is for security, not an SMTP setting.
 
 The Vercel API request triggers a _new_ production deployment; the settings
 do not take effect until that deployment is READY. Test a sample notification,
