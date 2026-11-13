@@ -132,6 +132,7 @@ export function AdminLayout() {
   const { session, roles, identity, loading, refresh } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [sidebarHovered, setSidebarHovered] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return window.localStorage.getItem('rfp-sidebar-collapsed') !== 'expanded';
@@ -166,6 +167,7 @@ export function AdminLayout() {
   useEffect(() => {
     setOpen(false);
     setProfileMenuOpen(false);
+    setSidebarHovered(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -188,11 +190,14 @@ export function AdminLayout() {
 
   const toggleSidebar = () => {
     if (desktopNavigation) {
+      setSidebarHovered(false);
       setCollapsed((current) => !current);
     } else {
       setOpen(false);
     }
   };
+  const sidebarPeeked = desktopNavigation && collapsed && sidebarHovered;
+  const navigationExpanded = !desktopNavigation || !collapsed || sidebarPeeked;
 
   useEffect(() => {
     if (!session || !roles.length) return;
@@ -274,9 +279,41 @@ export function AdminLayout() {
         )}
         <aside
           id="staff-sidebar"
-          className={`admin-sidebar fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden ${collapsed ? 'admin-sidebar-is-collapsed' : ''} ${open ? 'translate-x-0 admin-sidebar-open' : '-translate-x-full'}`}
+          className={`admin-sidebar fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden ${collapsed ? 'admin-sidebar-is-collapsed' : ''} ${sidebarPeeked ? 'admin-sidebar-is-peeked' : ''} ${open ? 'translate-x-0 admin-sidebar-open' : '-translate-x-full'}`}
+          onMouseEnter={() => {
+            if (desktopNavigation) setSidebarHovered(true);
+          }}
+          onMouseLeave={() => setSidebarHovered(false)}
         >
-          <div className="admin-brand flex h-[5.25rem] shrink-0 items-center justify-between gap-2 px-3">
+          <div className="admin-brand flex h-[5.25rem] shrink-0 items-center gap-2 px-3">
+            <button
+              type="button"
+              className="admin-menu-toggle focus-ring"
+              onClick={toggleSidebar}
+              aria-label={
+                desktopNavigation
+                  ? collapsed
+                    ? sidebarPeeked
+                      ? 'Pin navigation open'
+                      : 'Expand navigation choices'
+                    : 'Collapse navigation choices'
+                  : 'Close navigation menu'
+              }
+              title={
+                desktopNavigation
+                  ? collapsed
+                    ? sidebarPeeked
+                      ? 'Keep sidebar expanded'
+                      : 'Expand sidebar'
+                    : 'Collapse sidebar'
+                  : 'Close menu'
+              }
+              aria-controls="staff-navigation"
+              aria-expanded={desktopNavigation ? navigationExpanded : open}
+            >
+              <Menu className="admin-desktop-menu-icon" size={21} />
+              <X className="admin-mobile-close-icon" size={21} />
+            </button>
             <Link
               to="/admin"
               className="admin-brand-link flex min-w-0 items-center gap-3 px-2"
@@ -294,30 +331,6 @@ export function AdminLayout() {
                 </small>
               </span>
             </Link>
-            <button
-              type="button"
-              className="admin-menu-toggle focus-ring"
-              onClick={toggleSidebar}
-              aria-label={
-                desktopNavigation
-                  ? collapsed
-                    ? 'Show navigation choices'
-                    : 'Hide navigation choices'
-                  : 'Close navigation menu'
-              }
-              title={
-                desktopNavigation
-                  ? collapsed
-                    ? 'Expand sidebar'
-                    : 'Collapse sidebar'
-                  : 'Close menu'
-              }
-              aria-controls="staff-navigation"
-              aria-expanded={desktopNavigation ? !collapsed : open}
-            >
-              <Menu className="admin-desktop-menu-icon" size={21} />
-              <X className="admin-mobile-close-icon" size={21} />
-            </button>
           </div>
 
           <nav
@@ -340,8 +353,8 @@ export function AdminLayout() {
                           to={item.to}
                           end={item.to === '/admin'}
                           onClick={() => setOpen(false)}
-                          aria-label={collapsed ? item.label : undefined}
-                          title={collapsed ? item.label : undefined}
+                          aria-label={collapsed && !sidebarPeeked ? item.label : undefined}
+                          title={collapsed && !sidebarPeeked ? item.label : undefined}
                           className={({ isActive }) =>
                             `admin-sidebar-link ${isActive ? 'admin-sidebar-link-active' : ''}`
                           }
