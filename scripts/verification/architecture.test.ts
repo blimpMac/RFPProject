@@ -30,3 +30,14 @@ test('approval workspace stays feature-oriented', () => {
     assert.ok(read(path).length > 0, `${path} must exist`);
   }
 });
+
+test('IT can update only its own profile and receives a technical manual', () => {
+  const profile = read('server/routes/staff/profile.ts');
+  assert.match(profile, /requireStaff\(event, \[[\s\S]*?'it_administrator'/);
+  assert.match(profile, /\.eq\('id', staff\.user\.id\)/);
+  const manual = read('src/pages/ManualPage.tsx');
+  assert.ok(manual.includes("roles.includes('it_administrator')"));
+  assert.ok(manual.includes("IT Technical Manual"));
+  assert.equal(manual.includes('to="/admin/new-request"'), false);
+  assert.equal(manual.includes('to="/admin/preview-forms"'), false);
+});
