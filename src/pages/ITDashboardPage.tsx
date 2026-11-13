@@ -411,6 +411,25 @@ export function ITDashboardPage() {
                 <div className="mt-4">
                   <EmailQueueDiagnostics />
                 </div>
+                <div className="mt-6 border-t pt-5">
+                  <h3 className="font-semibold">Recent IT security actions</h3>
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="w-full min-w-[34rem] text-left text-sm">
+                      <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                        <tr><th className="p-2">Action</th><th className="p-2">Performed by</th><th className="p-2">Time</th></tr>
+                      </thead>
+                      <tbody>
+                        {(data?.securityEvents || []).map((entry) => (
+                          <tr key={entry.id} className="border-t">
+                            <td className="p-2">{entry.action.replaceAll('_', ' ')}</td>
+                            <td className="p-2">{userById.get(entry.actor_user_id)?.name || 'IT operator'}</td>
+                            <td className="p-2">{localTime(entry.occurred_at)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           )}
