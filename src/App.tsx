@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from './components/AuthProvider';
+import { AuthProvider, useAuth } from './components/AuthProvider';
 import { Spinner } from './components/ui';
 
 const AdminLayout = lazy(() =>
@@ -48,6 +48,15 @@ const AuditTrailPage = lazy(() =>
   import('./pages/AuditTrailPage').then((m) => ({ default: m.AuditTrailPage })),
 );
 
+const ITDashboardPage = lazy(() =>
+  import('./pages/ITDashboardPage').then((m) => ({ default: m.ITDashboardPage })),
+);
+
+function RoleHome() {
+  const { roles } = useAuth();
+  return roles.includes('it_administrator') ? <Navigate to="/admin/it" replace /> : <DashboardPage />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -68,7 +77,8 @@ export default function App() {
             <Route path="/admin/reset-password" element={<PasswordResetPage />} />
             <Route path="/admin/rfp/:id/print" element={<DigitalRfpPrintPage />} />
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<DashboardPage />} />
+              <Route index element={<RoleHome />} />
+              <Route path="it" element={<ITDashboardPage />} />
               <Route path="new-request" element={<RequestPage embedded />} />
               <Route path="monitoring" element={<MonitoringPage />} />
               <Route path="approvals" element={<ApprovalsPage />} />
