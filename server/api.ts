@@ -13,9 +13,11 @@ import { handleAdministrationRoutes } from './routes/administration.js';
 import type { RouteHandler } from './routes/context.js';
 import { handlePublicRoutes } from './routes/public.js';
 import { handleStaffRoutes } from './routes/staff.js';
+import { handleITRoutes } from './routes/it.js';
 
 const routeHandlers: RouteHandler[] = [
   handlePublicRoutes,
+  handleITRoutes,
   handleStaffRoutes,
   handleAdministrationRoutes,
 ];
