@@ -21,7 +21,7 @@ export async function sendBrandedRecoveryEmail(recipient: string, actionLink: st
       to: recipient,
       subject: recoverySubject,
       html: renderRecoveryEmail(actionLink),
-      text: 'A password-reset request was made for your RFP Monitoring System account. Use the secure link in the HTML email. If you did not request this, ignore it.',
+      text: `RFP Monitoring System — Reset your password\n\nUse the following secure link to set a new password:\n\n${actionLink}\n\nIf you did not request this, ignore this email. Never share your password or recovery link.`,
     });
   } finally {
     transport.close();
