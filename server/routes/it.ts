@@ -92,7 +92,8 @@ async function confirmITPassword(_db: DatabaseClient, staff: Staff, password: st
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
   const result = await verifier.auth.signInWithPassword({
-    email: staff.user.email, password,
+    email: staff.user.email,
+    password,
   });
   if (result.error || result.data.user?.id !== staff.user.id) {
     throw new HttpError(403, 'IT password confirmation failed.');
