@@ -99,7 +99,11 @@ export async function readVercelSmtpStatus() {
     ready: true,
     checked: true,
     keys: vars
-      .filter((entry) => ['SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM_EMAIL'].includes(entry.key || '') && entry.target?.includes('production'))
+      .filter(
+        (entry) =>
+          ['SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM_EMAIL'].includes(entry.key || '') &&
+          entry.target?.includes('production'),
+      )
       .map((entry) => entry.key!),
   };
 }

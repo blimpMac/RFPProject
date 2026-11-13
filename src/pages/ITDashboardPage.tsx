@@ -488,10 +488,10 @@ export function ITDashboardPage() {
                 <Settings2 size={20} /> Configure RFP notification sender
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-                Change only the notification email, its SMTP password, and the From email.
-                The SMTP host, port and security mode are managed separately by IT and cannot
-                be changed here. Saving updates the RFP project's settings and requests a
-                production redeployment. Secret values are never returned by the server.
+                Change only the notification email, its SMTP password, and the From email. The SMTP
+                host, port and security mode are managed separately by IT and cannot be changed
+                here. Saving updates the RFP project's settings and requests a production
+                redeployment. Secret values are never returned by the server.
               </p>
               {smtpStatus && !smtpStatus.ready && (
                 <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -546,7 +546,8 @@ export function ITDashboardPage() {
                     placeholder="rfp.notifications@yourcompany.com"
                   />
                   <span className="text-xs text-slate-500">
-                    The From email should be authorized by your email provider for this SMTP account.
+                    The From email should be authorized by your email provider for this SMTP
+                    account.
                   </span>
                 </label>
                 <div className="sm:col-span-2 border-t pt-4">
@@ -563,7 +564,8 @@ export function ITDashboardPage() {
                     />
                   </label>
                   <p className="mt-2 text-xs text-slate-500">
-                    This verifies permission to change production settings. It is not an SMTP setting.
+                    This verifies permission to change production settings. It is not an SMTP
+                    setting.
                   </p>
                 </div>
                 <div className="sm:col-span-2">

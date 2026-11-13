@@ -49,8 +49,8 @@ export function LoginPage() {
             Staff sign in
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            One sign-in for all authorized staff. Your access level is detected automatically
-            and the system opens the appropriate dashboard after login.
+            One sign-in for all authorized staff. Your access level is detected automatically and
+            the system opens the appropriate dashboard after login.
           </p>
 
           {!isConfigured && (
