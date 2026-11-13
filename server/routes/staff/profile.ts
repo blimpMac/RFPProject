@@ -8,7 +8,14 @@ export const handleProfileRoutes: RouteHandler = async ({ event, route, db }) =>
   if (route !== 'profile/name') return undefined;
 
   ensureMethod(event, 'PATCH');
-  const staff = await requireStaff(event);
+  // Every authenticated staff role may edit its own display name.
+  // Keep the update scoped to staff.user.id; no Finance permissions are granted.
+  const staff = await requireStaff(event, [
+    'it_administrator',
+    'super_administrator',
+    'finance_reviewer',
+    'department_approver',
+  ]);
   const input = z.object({ fullName: z.string().trim().min(2).max(160) }).parse(readJson(event));
   const fullName = input.fullName.trim();
 
