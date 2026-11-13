@@ -69,9 +69,20 @@ test('password recovery uses RFP branding and retains secure Supabase reset link
 
   assert.ok(page.includes('RFP Monitoring System'));
   assert.ok(page.includes('Recovery request received'));
-  assert.ok(page.includes('window.location.origin}/admin/reset-password'));
-  assert.ok(page.includes('supabase.auth.resetPasswordForEmail'));
+  assert.ok(page.includes("fetch('/api/auth/recover'"));
+  assert.equal(page.includes('supabase.auth.resetPasswordForEmail'), false);
   assert.ok(page.includes('supabase.auth.updateUser'));
+  const api = read('server/api.ts');
+  const recovery = read('server/routes/recovery.ts');
+  const delivery = read('server/email/recovery.ts');
+  assert.ok(api.includes('handleRecoveryRoutes'));
+  assert.ok(recovery.includes("route !== 'auth/recover'"));
+  assert.ok(recovery.includes("type: 'recovery'"));
+  assert.ok(recovery.includes('p_max_attempts: 10'));
+  assert.ok(recovery.includes('p_max_attempts: 3'));
+  assert.ok(recovery.includes("eq('active', true)"));
+  assert.ok(recovery.includes('return json(200, receipt)'));
+  assert.ok(delivery.includes('sendMail'));
   assert.ok(template.includes('RFP Monitoring System'));
   assert.ok(template.includes('Reset my password'));
   assert.equal(template.split('{{ .ConfirmationURL }}').length - 1, 1);
