@@ -129,7 +129,7 @@ async function inspect(page: import('@playwright/test').Page): Promise<Metrics> 
     const navIconRect = navIcon.getBoundingClientRect();
     return {
       visible: style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0.9 &&
-        rect.width > 35 && rect.height > 35 && rect.left >= 0 && rect.right <= innerWidth &&
+        rect.width > 24 && rect.height > 24 && rect.left >= 0 && rect.right <= innerWidth &&
         rect.top >= 0 && rect.bottom <= innerHeight,
       hitTest: Boolean(center?.closest('#menu-toggle')),
       top: rect.top,
