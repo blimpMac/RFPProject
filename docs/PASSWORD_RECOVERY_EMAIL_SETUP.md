@@ -41,7 +41,7 @@ provider unless separately configured.
 - The original From address is preserved while its display name becomes
   **RFP Monitoring System**.
 - Sensitive SMTP and Supabase administrative credentials remain server-only.
-- A failed SMTP send returns a generic availability error.
+- SMTP delivery failures return the same generic response as unknown emails to avoid disclosing whether an account exists; IT should check transport health if recovery messages do not arrive.
 - The reset-password screen uses `supabase.auth.updateUser({ password })`;
   after a successful reset the browser signs out, requiring a fresh login.
 
