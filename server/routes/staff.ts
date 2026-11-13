@@ -21,7 +21,12 @@ export const handleStaffRoutes: RouteHandler = async (context) => {
   const { event, route } = context;
   if (route === 'me') {
     ensureMethod(event, 'GET');
-    const staff = await requireStaff(event, ['it_administrator', 'super_administrator', 'finance_reviewer', 'department_approver']);
+    const staff = await requireStaff(event, [
+      'it_administrator',
+      'super_administrator',
+      'finance_reviewer',
+      'department_approver',
+    ]);
     return json(200, {
       ok: true,
       user: { id: staff.user.id, email: staff.user.email },

@@ -137,18 +137,22 @@ export function AdminLayout() {
 
   useEffect(() => {
     if (!session || !roles.length) return;
-    const heartbeat = () => { void post('presence', { action: 'heartbeat', path: location.pathname }).catch(() => {}); };
+    const heartbeat = () => {
+      void post('presence', { action: 'heartbeat', path: location.pathname }).catch(() => {});
+    };
     heartbeat();
     const timer = window.setInterval(heartbeat, 60_000);
     return () => window.clearInterval(timer);
   }, [session?.access_token, roles, location.pathname]);
 
   const signOut = async () => {
-    try { await post('presence', { action: 'logout', path: location.pathname }); }
-    catch { /* Missing activity log must not block sign-out. */ }
+    try {
+      await post('presence', { action: 'logout', path: location.pathname });
+    } catch {
+      /* Missing activity log must not block sign-out. */
+    }
     await supabase.auth.signOut();
   };
-
 
   const availableItems = useMemo(
     () => navigationItems.filter((item) => canViewNavigationItem(item, roles)),
@@ -186,7 +190,10 @@ export function AdminLayout() {
       </div>
     );
 
-  if (isIT && !['/admin', '/admin/it', '/admin/audit-trail', '/admin/manual'].includes(location.pathname)) {
+  if (
+    isIT &&
+    !['/admin', '/admin/it', '/admin/audit-trail', '/admin/manual'].includes(location.pathname)
+  ) {
     return <Navigate to="/admin/it" replace />;
   }
 

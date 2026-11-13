@@ -54,7 +54,11 @@ const ITDashboardPage = lazy(() =>
 
 function RoleHome() {
   const { roles } = useAuth();
-  return roles.includes('it_administrator') ? <Navigate to="/admin/it" replace /> : <DashboardPage />;
+  return roles.includes('it_administrator') ? (
+    <Navigate to="/admin/it" replace />
+  ) : (
+    <DashboardPage />
+  );
 }
 
 export default function App() {

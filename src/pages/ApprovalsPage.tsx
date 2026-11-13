@@ -518,8 +518,8 @@ export function ApprovalsPage() {
             <div className="card mt-5 space-y-3 p-5">
               <h3 className="font-semibold">Digital RFP form</h3>
               <p className="text-sm leading-6 text-slate-500">
-                Open this RFP in a dedicated page rather than nesting the form in the approval queue.
-                For demonstration layouts, use the Preview Forms tab.
+                Open this RFP in a dedicated page rather than nesting the form in the approval
+                queue. For demonstration layouts, use the Preview Forms tab.
               </p>
               <div className="flex flex-wrap gap-2">
                 <Link
