@@ -1,13 +1,9 @@
 import { HttpError } from '../lib/http.js';
 
 type SMTPSettings = {
-  host: string;
-  port: number;
-  secure: boolean;
   user: string;
   password: string;
   fromEmail: string;
-  senderName: string;
 };
 
 const token = () => process.env.VERCEL_API_TOKEN;
@@ -51,16 +47,15 @@ async function vercelCall(path: string, init: RequestInit = {}) {
 
 export async function applySMTPToVercelAndRedeploy(input: SMTPSettings) {
   const id = encodeURIComponent(project() || '');
+  // Only the three sender credentials can be edited through the IT portal.
+  // SMTP_HOST, SMTP_PORT and SMTP_SECURE remain server-managed settings.
   const variables = [
-    ['SMTP_HOST', input.host],
-    ['SMTP_PORT', String(input.port)],
-    ['SMTP_SECURE', String(input.secure)],
     ['SMTP_USER', input.user],
     ['SMTP_PASSWORD', input.password],
-    ['SMTP_FROM_EMAIL', `${input.senderName.replace(/[<>\r\n]/g, '').trim()} <${input.fromEmail}>`],
+    ['SMTP_FROM_EMAIL', input.fromEmail],
   ].map(([key, value]) => ({ key, value, type: 'encrypted', target: ['production'] }));
 
-  // Upsert only the allowed six keys for the configured RFP project.
+  // Upsert only these three allowed keys in the designated RFP project.
   await vercelCall(`/v10/projects/${id}/env?upsert=true`, {
     method: 'POST',
     body: JSON.stringify(variables),
@@ -104,7 +99,7 @@ export async function readVercelSmtpStatus() {
     ready: true,
     checked: true,
     keys: vars
-      .filter((entry) => entry.key?.startsWith('SMTP_') && entry.target?.includes('production'))
+      .filter((entry) => ['SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM_EMAIL'].includes(entry.key || '') && entry.target?.includes('production'))
       .map((entry) => entry.key!),
   };
 }
