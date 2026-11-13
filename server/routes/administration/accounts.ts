@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { StaffUser } from '../../../shared/contracts/accounts.js';
+import { isValidFinanceEmailType } from '../../../shared/constants/finance-email-types.js';
 import { isLegacyProtectedStaffEmail } from '../../domain/access.js';
 import { flushEmailQueueForRequest } from '../../email/service.js';
 import { inviteStaffUser } from '../../email/staff-invitation.js';
@@ -56,6 +57,61 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
 }) => {
   if (route === 'staff-users/reset-password') {
     throw new HttpError(403, 'Password reset is now restricted to the IT Administrator workspace.');
+  }
+
+  if (route === 'staff-users/email-preferences') {
+    ensureMethod(event, 'PATCH');
+    // Finance Head / Finance Manager is the only role that may assign email types.
+    const actor = await requireStaff(event, ['super_administrator']);
+    const input = z
+      .object({
+        userId: z.uuid(),
+        allowedTypes: z
+          .array(z.string().refine(isValidFinanceEmailType, 'Unrecognized request type'))
+          .max(11)
+          .refine((types) => new Set(types).size === types.length, 'Duplicate request type'),
+      })
+      .strict()
+      .parse(readJson(event));
+    await assertNotITAccount(db, input.userId);
+    const [roles, profile, previous] = await Promise.all([
+      db.from('user_roles').select('role').eq('user_id', input.userId),
+      db.from('profiles').select('id,email').eq('id', input.userId).maybeSingle(),
+      db.from('finance_email_preferences').select('allowed_types').eq('user_id', input.userId).maybeSingle(),
+    ]);
+    if (roles.error) throw roles.error;
+    if (profile.error) throw profile.error;
+    if (previous.error) throw previous.error;
+    if (!profile.data) throw new HttpError(404, 'Finance Member account not found.');
+    if (!roles.data?.some((row) => row.role === 'finance_reviewer') ||
+        roles.data.some((row) => row.role === 'super_administrator')) {
+      throw new HttpError(403, 'Only Finance Member email preferences may be assigned.');
+    }
+
+    const updated = await db.from('finance_email_preferences').upsert(
+      {
+        user_id: input.userId,
+        allowed_types: input.allowedTypes,
+        updated_by: actor.user.id,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' },
+    );
+    if (updated.error) throw updated.error;
+
+    // Queue-level INSERT filter handles new notifications; the delivery worker
+    // also rechecks pending messages against the latest saved preference.
+    const audit = await db.from('audit_logs').insert({
+      table_name: 'finance_email_preferences',
+      record_id: input.userId,
+      operation: previous.data ? 'UPDATE' : 'INSERT',
+      actor_user_id: actor.user.id,
+      actor_email: actor.user.email || null,
+      old_values: previous.data ? { allowed_types: previous.data.allowed_types } : null,
+      new_values: { allowed_types: input.allowedTypes },
+    });
+    if (audit.error) console.error('Finance notification preference audit failed', audit.error.code);
+    return json(200, { ok: true, allowedTypes: input.allowedTypes });
   }
 
   if (route === 'staff-users/email') {
@@ -150,15 +206,20 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
     if (event.httpMethod === 'GET') {
       const listed = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
       if (listed.error) throw listed.error;
-      const [roleResult, profileResult, headResult, itResult] = await Promise.all([
+      const [roleResult, profileResult, headResult, itResult, preferenceResult] = await Promise.all([
         db.from('user_roles').select('user_id,role'),
         db.from('profiles').select('*'),
         db.from('department_approving_heads').select('user_id,department').order('position'),
         db.from('it_administrators').select('user_id').eq('active', true),
+        db.from('finance_email_preferences').select('user_id,allowed_types'),
       ]);
       if (roleResult.error) throw roleResult.error;
       if (profileResult.error) throw profileResult.error;
       if (headResult.error) throw headResult.error;
+      if (preferenceResult.error) throw preferenceResult.error;
+      const preferencesById = new Map(
+        (preferenceResult.data || []).map((entry) => [entry.user_id, entry.allowed_types]),
+      );
       if (itResult.error && !['42P01', 'PGRST205', 'PGRST116'].includes(itResult.error.code)) {
         throw itResult.error;
       }
@@ -199,6 +260,9 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
                 ? 'staff'
                 : null,
             protected: profile?.protected_account ?? isLegacyProtectedStaffEmail(user.email),
+            financeNotificationTypes: roles.includes('finance_reviewer')
+              ? (preferencesById.get(user.id) ?? null)
+              : null,
           };
         });
       return json(200, { ok: true, users, canRemove: true });
@@ -264,6 +328,7 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
           active: true,
           protected: false,
           accessLevel: input.accessLevel,
+          financeNotificationTypes: null,
         },
       });
     }
