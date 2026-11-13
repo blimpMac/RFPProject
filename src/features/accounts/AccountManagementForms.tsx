@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyRound, Mail, Trash2 } from 'lucide-react';
+import { Mail, Trash2 } from 'lucide-react';
 import type { AccessLevel, StaffUser } from '../../../shared/contracts/accounts';
 import { Button, Modal, Spinner, StatusBadge } from '../../components/ui';
 import { patch, post } from '../../lib/api';
@@ -16,14 +16,12 @@ export function AccountRow({
   busy,
   onEdit,
   onEmail,
-  onReset,
   onRemove,
 }: {
   user: StaffUser;
   busy: boolean;
   onEdit: () => void;
   onEmail: () => void;
-  onReset: () => void;
   onRemove: () => void;
 }) {
   const isSuperAdministrator = user.roles.includes('super_administrator');
@@ -51,10 +49,6 @@ export function AccountRow({
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" disabled={busy} onClick={onReset}>
-          <KeyRound size={16} />
-          Reset password
-        </Button>
         {!isSuperAdministrator && !user.protected && user.accessLevel && (
           <Button variant="secondary" disabled={busy} onClick={onEmail}>
             <Mail size={16} />
