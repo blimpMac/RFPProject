@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   BarChart3,
@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   FilePlus2,
   FileStack,
+  ServerCog,
   History,
   BookOpen,
   Files,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../components/AuthProvider';
 import { supabase } from '../lib/supabase';
+import { post } from '../lib/api';
 import { Spinner } from '../components/ui';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { EditNameModal } from '../features/profile/EditNameModal';
@@ -27,12 +29,20 @@ type NavigationItem = {
   to: string;
   label: string;
   description: string;
-  group: 'Workspace' | 'Administration';
+  group: 'Workspace' | 'Administration' | 'IT Operations';
   icon: LucideIcon;
   allowedRoles?: Role[];
 };
 
 const navigationItems: NavigationItem[] = [
+  {
+    to: '/admin/it',
+    label: 'IT Dashboard',
+    description: 'User overview, services and security',
+    group: 'IT Operations',
+    icon: ServerCog,
+    allowedRoles: ['it_administrator'],
+  },
   {
     to: '/admin',
     label: 'Overview',
@@ -72,9 +82,9 @@ const navigationItems: NavigationItem[] = [
     to: '/admin/audit-trail',
     label: 'Audit trail',
     description: 'Recorded system activity',
-    group: 'Workspace',
+    group: 'IT Operations',
     icon: History,
-    allowedRoles: ['super_administrator', 'finance_reviewer'],
+    allowedRoles: ['it_administrator'],
   },
   {
     to: '/admin/documents',
@@ -98,9 +108,13 @@ const roleLabels: Record<Role, string> = {
   super_administrator: 'Finance Head',
   department_approver: 'Department Head',
   finance_reviewer: 'Finance Member',
+  it_administrator: 'IT Administrator',
 };
 
 function canViewNavigationItem(item: NavigationItem, roles: Role[]) {
+  if (roles.includes('it_administrator')) {
+    return Boolean(item.allowedRoles?.includes('it_administrator'));
+  }
   return !item.allowedRoles || roles.some((role) => item.allowedRoles?.includes(role));
 }
 
@@ -119,6 +133,22 @@ export function AdminLayout() {
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [editingName, setEditingName] = useState(false);
+  const isIT = roles.includes('it_administrator');
+
+  useEffect(() => {
+    if (!session || !roles.length) return;
+    const heartbeat = () => { void post('presence', { action: 'heartbeat', path: location.pathname }).catch(() => {}); };
+    heartbeat();
+    const timer = window.setInterval(heartbeat, 60_000);
+    return () => window.clearInterval(timer);
+  }, [session?.access_token, roles, location.pathname]);
+
+  const signOut = async () => {
+    try { await post('presence', { action: 'logout', path: location.pathname }); }
+    catch { /* Missing activity log must not block sign-out. */ }
+    await supabase.auth.signOut();
+  };
+
 
   const availableItems = useMemo(
     () => navigationItems.filter((item) => canViewNavigationItem(item, roles)),
@@ -149,12 +179,16 @@ export function AdminLayout() {
           <p className="mt-2 text-slate-500">
             Your account is signed in but has no RFP role. Ask the Finance Head to grant access.
           </p>
-          <button className="btn btn-secondary mt-4" onClick={() => supabase.auth.signOut()}>
+          <button className="btn btn-secondary mt-4" onClick={() => void signOut()}>
             Sign out
           </button>
         </div>
       </div>
     );
+
+  if (isIT && !['/admin', '/admin/it', '/admin/audit-trail', '/admin/manual'].includes(location.pathname)) {
+    return <Navigate to="/admin/it" replace />;
+  }
 
   return (
     <>
@@ -219,7 +253,7 @@ export function AdminLayout() {
             className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-3 pt-4"
             aria-label="Staff navigation"
           >
-            {(['Workspace', 'Administration'] as const).map((group) => {
+            {(['IT Operations', 'Workspace', 'Administration'] as const).map((group) => {
               const items = availableItems.filter((item) => item.group === group);
               if (!items.length) return null;
               return (
@@ -322,15 +356,17 @@ export function AdminLayout() {
               </h1>
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              <Link
-                to="/admin/new-request"
-                className="btn btn-primary inline-flex items-center justify-center gap-2 whitespace-nowrap px-3 py-2 text-xs font-semibold sm:px-4 sm:text-sm"
-                aria-label="Add a new Request"
-                aria-current={location.pathname === '/admin/new-request' ? 'page' : undefined}
-              >
-                <FilePlus2 size={16} aria-hidden="true" />
-                <span className="hidden sm:inline">Add a new Request</span>
-              </Link>
+              {!isIT && (
+                <Link
+                  to="/admin/new-request"
+                  className="btn btn-primary inline-flex items-center justify-center gap-2 whitespace-nowrap px-3 py-2 text-xs font-semibold sm:px-4 sm:text-sm"
+                  aria-label="Add a new Request"
+                  aria-current={location.pathname === '/admin/new-request' ? 'page' : undefined}
+                >
+                  <FilePlus2 size={16} aria-hidden="true" />
+                  <span className="hidden sm:inline">Add a new Request</span>
+                </Link>
+              )}
               <ThemeToggle compact />
             </div>
           </header>
