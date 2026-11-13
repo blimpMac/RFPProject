@@ -140,7 +140,7 @@ export function ITDashboardPage() {
         </div>
       </section>
       <div className="grid gap-3 sm:grid-cols-3">
-        {[
+        {([
           ['Registered users', data?.summary.totalUsers ?? '—', Users],
           ['Active accounts', data?.summary.activeUsers ?? '—', CheckCircle2],
           ['Active login sessions', data?.summary.onlineSessions ?? '—', Activity],
@@ -181,7 +181,7 @@ export function ITDashboardPage() {
             </table></div>
           </section>}
           {tab === 'services' && <div className="grid gap-3 lg:grid-cols-2">
-            {[
+            {([
               ['Supabase database', data?.services.database, 'Database connectivity and account records'],
               ['Notification SMTP', data?.services.smtp, 'Sender: ' + (data?.services.sender || '—')],
               ['Vercel management API', data?.services.vercelApi, 'Required for editing sender without visiting Vercel'],
