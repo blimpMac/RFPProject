@@ -23,8 +23,18 @@ export async function requireStaff(event: ApplicationEvent, allowed?: string[]):
   if (roleError) throw roleError;
   if (profileError || !profile) throw new HttpError(403, 'Your staff profile is not configured.');
   if (!profile.active) throw new HttpError(403, 'This staff account is inactive.');
-  const roles = (data || []).map((row) => row.role as string);
-  if (!roles.length || (allowed && !roles.some((r) => allowed.includes(r))))
+  // Separate IT operators from payment authority, even with legacy roles.
+  // Keep the existing application functional before the IT migration is applied.
+  const itAccess = await db.from('it_administrators')
+    .select('active').eq('user_id', user.id).maybeSingle();
+  if (itAccess.error && !['42P01', 'PGRST205', 'PGRST116'].includes(itAccess.error.code)) {
+    throw itAccess.error;
+  }
+  const isIT = itAccess.data?.active === true;
+  const roles = isIT
+    ? ['it_administrator']
+    : (data || []).map((row) => row.role as string);
+  if (!roles.length || (isIT && !allowed) || (allowed && !roles.some((r) => allowed.includes(r))))
     throw new HttpError(403, 'You do not have access to this action.');
   return {
     user,
