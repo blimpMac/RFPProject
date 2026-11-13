@@ -61,3 +61,21 @@ test('staff sign-out redirects immediately without stale auth state or blocked p
   assert.ok(layout.includes("navigate('/admin/login', { replace: true })"));
   assert.equal(layout.includes("await post('presence', { action: 'logout'"), false);
 });
+
+test('password recovery uses RFP branding and retains secure Supabase reset links', () => {
+  const page = read('src/pages/PasswordRecoveryPage.tsx');
+  const template = read('supabase/templates/recovery.html');
+  const authConfig = read('supabase/config.toml');
+
+  assert.ok(page.includes('RFP Monitoring System'));
+  assert.ok(page.includes('Recovery request received'));
+  assert.ok(page.includes("window.location.origin}/admin/reset-password"));
+  assert.ok(page.includes('supabase.auth.resetPasswordForEmail'));
+  assert.ok(page.includes('supabase.auth.updateUser'));
+  assert.ok(template.includes('RFP Monitoring System'));
+  assert.ok(template.includes('Reset my password'));
+  assert.equal(template.split('{{ .ConfirmationURL }}').length - 1, 1);
+  assert.match(template, /Didn't request this\?/);
+  assert.match(authConfig, /\[auth\.email\.template\.recovery\]/);
+  assert.ok(authConfig.includes('supabase/templates/recovery.html'));
+});
