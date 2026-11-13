@@ -12,10 +12,12 @@ import { adminClient } from './lib/supabase.js';
 import { handleAdministrationRoutes } from './routes/administration.js';
 import type { RouteHandler } from './routes/context.js';
 import { handlePublicRoutes } from './routes/public.js';
+import { handleRecoveryRoutes } from './routes/recovery.js';
 import { handleStaffRoutes } from './routes/staff.js';
 import { handleITRoutes } from './routes/it.js';
 
 const routeHandlers: RouteHandler[] = [
+  handleRecoveryRoutes,
   handlePublicRoutes,
   handleITRoutes,
   handleStaffRoutes,
