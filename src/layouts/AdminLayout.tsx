@@ -426,18 +426,6 @@ export function AdminLayout() {
               </h1>
             </div>
             <div className="admin-topbar-actions ml-auto flex min-w-0 shrink-0 items-center gap-2">
-              {!isIT && (
-                <Link
-                  to="/admin/new-request"
-                  className="btn btn-primary admin-topbar-request"
-                  aria-label="Add a new Request"
-                  title="Add a new Request"
-                  aria-current={location.pathname === '/admin/new-request' ? 'page' : undefined}
-                >
-                  <FilePlus2 size={17} aria-hidden="true" />
-                  <span className="hidden md:inline">Add a new Request</span>
-                </Link>
-              )}
               <ThemeToggle compact />
               <div className="admin-account relative" ref={profileMenuRef}>
                 <button
