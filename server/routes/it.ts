@@ -217,9 +217,12 @@ export const handleITRoutes: RouteHandler = async ({ event, route, db, config })
       },
       services: {
         database: 'connected',
-        smtp: Boolean(
-          config.SMTP_HOST && config.SMTP_USER && config.SMTP_PASSWORD && config.SMTP_FROM_EMAIL,
-        )
+        smtp: [
+          config.SMTP_HOST,
+          config.SMTP_USER,
+          config.SMTP_PASSWORD,
+          config.SMTP_FROM_EMAIL,
+        ].every(Boolean)
           ? 'configured on running deployment'
           : 'not configured',
         sender: config.SMTP_FROM_EMAIL || 'Not configured',
