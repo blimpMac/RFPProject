@@ -230,19 +230,15 @@ try {
     const zoomTest = await browser.newPage({ viewport: { width, height: 850 } });
     await zoomTest.setContent(markup());
     await zoomTest.addStyleTag({ content: stylesheet });
-    await zoomTest.evaluate("document.body.style.zoom = '1.5'");
-    const zoomed = await inspect(zoomTest);
-    assert.ok(
-      zoomed.visible && zoomed.hitTest,
-      `Burger is missing after 150% visual zoom at width ${width}: ${JSON.stringify(zoomed)}`,
-    );
-    console.log(
-      JSON.stringify({
-        cssWidth: width,
-        collapsed,
-        zoomed: { visible: zoomed.visible, hitTest: zoomed.hitTest },
-      }),
-    );
+    for (const zoom of [0.75, 0.8, 1.25, 1.5]) {
+      await zoomTest.evaluate(`document.body.style.zoom = '${zoom}'`);
+      const zoomed = await inspect(zoomTest);
+      assert.ok(
+        zoomed.visible && zoomed.hitTest,
+        `Burger is missing at ${Math.round(zoom * 100)}% visual zoom and width ${width}: ${JSON.stringify(zoomed)}`,
+      );
+    }
+    console.log(JSON.stringify({ cssWidth: width, collapsed, zoomLevels: [75, 80, 125, 150] }));
     await page.close();
     await zoomTest.close();
   }
@@ -250,5 +246,5 @@ try {
   await browser.close();
 }
 console.log(
-  'PASS: navigation icon, hover choices, click/pin, scroll and 150% zoom at all tested widths.',
+  'PASS: navigation icon, hover choices, click/pin, scrolling and 75–150% zoom at all tested widths.',
 );
