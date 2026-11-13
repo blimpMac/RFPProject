@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   CheckSquare,
@@ -131,6 +131,7 @@ function initials(name?: string | null) {
 export function AdminLayout() {
   const { session, roles, identity, loading, refresh } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
@@ -227,12 +228,29 @@ export function AdminLayout() {
   }, [session, roles, location.pathname]);
 
   const signOut = async () => {
-    try {
-      await post('presence', { action: 'logout', path: location.pathname });
-    } catch {
-      /* Missing activity log must not block sign-out. */
+    // Keep activity logging best-effort and nonblocking. Sending the captured
+    // access token directly avoids reading the session while it is being cleared.
+    if (session) {
+      void fetch('/api/presence', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ action: 'logout', path: location.pathname }),
+        keepalive: true,
+      }).catch(() => {});
     }
-    await supabase.auth.signOut();
+
+    try {
+      // Only this browser needs to sign out; don't delay routing on a
+      // network-wide session revocation or an activity-monitoring request.
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      if (error) throw error;
+      navigate('/admin/login', { replace: true });
+    } catch {
+      window.alert('Unable to sign out. Please try again.');
+    }
   };
 
   const availableItems = useMemo(
