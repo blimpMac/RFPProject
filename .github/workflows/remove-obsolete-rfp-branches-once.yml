@@ -1,0 +1,38 @@
+name: Remove obsolete RFP branches once
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/remove-obsolete-rfp-branches-once.yml
+permissions:
+  contents: write
+jobs:
+  cleanup:
+    if: github.repository == 'blimpMac/RFPProject' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Delete only approved non-main branch references
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          branches=(
+            'feat/finance-email-type-checklist-20261113'
+            'fix/it-self-profile-name-20261113'
+            'fix/responsive-zoom-navigation-20261113'
+            'fix/sidebar-hover-discovery-20261113'
+            'fix/staff-login-cleanup-20261113'
+            'fix/universal-rfp-navigation-zoom-20261113'
+            'ui/sidebar-profile-polish-20261113'
+          )
+          for branch in "${branches[@]}"; do
+            if [[ "$branch" == main || "$branch" == refs/heads/main ]]; then
+              echo "Refusing to delete main" >&2
+              exit 1
+            fi
+            echo "Removing ref: $branch"
+            gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${branch}"
+          done
+          echo "Removed all seven legacy branches; main was untouched."
