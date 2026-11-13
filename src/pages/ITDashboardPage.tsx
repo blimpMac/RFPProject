@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, BookOpen, CheckCircle2, CircleAlert, Clock3, ExternalLink, History, LockKeyhole, Mail, RefreshCw, Server, Settings2, ShieldCheck, Users } from 'lucide-react';
+import { Activity, BookOpen, CheckCircle2, CircleAlert, Clock3, History, LockKeyhole, Mail, RefreshCw, Server, Settings2, ShieldCheck, Users, type LucideIcon } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
 import { Button, Spinner } from '../components/ui';
@@ -22,7 +22,7 @@ type Overview = {
 };
 type SmtpStatus = { ready: boolean; checked: boolean; keys: string[] };
 type TabId = 'users' | 'services' | 'logins' | 'smtp' | 'passwords';
-const items: { id: TabId; label: string; icon: typeof Users }[] = [
+const items: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: 'users', label: 'Users', icon: Users },
   { id: 'services', label: 'Services', icon: Server },
   { id: 'logins', label: 'Login monitoring', icon: Activity },
@@ -143,7 +143,7 @@ export function ITDashboardPage() {
           ['Registered users', data?.summary.totalUsers ?? '—', Users],
           ['Active accounts', data?.summary.activeUsers ?? '—', CheckCircle2],
           ['Active login sessions', data?.summary.onlineSessions ?? '—', Activity],
-        ].map(([label, value, Icon]) => (
+        ] as const).map(([label, value, Icon]) => (
           <div key={String(label)} className="card flex items-center gap-3 p-4">
             <span className="rounded-xl bg-slate-100 p-3 text-[#315c93]"><Icon size={21} /></span>
             <div><p className="text-xs text-slate-500">{label as string}</p><p className="text-2xl font-bold">{value as string | number}</p></div>
@@ -185,7 +185,7 @@ export function ITDashboardPage() {
               ['Notification SMTP', data?.services.smtp, 'Sender: ' + (data?.services.sender || '—')],
               ['Vercel management API', data?.services.vercelApi, 'Required for editing sender without visiting Vercel'],
               ['Last accepted notification', localTime(data?.services.lastEmailSent), 'Delivery is provider acceptance, not inbox read confirmation'],
-            ].map(([label, status, detail]) => <div className="card p-5" key={label}>
+            ] as const).map(([label, status, detail]) => <div className="card p-5" key={label}>
               <p className="flex items-center gap-2 font-semibold"><Server size={17} /> {label}</p>
               <p className="mt-2 break-words text-lg font-bold">{status}</p>
               <p className="mt-1 text-sm text-slate-500">{detail}</p>
