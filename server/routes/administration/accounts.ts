@@ -181,27 +181,29 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
         departmentsByUser.set(row.user_id, departments);
       }
 
-      const users: StaffUser[] = listed.data.users.filter((user) => !itIds.has(user.id)).map((user) => {
-        const roles = rolesByUser.get(user.id) || [];
-        const profile = profilesById.get(user.id);
-        return {
-          id: user.id,
-          email: user.email || '',
-          createdAt: user.created_at,
-          lastSignInAt: user.last_sign_in_at || null,
-          roles,
-          fullName: profile?.full_name || null,
-          department: profile?.department || null,
-          assignedDepartments: departmentsByUser.get(user.id) || [],
-          active: profile?.active ?? true,
-          accessLevel: roles.includes('department_approver')
-            ? 'approver'
-            : roles.includes('finance_reviewer')
-              ? 'staff'
-              : null,
-          protected: profile?.protected_account ?? isLegacyProtectedStaffEmail(user.email),
-        };
-      });
+      const users: StaffUser[] = listed.data.users
+        .filter((user) => !itIds.has(user.id))
+        .map((user) => {
+          const roles = rolesByUser.get(user.id) || [];
+          const profile = profilesById.get(user.id);
+          return {
+            id: user.id,
+            email: user.email || '',
+            createdAt: user.created_at,
+            lastSignInAt: user.last_sign_in_at || null,
+            roles,
+            fullName: profile?.full_name || null,
+            department: profile?.department || null,
+            assignedDepartments: departmentsByUser.get(user.id) || [],
+            active: profile?.active ?? true,
+            accessLevel: roles.includes('department_approver')
+              ? 'approver'
+              : roles.includes('finance_reviewer')
+                ? 'staff'
+                : null,
+            protected: profile?.protected_account ?? isLegacyProtectedStaffEmail(user.email),
+          };
+        });
       return json(200, { ok: true, users, canRemove: true });
     }
 
