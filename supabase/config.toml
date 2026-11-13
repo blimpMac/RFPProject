@@ -9,6 +9,12 @@ enable_confirmations = true
 max_frequency = "1m0s"
 otp_length = 8
 
+# Used only by local Supabase CLI / self-hosted environments.
+# Hosted RFP Auth email content and sender must be configured in the Supabase dashboard.
+[auth.email.template.recovery]
+subject = "RFP Monitoring System | Reset your password"
+content_path = "./supabase/templates/recovery.html"
+
 [auth.mfa.totp]
 enroll_enabled = true
 verify_enabled = true
