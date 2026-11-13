@@ -143,7 +143,7 @@ export function AdminLayout() {
     heartbeat();
     const timer = window.setInterval(heartbeat, 60_000);
     return () => window.clearInterval(timer);
-  }, [session?.access_token, roles, location.pathname]);
+  }, [session, roles, location.pathname]);
 
   const signOut = async () => {
     try {
