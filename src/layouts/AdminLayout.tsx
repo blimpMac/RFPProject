@@ -69,13 +69,6 @@ const navigationItems: NavigationItem[] = [
     icon: Files,
   },
   {
-    to: '/admin/manual',
-    label: 'User Manual',
-    description: 'Guides, FAQs and troubleshooting',
-    group: 'Workspace',
-    icon: BookOpen,
-  },
-  {
     to: '/admin/audit-trail',
     label: 'Audit trail',
     description: 'Recorded system activity',
@@ -266,6 +259,25 @@ export function AdminLayout() {
           </nav>
 
           <div className="admin-sidebar-footer shrink-0 p-3">
+            <NavLink
+              to="/admin/manual"
+              onClick={() => setOpen(false)}
+              aria-label={collapsed ? 'User Manual' : undefined}
+              title={collapsed ? 'User Manual' : undefined}
+              className={({ isActive }) =>
+                `admin-sidebar-link mb-3 w-full ${collapsed ? 'justify-center' : ''} ${isActive ? 'admin-sidebar-link-active' : ''}`
+              }
+            >
+              <span className="admin-nav-icon">
+                <BookOpen size={18} />
+              </span>
+              {!collapsed && (
+                <span className="min-w-0">
+                  <strong className="block truncate">User Manual</strong>
+                  <small className="block truncate">Guides, FAQs and troubleshooting</small>
+                </span>
+              )}
+            </NavLink>
             <button
               type="button"
               className={`admin-profile focus-ring w-full text-left ${collapsed ? 'justify-center p-2' : ''}`}
