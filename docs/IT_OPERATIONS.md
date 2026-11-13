@@ -90,7 +90,7 @@ request redeploy**. The server updates only:
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`,
 `SMTP_PASSWORD`, `SMTP_FROM_EMAIL`.
 
-The Vercel API request triggers a *new* production deployment; the settings
+The Vercel API request triggers a _new_ production deployment; the settings
 do not take effect until that deployment is READY. Test a sample notification,
 review queue diagnostics and verify that the recipient sees the new From
 address. Failed builds do not mean sender configuration is live.
@@ -140,7 +140,7 @@ and require the user to change it promptly.
 5. Only IT can read Audit Trail and Email Queue Diagnostics.
 6. Finance Head no longer has the Reset password button; the old email-reset
    endpoint is blocked.
-7. IT can successfully reset a *non-protected approved test account* without OTP.
+7. IT can successfully reset a _non-protected approved test account_ without OTP.
 8. IT cannot reset itself, another IT administrator, or protected accounts.
 9. SMTP edit fails safely when Vercel authorization is missing.
 10. After authorization, an approved test SMTP change updates only the RFP
