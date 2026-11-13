@@ -76,11 +76,10 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
   try {
     await sendBrandedRecoveryEmail(email, generated.data.properties.action_link);
   } catch {
-    // In particular, never log exception objects containing an Auth action link.
-    throw new HttpError(
-      503,
-      'Email delivery is unavailable. Please try again later or contact IT.',
-    );
+    // Avoid account enumeration through SMTP delivery failures.
+    // Never log an exception that may contain a token-bearing recovery URL.
+    console.warn('RFP password recovery email delivery failed.');
+    return json(200, receipt);
   }
   return json(200, receipt);
 };
