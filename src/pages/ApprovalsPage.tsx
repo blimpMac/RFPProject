@@ -518,11 +518,16 @@ export function ApprovalsPage() {
             <div className="card mt-5 space-y-3 p-5">
               <h3 className="font-semibold">Digital RFP form</h3>
               <p className="text-sm leading-6 text-slate-500">
-                Open this RFP in its own print view instead of displaying a nested form preview
-                inside the approval queue. Use Preview Forms in the sidebar for sample layouts.
+                Open this RFP in a dedicated page rather than nesting the form in the approval queue.
+                For demonstration layouts, use the Preview Forms tab.
               </p>
               <div className="flex flex-wrap gap-2">
-                <Link to={`/admin/rfp/${selected.id}/print`} target="_blank" rel="noreferrer" className="btn btn-primary">
+                <Link
+                  to={`/admin/rfp/${selected.id}/print`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-primary"
+                >
                   <Eye size={16} /> Open RFP form
                 </Link>
                 <Link to="/admin/preview-forms" className="btn btn-secondary">
@@ -534,3 +539,97 @@ export function ApprovalsPage() {
           ) : (
             <>
               <h3 className="finance-section-title">Request overview</h3>
+              <div className="finance-detail-grid finance-detail-grid-compact">
+                {[
+                  ['Requestor', selected.requestor_name],
+                  ['Department', selected.department],
+                  ['Requestor email', selected.requestor_email],
+                  ['RFP type', selected.rfp_type],
+                  ['Type of request', String(selected.raw_record?.request_type || 'Not recorded')],
+                  ['Supplier / Payee', selected.supplier_payee],
+                  ['Amount', php.format(selected.amount)],
+                  ['Project / Class', selected.project_class],
+                  ['Required date', manilaDate(selected.required_payment_date)],
+                  ['Submitted date', manilaDate(selected.submitted_at, true)],
+                  ['Target release', manilaDate(selected.planned_check_date)],
+                  ['SLA position', getSlaInfo(selected, now).label],
+                  ['Current stage', displayStatus(selected, now)],
+                  ['Approving heads', selected.approving_head],
+                  ['Department approval', selected.department_approval],
+                  ['Department remarks', selected.department_approval_remarks || '—'],
+                  [
+                    'Finance member review',
+                    financeWorkflow(selected).member_status || selected.finance_review,
+                  ],
+                  ['Finance head review', financeWorkflow(selected).head_status || 'Pending'],
+                  ['Hard-copy approval', financeWorkflow(selected).hard_copy_status || 'Pending'],
+                  [
+                    '3-day processing due',
+                    manilaDate(financeWorkflow(selected).processing_due_at || null, true),
+                  ],
+                  ['Finance remarks', selected.finance_remarks || '—'],
+                  ['Purpose', selected.purpose_description],
+                ].map(([key, value]) => (
+                  <div
+                    key={key}
+                    className={
+                      [
+                        'Purpose',
+                        'Approving heads',
+                        'Department remarks',
+                        'Finance remarks',
+                      ].includes(key)
+                        ? 'finance-detail-wide'
+                        : ''
+                    }
+                  >
+                    <p>{key}</p>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+              <AttachmentPreviewSection requestId={selected.id} />
+            </>
+          )}
+          {finance && modalMode === 'edit' && (
+            <FinanceUpdateForm
+              request={selected}
+              originalsDate={originalsDate}
+              documentVerification={documentVerification}
+              verificationRemarks={verificationRemarks}
+              checkDate={checkDate}
+              reason={reason}
+              processingStatus={processingStatus}
+              lateDocuments={lateDocuments}
+              financeNotes={financeNotes}
+              busy={updateBusy}
+              onOriginalsDateChange={setOriginalsDate}
+              onDocumentVerificationChange={setDocumentVerification}
+              onVerificationRemarksChange={setVerificationRemarks}
+              onCheckDateChange={setCheckDate}
+              onReasonChange={setReason}
+              onProcessingStatusChange={setProcessingStatus}
+              onLateDocumentsChange={setLateDocuments}
+              onFinanceNotesChange={setFinanceNotes}
+              onSave={() => void saveFinanceUpdates()}
+            />
+          )}
+          {modalMode === 'edit' && (
+            <WorkflowActionPanel
+              choices={choices}
+              action={action}
+              remarks={remarks}
+              departmentAction={departmentAction}
+              busy={busy}
+              finance={finance}
+              department={department}
+              onActionChange={setAction}
+              onRemarksChange={setRemarks}
+              onSave={() => void save()}
+            />
+          )}
+        </Modal>
+      )}
+    </div>
+  );
+}
