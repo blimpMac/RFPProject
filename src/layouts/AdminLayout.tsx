@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
   BarChart3,
   CheckSquare,
-  ChevronLeft,
   FilePlus2,
   FileStack,
   ServerCog,
@@ -12,6 +11,8 @@ import {
   Files,
   LogOut,
   Menu,
+  Pencil,
+  ChevronDown,
   Table2,
   Users,
   X,
@@ -131,9 +132,67 @@ export function AdminLayout() {
   const { session, roles, identity, loading, refresh } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return window.localStorage.getItem('rfp-sidebar-collapsed') !== 'expanded';
+    } catch {
+      return true;
+    }
+  });
   const [editingName, setEditingName] = useState(false);
+  const [desktopNavigation, setDesktopNavigation] = useState(
+    () => window.matchMedia('(min-width: 1280px)').matches,
+  );
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const isIT = roles.includes('it_administrator');
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('rfp-sidebar-collapsed', collapsed ? 'collapsed' : 'expanded');
+    } catch {
+      // Navigation still works if browser storage is unavailable.
+    }
+  }, [collapsed]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1280px)');
+    const onChange = () => setDesktopNavigation(media.matches);
+    onChange();
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    setOpen(false);
+    setProfileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setProfileMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onEscape);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onEscape);
+    };
+  }, [profileMenuOpen]);
+
+  const toggleSidebar = () => {
+    if (desktopNavigation) {
+      setCollapsed((current) => !current);
+    } else {
+      setOpen(false);
+    }
+  };
 
   useEffect(() => {
     if (!session || !roles.length) return;
@@ -167,6 +226,8 @@ export function AdminLayout() {
           : location.pathname.startsWith(item.to),
       ) || availableItems[0];
   const primaryRole = roles[0];
+  const pageTitle =
+    location.pathname === '/admin/manual' ? 'User Manual' : currentItem?.label || 'RFP workspace';
 
   if (loading)
     return (
@@ -203,16 +264,6 @@ export function AdminLayout() {
         Skip to main content
       </a>
       <div className={`admin-shell min-h-screen ${collapsed ? 'admin-shell-collapsed' : ''}`}>
-        <button
-          type="button"
-          className="admin-mobile-menu fixed left-4 top-[2.625rem] z-40 grid -translate-y-1/2 place-items-center p-2 lg:hidden"
-          onClick={() => setOpen(!open)}
-          aria-label={open ? 'Close navigation' : 'Open navigation'}
-          aria-expanded={open}
-          aria-controls="staff-sidebar"
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
         {open && (
           <button
             type="button"
@@ -223,12 +274,12 @@ export function AdminLayout() {
         )}
         <aside
           id="staff-sidebar"
-          className={`admin-sidebar fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden transition-all ${collapsed ? 'w-20' : 'w-72'} ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
+          className={`admin-sidebar fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden ${collapsed ? 'admin-sidebar-is-collapsed' : ''} ${open ? 'translate-x-0 admin-sidebar-open' : '-translate-x-full'}`}
         >
-          <div className="admin-brand flex h-[5.25rem] shrink-0 items-center justify-between px-4">
+          <div className="admin-brand flex h-[5.25rem] shrink-0 items-center justify-between gap-2 px-3">
             <Link
               to="/admin"
-              className={`min-w-0 items-center gap-3 ${collapsed ? 'hidden' : 'flex'}`}
+              className="admin-brand-link flex min-w-0 items-center gap-3 px-2"
               onClick={() => setOpen(false)}
             >
               <span className="admin-brand-mark" aria-hidden="true">
@@ -238,26 +289,40 @@ export function AdminLayout() {
               </span>
               <span className="min-w-0">
                 <strong className="block truncate text-sm tracking-wide">RFP CONTROL</strong>
-                <small className="block text-[0.68rem] font-semibold uppercase tracking-[0.17em] text-slate-400">
-                  Finance operations
+                <small className="block text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                  {isIT ? 'IT operations' : 'Finance operations'}
                 </small>
               </span>
             </Link>
             <button
               type="button"
-              className="admin-collapse hidden rounded-xl p-2 lg:block"
-              onClick={() => setCollapsed(!collapsed)}
-              aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+              className="admin-menu-toggle focus-ring"
+              onClick={toggleSidebar}
+              aria-label={
+                desktopNavigation
+                  ? collapsed
+                    ? 'Show navigation choices'
+                    : 'Hide navigation choices'
+                  : 'Close navigation menu'
+              }
+              title={
+                desktopNavigation
+                  ? collapsed
+                    ? 'Expand sidebar'
+                    : 'Collapse sidebar'
+                  : 'Close menu'
+              }
+              aria-controls="staff-navigation"
+              aria-expanded={desktopNavigation ? !collapsed : open}
             >
-              <ChevronLeft
-                className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}
-                size={18}
-              />
+              <Menu className="admin-desktop-menu-icon" size={21} />
+              <X className="admin-mobile-close-icon" size={21} />
             </button>
           </div>
 
           <nav
-            className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-3 pt-4"
+            id="staff-navigation"
+            className="admin-sidebar-navigation min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-3 pt-4"
             aria-label="Staff navigation"
           >
             {(['IT Operations', 'Workspace', 'Administration'] as const).map((group) => {
@@ -265,7 +330,7 @@ export function AdminLayout() {
               if (!items.length) return null;
               return (
                 <div className="mb-5" key={group}>
-                  {!collapsed && <p className="admin-nav-label">{group}</p>}
+                  <p className="admin-nav-label">{group}</p>
                   <div className="space-y-1">
                     {items.map((item) => {
                       const Icon = item.icon;
@@ -284,12 +349,10 @@ export function AdminLayout() {
                           <span className="admin-nav-icon">
                             <Icon size={18} />
                           </span>
-                          {!collapsed && (
-                            <span className="min-w-0">
-                              <strong className="block truncate">{item.label}</strong>
-                              <small className="block truncate">{item.description}</small>
-                            </span>
-                          )}
+                          <span className="min-w-0">
+                            <strong className="block truncate">{item.label}</strong>
+                            <small className="block truncate">{item.description}</small>
+                          </span>
                         </NavLink>
                       );
                     })}
@@ -303,78 +366,117 @@ export function AdminLayout() {
             <NavLink
               to="/admin/manual"
               onClick={() => setOpen(false)}
-              aria-label={collapsed ? 'User Manual' : undefined}
-              title={collapsed ? 'User Manual' : undefined}
               className={({ isActive }) =>
-                `admin-sidebar-link mb-3 w-full ${collapsed ? 'justify-center' : ''} ${isActive ? 'admin-sidebar-link-active' : ''}`
+                `admin-sidebar-link w-full ${isActive ? 'admin-sidebar-link-active' : ''}`
               }
             >
               <span className="admin-nav-icon">
                 <BookOpen size={18} />
               </span>
-              {!collapsed && (
-                <span className="min-w-0">
-                  <strong className="block truncate">User Manual</strong>
-                  <small className="block truncate">Guides, FAQs and troubleshooting</small>
-                </span>
-              )}
-            </NavLink>
-            <button
-              type="button"
-              className={`admin-profile focus-ring w-full text-left ${collapsed ? 'justify-center p-2' : ''}`}
-              onClick={() => setEditingName(true)}
-              aria-label="Open profile settings"
-              title={collapsed ? 'Profile' : 'Click to edit profile'}
-            >
-              <span className="admin-avatar">{initials(identity?.fullName)}</span>
-              {!collapsed && (
-                <span className="min-w-0 flex-1">
-                  <strong className="block truncate text-sm">
-                    {identity?.fullName || 'Staff account'}
-                  </strong>
-                  <small className="block truncate text-xs text-slate-400">
-                    {primaryRole ? roleLabels[primaryRole] : identity?.email}
-                  </small>
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              className={`admin-sidebar-link mt-2 w-full ${collapsed ? 'justify-center' : ''}`}
-              onClick={() => supabase.auth.signOut()}
-              title={collapsed ? 'Sign out' : undefined}
-            >
-              <span className="admin-nav-icon">
-                <LogOut size={18} />
+              <span className="min-w-0">
+                <strong className="block truncate">User Manual</strong>
+                <small className="block truncate">Guides, FAQs and troubleshooting</small>
               </span>
-              {!collapsed && <strong>Sign out</strong>}
-            </button>
+            </NavLink>
           </div>
         </aside>
 
         <div className="admin-content transition-all">
-          <header className="admin-topbar flex min-h-[5.25rem] items-center gap-3 px-4 pl-[4.75rem] sm:gap-4 sm:pl-20 lg:px-8">
+          <header className="admin-topbar flex min-h-[5.25rem] items-center gap-3 px-4 sm:gap-4 lg:px-6">
+            <button
+              type="button"
+              className="admin-mobile-trigger focus-ring"
+              onClick={() => setOpen(true)}
+              aria-label="Open navigation menu"
+              aria-expanded={open}
+              aria-controls="staff-sidebar"
+              title="Open navigation"
+            >
+              <Menu size={21} />
+            </button>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[0.68rem] font-bold uppercase tracking-[0.18em] text-slate-400">
-                Operations workspace
+              <p className="truncate text-[0.68rem] font-bold uppercase tracking-[0.15em] text-slate-400">
+                {isIT ? 'IT operations' : 'Operations workspace'}
               </p>
-              <h1 className="truncate text-lg font-semibold tracking-tight">
-                {currentItem?.label || 'RFP workspace'}
+              <h1 className="truncate text-base font-semibold tracking-tight sm:text-lg">
+                {pageTitle}
               </h1>
             </div>
-            <div className="ml-auto flex shrink-0 items-center gap-2">
+            <div className="admin-topbar-actions ml-auto flex min-w-0 shrink-0 items-center gap-2">
               {!isIT && (
                 <Link
                   to="/admin/new-request"
-                  className="btn btn-primary inline-flex items-center justify-center gap-2 whitespace-nowrap px-3 py-2 text-xs font-semibold sm:px-4 sm:text-sm"
+                  className="btn btn-primary admin-topbar-request"
                   aria-label="Add a new Request"
+                  title="Add a new Request"
                   aria-current={location.pathname === '/admin/new-request' ? 'page' : undefined}
                 >
-                  <FilePlus2 size={16} aria-hidden="true" />
-                  <span className="hidden sm:inline">Add a new Request</span>
+                  <FilePlus2 size={17} aria-hidden="true" />
+                  <span className="hidden md:inline">Add a new Request</span>
                 </Link>
               )}
               <ThemeToggle compact />
+              <div className="admin-account relative" ref={profileMenuRef}>
+                <button
+                  type="button"
+                  className="admin-account-trigger focus-ring"
+                  aria-label="Account and profile settings"
+                  aria-expanded={profileMenuOpen}
+                  aria-controls="admin-account-menu"
+                  onClick={() => setProfileMenuOpen((current) => !current)}
+                  title="Account and profile"
+                >
+                  <span className="admin-account-avatar">{initials(identity?.fullName)}</span>
+                  <span className="admin-account-copy hidden min-w-0 lg:block">
+                    <strong className="block truncate">
+                      {identity?.fullName || 'Staff account'}
+                    </strong>
+                    <small className="block truncate">
+                      {primaryRole ? roleLabels[primaryRole] : 'Staff'}
+                    </small>
+                  </span>
+                  <ChevronDown className="admin-account-chevron hidden sm:block" size={16} />
+                </button>
+                {profileMenuOpen && (
+                  <div
+                    id="admin-account-menu"
+                    className="admin-account-popover"
+                    aria-label="Account actions"
+                  >
+                    <div className="admin-account-summary">
+                      <strong className="block truncate">
+                        {identity?.fullName || 'Staff account'}
+                      </strong>
+                      <p className="truncate text-xs text-slate-500">{identity?.email}</p>
+                      <p className="mt-1 text-xs font-semibold text-emerald-700">
+                        {primaryRole ? roleLabels[primaryRole] : 'Staff'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="admin-account-action"
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        setEditingName(true);
+                      }}
+                    >
+                      <Pencil size={17} />
+                      Edit profile
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-account-action admin-account-signout"
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        void signOut();
+                      }}
+                    >
+                      <LogOut size={17} />
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </header>
           <main

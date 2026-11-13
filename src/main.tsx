@@ -10,6 +10,7 @@ import './styles/responsive-fix.css';
 import './styles/overflow-polish.css';
 import './styles/rf-liquidation-editor.css';
 import './styles/rf-print-a4.css';
+import './styles/admin-shell-polish.css';
 
 const themeStorageKey = 'rfp-theme';
 let savedTheme: string | null = null;
