@@ -48,10 +48,6 @@ export function LoginPage() {
           <h1 id="staff-login-title" className="text-2xl font-semibold tracking-tight">
             Staff sign in
           </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            One sign-in for all authorized staff. Your access level is detected automatically and
-            the system opens the appropriate dashboard after login.
-          </p>
 
           {!isConfigured && (
             <p
