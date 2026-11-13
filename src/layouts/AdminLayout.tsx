@@ -193,7 +193,7 @@ export function AdminLayout() {
       setSidebarHovered(false);
       setCollapsed((current) => !current);
     } else {
-      setOpen(false);
+      setOpen((current) => !current);
     }
   };
   const sidebarPeeked = desktopNavigation && collapsed && sidebarHovered;
@@ -269,6 +269,25 @@ export function AdminLayout() {
         Skip to main content
       </a>
       <div className={`admin-shell min-h-screen ${collapsed ? 'admin-shell-collapsed' : ''}`}>
+        <button
+          type="button"
+          className={`admin-navigation-trigger focus-ring ${open ? 'admin-navigation-trigger-open' : ''}`}
+          onClick={toggleSidebar}
+          aria-label={
+            desktopNavigation
+              ? collapsed
+                ? 'Expand navigation'
+                : 'Collapse navigation'
+              : open
+                ? 'Close navigation'
+                : 'Open navigation'
+          }
+          title={desktopNavigation ? (collapsed ? 'Keep sidebar open' : 'Collapse sidebar') : 'Navigation'}
+          aria-expanded={desktopNavigation ? navigationExpanded : open}
+          aria-controls="staff-sidebar"
+        >
+          {open && !desktopNavigation ? <X size={21} /> : <Menu size={21} />}
+        </button>
         {open && (
           <button
             type="button"
@@ -285,35 +304,7 @@ export function AdminLayout() {
           }}
           onMouseLeave={() => setSidebarHovered(false)}
         >
-          <div className="admin-brand flex h-[5.25rem] shrink-0 items-center gap-2 px-3">
-            <button
-              type="button"
-              className="admin-menu-toggle focus-ring"
-              onClick={toggleSidebar}
-              aria-label={
-                desktopNavigation
-                  ? collapsed
-                    ? sidebarPeeked
-                      ? 'Pin navigation open'
-                      : 'Expand navigation choices'
-                    : 'Collapse navigation choices'
-                  : 'Close navigation menu'
-              }
-              title={
-                desktopNavigation
-                  ? collapsed
-                    ? sidebarPeeked
-                      ? 'Keep sidebar expanded'
-                      : 'Expand sidebar'
-                    : 'Collapse sidebar'
-                  : 'Close menu'
-              }
-              aria-controls="staff-navigation"
-              aria-expanded={desktopNavigation ? navigationExpanded : open}
-            >
-              <Menu className="admin-desktop-menu-icon" size={21} />
-              <X className="admin-mobile-close-icon" size={21} />
-            </button>
+          <div className="admin-brand flex h-[5.25rem] shrink-0 items-center px-3">
             <Link
               to="/admin"
               className="admin-brand-link flex min-w-0 items-center gap-3 px-2"
@@ -379,6 +370,8 @@ export function AdminLayout() {
             <NavLink
               to="/admin/manual"
               onClick={() => setOpen(false)}
+              aria-label={collapsed && !sidebarPeeked ? 'User Manual' : undefined}
+              title={collapsed && !sidebarPeeked ? 'User Manual' : undefined}
               className={({ isActive }) =>
                 `admin-sidebar-link w-full ${isActive ? 'admin-sidebar-link-active' : ''}`
               }
@@ -396,17 +389,6 @@ export function AdminLayout() {
 
         <div className="admin-content transition-all">
           <header className="admin-topbar flex min-h-[5.25rem] items-center gap-3 px-4 sm:gap-4 lg:px-6">
-            <button
-              type="button"
-              className="admin-mobile-trigger focus-ring"
-              onClick={() => setOpen(true)}
-              aria-label="Open navigation menu"
-              aria-expanded={open}
-              aria-controls="staff-sidebar"
-              title="Open navigation"
-            >
-              <Menu size={21} />
-            </button>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[0.68rem] font-bold uppercase tracking-[0.15em] text-slate-400">
                 {isIT ? 'IT operations' : 'Operations workspace'}
