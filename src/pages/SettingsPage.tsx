@@ -4,7 +4,6 @@ import { Navigate } from 'react-router-dom';
 import type { StaffUser } from '../../shared/contracts/accounts';
 import { useAuth } from '../components/AuthProvider';
 import { Button, Spinner } from '../components/ui';
-import { EmailQueueDiagnostics } from '../components/EmailQueueDiagnostics';
 import { AccountPagination } from '../features/accounts/AccountPagination';
 import { AccountForm, AccountRow, EmailForm } from '../features/accounts/AccountManagementForms';
 import { useAccountDirectory } from '../features/accounts/useAccountDirectory';
@@ -56,20 +55,6 @@ export function SettingsPage() {
   const currentPage = Math.min(page, totalPages);
   const firstVisible = (currentPage - 1) * PAGE_SIZE;
   const paginatedUsers = filteredUsers.slice(firstVisible, firstVisible + PAGE_SIZE);
-
-  async function sendReset(user: StaffUser) {
-    setBusyId(user.id);
-    setError('');
-    setNotice('');
-    try {
-      await post('staff-users/reset-password', { userId: user.id });
-      setNotice('Password-reset email sent.');
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not send the password-reset email.');
-    } finally {
-      setBusyId('');
-    }
-  }
 
   async function removeUser(user: StaffUser) {
     if (!window.confirm(`Delete ${user.fullName || 'this account'}? This cannot be undone.`))
@@ -168,7 +153,6 @@ export function SettingsPage() {
               busy={busyId === user.id}
               onEdit={() => setAccount(user)}
               onEmail={() => setEmailAccount(user)}
-              onReset={() => void sendReset(user)}
               onRemove={() => void removeUser(user)}
             />
           ))}
@@ -186,7 +170,6 @@ export function SettingsPage() {
           onPageChange={setPage}
         />
       </section>
-      <EmailQueueDiagnostics />
       {account && (
         <AccountForm
           value={account}
