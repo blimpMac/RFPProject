@@ -104,7 +104,10 @@ export function PasswordRecoveryPage() {
     >
       {sent ? (
         <div className="mt-6 space-y-5">
-          <div className="flex items-start gap-3 rounded-xl border border-[#256e66] bg-[#12382f] p-4" role="status">
+          <div
+            className="flex items-start gap-3 rounded-xl border border-[#256e66] bg-[#12382f] p-4"
+            role="status"
+          >
             <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-[#8af1d8]" aria-hidden="true" />
             <div>
               <p className="font-semibold text-[#d5fff2]">Recovery request received</p>
@@ -134,11 +137,18 @@ export function PasswordRecoveryPage() {
       ) : (
         <form onSubmit={(event) => void submit(event)} className="mt-6 space-y-5">
           <div className="field">
-            <label htmlFor="recovery-email" className="mb-2 block text-sm font-semibold text-slate-100">
+            <label
+              htmlFor="recovery-email"
+              className="mb-2 block text-sm font-semibold text-slate-100"
+            >
               Work email address
             </label>
             <div className="relative">
-              <Mail size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+              <Mail
+                size={18}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                aria-hidden="true"
+              />
               <input
                 className="input w-full pl-11"
                 id="recovery-email"
@@ -155,7 +165,11 @@ export function PasswordRecoveryPage() {
               />
             </div>
           </div>
-          {error && <p className="error rounded-lg p-3 text-sm" role="alert">{error}</p>}
+          {error && (
+            <p className="error rounded-lg p-3 text-sm" role="alert">
+              {error}
+            </p>
+          )}
           <Button className="w-full" disabled={busy}>
             {busy ? <Spinner label="Sending recovery email" /> : 'Email me a reset link'}
           </Button>
@@ -211,7 +225,10 @@ export function PasswordResetPage() {
     >
       {done ? (
         <div className="mt-6 space-y-5">
-          <div role="status" className="flex items-center gap-3 rounded-xl border border-[#256e66] bg-[#12382f] p-4 text-[#d5fff2]">
+          <div
+            role="status"
+            className="flex items-center gap-3 rounded-xl border border-[#256e66] bg-[#12382f] p-4 text-[#d5fff2]"
+          >
             <CheckCircle2 size={22} aria-hidden="true" />
             <p className="font-semibold">Your password has been reset successfully.</p>
           </div>
@@ -228,7 +245,12 @@ export function PasswordResetPage() {
             Use at least 8 characters. A longer, unique password is recommended.
           </p>
           <div className="field">
-            <label className="mb-2 block text-sm font-semibold text-slate-100" htmlFor="new-password">New password</label>
+            <label
+              className="mb-2 block text-sm font-semibold text-slate-100"
+              htmlFor="new-password"
+            >
+              New password
+            </label>
             <div className="relative">
               <input
                 id="new-password"
@@ -241,15 +263,23 @@ export function PasswordResetPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
-              <button type="button" className="focus-ring absolute inset-y-0 right-2 grid w-10 place-items-center rounded-lg text-slate-400 hover:text-white"
+              <button
+                type="button"
+                className="focus-ring absolute inset-y-0 right-2 grid w-10 place-items-center rounded-lg text-slate-400 hover:text-white"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                onClick={() => setShowPassword((value) => !value)}>
+                onClick={() => setShowPassword((value) => !value)}
+              >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
           <div className="field">
-            <label className="mb-2 block text-sm font-semibold text-slate-100" htmlFor="confirm-password">Confirm new password</label>
+            <label
+              className="mb-2 block text-sm font-semibold text-slate-100"
+              htmlFor="confirm-password"
+            >
+              Confirm new password
+            </label>
             <div className="relative">
               <input
                 id="confirm-password"
@@ -262,17 +292,28 @@ export function PasswordResetPage() {
                 value={confirm}
                 onChange={(event) => setConfirm(event.target.value)}
               />
-              <button type="button" className="focus-ring absolute inset-y-0 right-2 grid w-10 place-items-center rounded-lg text-slate-400 hover:text-white"
-                aria-label={showConfirm ? 'Hide confirmation password' : 'Show confirmation password'}
-                onClick={() => setShowConfirm((value) => !value)}>
+              <button
+                type="button"
+                className="focus-ring absolute inset-y-0 right-2 grid w-10 place-items-center rounded-lg text-slate-400 hover:text-white"
+                aria-label={
+                  showConfirm ? 'Hide confirmation password' : 'Show confirmation password'
+                }
+                onClick={() => setShowConfirm((value) => !value)}
+              >
                 {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
           {confirm && password !== confirm && (
-            <p className="text-xs font-medium text-[#ffb3b3]" role="status">Passwords do not match yet.</p>
+            <p className="text-xs font-medium text-[#ffb3b3]" role="status">
+              Passwords do not match yet.
+            </p>
           )}
-          {error && <p className="error rounded-lg p-3 text-sm" role="alert">{error}</p>}
+          {error && (
+            <p className="error rounded-lg p-3 text-sm" role="alert">
+              {error}
+            </p>
+          )}
           <Button className="w-full" disabled={busy || password.length < 8 || confirm !== password}>
             {busy ? <Spinner label="Updating password" /> : 'Save new password'}
           </Button>

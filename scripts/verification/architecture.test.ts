@@ -69,7 +69,7 @@ test('password recovery uses RFP branding and retains secure Supabase reset link
 
   assert.ok(page.includes('RFP Monitoring System'));
   assert.ok(page.includes('Recovery request received'));
-  assert.ok(page.includes("window.location.origin}/admin/reset-password"));
+  assert.ok(page.includes('window.location.origin}/admin/reset-password'));
   assert.ok(page.includes('supabase.auth.resetPasswordForEmail'));
   assert.ok(page.includes('supabase.auth.updateUser'));
   assert.ok(template.includes('RFP Monitoring System'));
