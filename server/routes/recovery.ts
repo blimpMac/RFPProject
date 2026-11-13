@@ -4,13 +4,16 @@ import { ensureMethod, HttpError, json, readJson } from '../lib/http.js';
 import { sendBrandedRecoveryEmail } from '../email/recovery.js';
 import type { RouteHandler } from './context.js';
 
-const inputSchema = z.object({
-  email: z.email().max(254),
-}).strict();
+const inputSchema = z
+  .object({
+    email: z.email().max(254),
+  })
+  .strict();
 
 const receipt = {
   ok: true,
-  message: 'If the email belongs to an active RFP staff account, check its inbox for recovery instructions.',
+  message:
+    'If the email belongs to an active RFP staff account, check its inbox for recovery instructions.',
 };
 
 /** The public endpoint never reveals account existence or sends links to the browser. */
@@ -74,7 +77,10 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
     await sendBrandedRecoveryEmail(email, generated.data.properties.action_link);
   } catch {
     // In particular, never log exception objects containing an Auth action link.
-    throw new HttpError(503, 'Email delivery is unavailable. Please try again later or contact IT.');
+    throw new HttpError(
+      503,
+      'Email delivery is unavailable. Please try again later or contact IT.',
+    );
   }
   return json(200, receipt);
 };

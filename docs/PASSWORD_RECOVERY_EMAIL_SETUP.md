@@ -13,7 +13,7 @@ server SMTP configuration** rather than the generic Supabase Auth mailer.
    to the browser.
 5. RFP's authorized SMTP transport emails a branded HTML message with the
    subject `RFP Monitoring System | Reset your password` and display sender
-   **RFP Monitoring System**. The sender *address* is taken from the already
+   **RFP Monitoring System**. The sender _address_ is taken from the already
    approved `SMTP_FROM_EMAIL` setting.
 6. Clicking the link takes the user to `/admin/reset-password` to set a new
    password using the regular Supabase Auth SDK.

@@ -1,10 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  recoveryFromAddress,
-  recoverySubject,
-  renderRecoveryEmail,
-} from './recovery-template.ts';
+import { recoveryFromAddress, recoverySubject, renderRecoveryEmail } from './recovery-template.ts';
 
 test('recovery email uses RFP Monitoring System identity and a secure link', () => {
   const tokenLink =
