@@ -246,6 +246,13 @@
     width: 4.75rem !important;
   }
 
+  /* Hovering over the compact burger rail previews all the sidebar choices
+     without shifting page content. Clicking the burger pins the wide sidebar. */
+  .admin-sidebar.admin-sidebar-is-collapsed.admin-sidebar-is-peeked {
+    width: 17rem !important;
+    box-shadow: 18px 0 42px rgba(4, 21, 31, 0.2);
+  }
+
   .admin-content {
     margin-left: 17rem !important;
   }
@@ -254,18 +261,26 @@
     margin-left: 4.75rem !important;
   }
 
-  .admin-sidebar-is-collapsed .admin-brand {
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked) .admin-brand {
     justify-content: center;
     padding: 0 0.35rem;
   }
 
-  .admin-sidebar-is-collapsed .admin-brand-link,
-  .admin-sidebar-is-collapsed .admin-sidebar-navigation,
-  .admin-sidebar-is-collapsed .admin-sidebar-footer {
+  /* Only conceal navigation when the sidebar is collapsed AND not hovered.
+     Previously these were hidden unconditionally, so hovering could never
+     reveal any navigation choices or the bottom User Manual. */
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked) .admin-brand-link,
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked) .admin-sidebar-navigation,
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked) .admin-sidebar-footer {
     display: none !important;
   }
 
-  .admin-sidebar-is-collapsed .admin-menu-toggle {
+  /* The burger is kept as the first fixed-width control in both states. */
+  .admin-menu-toggle {
+    flex-shrink: 0;
+  }
+
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked) .admin-menu-toggle {
     margin: 0 auto;
   }
 }
@@ -317,6 +332,16 @@
   .admin-sidebar .admin-sidebar-navigation,
   .admin-sidebar .admin-sidebar-footer {
     display: block;
+  }
+
+  /* Below desktop width, keep the burger visible in the top bar and show
+     the complete navigation inside the opened drawer. */
+  .admin-mobile-trigger {
+    display: inline-grid !important;
+    visibility: visible;
+    opacity: 1;
+    position: relative;
+    z-index: 1;
   }
 
   .dark .admin-mobile-trigger {
