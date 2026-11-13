@@ -140,8 +140,8 @@ export function AdminLayout() {
     }
   });
   const [editingName, setEditingName] = useState(false);
-  const [desktopNavigation, setDesktopNavigation] = useState(() =>
-    window.matchMedia('(min-width: 1280px)').matches,
+  const [desktopNavigation, setDesktopNavigation] = useState(
+    () => window.matchMedia('(min-width: 1280px)').matches,
   );
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -226,7 +226,8 @@ export function AdminLayout() {
           : location.pathname.startsWith(item.to),
       ) || availableItems[0];
   const primaryRole = roles[0];
-  const pageTitle = location.pathname === '/admin/manual' ? 'User Manual' : currentItem?.label || 'RFP workspace';
+  const pageTitle =
+    location.pathname === '/admin/manual' ? 'User Manual' : currentItem?.label || 'RFP workspace';
 
   if (loading)
     return (
@@ -304,7 +305,13 @@ export function AdminLayout() {
                     : 'Hide navigation choices'
                   : 'Close navigation menu'
               }
-              title={desktopNavigation ? (collapsed ? 'Expand sidebar' : 'Collapse sidebar') : 'Close menu'}
+              title={
+                desktopNavigation
+                  ? collapsed
+                    ? 'Expand sidebar'
+                    : 'Collapse sidebar'
+                  : 'Close menu'
+              }
               aria-controls="staff-navigation"
               aria-expanded={desktopNavigation ? !collapsed : open}
             >
@@ -421,15 +428,25 @@ export function AdminLayout() {
                 >
                   <span className="admin-account-avatar">{initials(identity?.fullName)}</span>
                   <span className="admin-account-copy hidden min-w-0 lg:block">
-                    <strong className="block truncate">{identity?.fullName || 'Staff account'}</strong>
-                    <small className="block truncate">{primaryRole ? roleLabels[primaryRole] : 'Staff'}</small>
+                    <strong className="block truncate">
+                      {identity?.fullName || 'Staff account'}
+                    </strong>
+                    <small className="block truncate">
+                      {primaryRole ? roleLabels[primaryRole] : 'Staff'}
+                    </small>
                   </span>
                   <ChevronDown className="admin-account-chevron hidden sm:block" size={16} />
                 </button>
                 {profileMenuOpen && (
-                  <div id="admin-account-menu" className="admin-account-popover" aria-label="Account actions">
+                  <div
+                    id="admin-account-menu"
+                    className="admin-account-popover"
+                    aria-label="Account actions"
+                  >
                     <div className="admin-account-summary">
-                      <strong className="block truncate">{identity?.fullName || 'Staff account'}</strong>
+                      <strong className="block truncate">
+                        {identity?.fullName || 'Staff account'}
+                      </strong>
                       <p className="truncate text-xs text-slate-500">{identity?.email}</p>
                       <p className="mt-1 text-xs font-semibold text-emerald-700">
                         {primaryRole ? roleLabels[primaryRole] : 'Staff'}
