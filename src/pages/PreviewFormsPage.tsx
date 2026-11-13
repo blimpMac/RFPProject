@@ -57,7 +57,7 @@ export function PreviewFormsPage() {
   const { roles } = useAuth();
   const [selected, setSelected] = useState<FormType>('rfp');
   const [showEmail, setShowEmail] = useState(false);
-  const isSuper = roles.includes('super_administrator');
+  const isIT = roles.includes('it_administrator');
   const request = useMemo<DigitalRfpRequest>(() => selected === 'rf'
     ? {
         ...sampleRequest,
@@ -111,14 +111,14 @@ export function PreviewFormsPage() {
             </button>
           ))}
         </div>
-        {isSuper && (
+        {isIT && (
           <button type="button" className={`btn mt-3 ${showEmail ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setShowEmail(true)}>
             <Mail size={16} /> Preview notification emails
           </button>
         )}
       </section>
 
-      {showEmail && isSuper ? <EmailPreviewPanel /> : (
+      {showEmail && isIT ? <EmailPreviewPanel /> : (
         <section className="card overflow-hidden p-4 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b pb-4">
             <div>
