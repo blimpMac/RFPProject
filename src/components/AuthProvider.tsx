@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { get } from '../lib/api';
@@ -44,35 +44,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<Role[]>([]);
   const [identity, setIdentity] = useState<StaffIdentity | null>(null);
   const [loading, setLoading] = useState(true);
+  // Invalidate any in-flight /api/me response when the session changes,
+  // particularly when a user signs out before a previous request finishes.
+  const sessionVersion = useRef(0);
 
-  const refresh = async () => {
-    const { data } = await supabase.auth.getSession();
-    setSession(data.session);
+  const clearSession = useCallback(() => {
+    setSession(null);
+    setRoles([]);
+    setIdentity(null);
+    setLoading(false);
+  }, []);
 
-    if (!data.session) {
+  const loadStaff = useCallback(async (currentSession: Session, version: number) => {
+    try {
+      const me = await get<MeResponse>('me');
+      if (version !== sessionVersion.current) return;
+      setRoles(me.roles);
+      setIdentity(getIdentity(me, currentSession));
+    } catch {
+      if (version !== sessionVersion.current) return;
       setRoles([]);
       setIdentity(null);
-      setLoading(false);
+    } finally {
+      if (version === sessionVersion.current) setLoading(false);
+    }
+  }, []);
+
+  const refresh = useCallback(async () => {
+    const version = ++sessionVersion.current;
+    const { data, error } = await supabase.auth.getSession();
+    if (version !== sessionVersion.current) return;
+
+    if (error || !data.session) {
+      clearSession();
       return;
     }
 
-    try {
-      const me = await get<MeResponse>('me');
-      setRoles(me.roles);
-      setIdentity(getIdentity(me, data.session));
-    } catch {
-      setRoles([]);
-      setIdentity(null);
-    }
-
-    setLoading(false);
-  };
+    setSession(data.session);
+    setLoading(true);
+    await loadStaff(data.session, version);
+  }, [clearSession, loadStaff]);
 
   useEffect(() => {
-    void refresh();
-    const { data } = supabase.auth.onAuthStateChange(() => void refresh());
-    return () => data.subscription.unsubscribe();
-  }, []);
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      const version = ++sessionVersion.current;
+      if (!nextSession) {
+        // Clear immediately so protected pages cannot keep displaying stale data.
+        clearSession();
+        return;
+      }
+
+      setSession(nextSession);
+      setRoles([]);
+      setIdentity(null);
+      setLoading(true);
+
+      // Do not call Supabase auth APIs (including getSession via /api/me)
+      // inside onAuthStateChange: the auth lock can deadlock on sign-out.
+      window.setTimeout(() => {
+        if (version !== sessionVersion.current) return;
+        void loadStaff(nextSession, version);
+      }, 0);
+    });
+
+    return () => {
+      sessionVersion.current += 1;
+      data.subscription.unsubscribe();
+    };
+  }, [clearSession, loadStaff]);
 
   return (
     <AuthContext.Provider value={{ session, roles, identity, loading, refresh }}>
