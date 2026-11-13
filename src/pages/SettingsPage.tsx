@@ -7,7 +7,7 @@ import { Button, Spinner } from '../components/ui';
 import { AccountPagination } from '../features/accounts/AccountPagination';
 import { AccountForm, AccountRow, EmailForm } from '../features/accounts/AccountManagementForms';
 import { useAccountDirectory } from '../features/accounts/useAccountDirectory';
-import { del, post } from '../lib/api';
+import { del } from '../lib/api';
 
 type AccessFilter = 'all' | 'approver' | 'staff';
 const PAGE_SIZE = 6;
