@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto';
+import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { requireStaff, type Staff } from '../lib/auth.js';
 import { ensureMethod, HttpError, json, readJson } from '../lib/http.js';
@@ -79,13 +80,24 @@ async function writeEvent(
   if (event.error) throw event.error;
 }
 
-async function confirmITPassword(db: DatabaseClient, staff: Staff, password: string) {
+async function confirmITPassword(_db: DatabaseClient, staff: Staff, password: string) {
   if (!staff.user.email) throw new HttpError(409, 'IT account has no email address.');
-  // A fresh password check is required before the most sensitive IT changes.
-  const result = await db.auth.signInWithPassword({ email: staff.user.email, password });
+  const anonKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!anonKey || !process.env.SUPABASE_URL) {
+    throw new HttpError(503, 'Authentication verification is not configured.');
+  }
+  // Never use the privileged db client for signInWithPassword: that call
+  // replaces its Authorization header with an end-user JWT.
+  const verifier = createClient(process.env.SUPABASE_URL, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+  const result = await verifier.auth.signInWithPassword({
+    email: staff.user.email, password,
+  });
   if (result.error || result.data.user?.id !== staff.user.id) {
     throw new HttpError(403, 'IT password confirmation failed.');
   }
+  await verifier.auth.signOut().catch(() => undefined);
 }
 
 export const handleITRoutes: RouteHandler = async ({ event, route, db, config }) => {
