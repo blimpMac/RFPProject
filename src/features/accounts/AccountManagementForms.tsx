@@ -51,11 +51,13 @@ export function AccountRow({
         </p>
         {user.accessLevel === 'staff' && !isSuperAdministrator && (
           <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-            Request email alerts: {user.financeNotificationTypes === null
+            Request email alerts:{' '}
+            {user.financeNotificationTypes === null
               ? 'All types (default)'
               : user.financeNotificationTypes.length === 0
                 ? 'None'
-                : user.financeNotificationTypes.length === 1 && user.financeNotificationTypes[0] === 'revolving_fund'
+                : user.financeNotificationTypes.length === 1 &&
+                    user.financeNotificationTypes[0] === 'revolving_fund'
                   ? 'RF only (including liquidation)'
                   : `${user.financeNotificationTypes.length} selected type(s)`}
           </p>

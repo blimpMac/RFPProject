@@ -83,8 +83,8 @@ export function SettingsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Account Management</h1>
           <p className="mt-1 max-w-3xl text-sm text-slate-500">
-            Manage Finance Members and Department Heads, including which request-type emails
-            each Finance Member receives. Only the Finance Manager can change these checklists.
+            Manage Finance Members and Department Heads, including which request-type emails each
+            Finance Member receives. Only the Finance Manager can change these checklists.
           </p>
         </div>
         <Button onClick={() => setAccount('new')}>

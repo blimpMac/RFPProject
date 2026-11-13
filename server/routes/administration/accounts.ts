@@ -77,14 +77,20 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
     const [roles, profile, previous] = await Promise.all([
       db.from('user_roles').select('role').eq('user_id', input.userId),
       db.from('profiles').select('id,email').eq('id', input.userId).maybeSingle(),
-      db.from('finance_email_preferences').select('allowed_types').eq('user_id', input.userId).maybeSingle(),
+      db
+        .from('finance_email_preferences')
+        .select('allowed_types')
+        .eq('user_id', input.userId)
+        .maybeSingle(),
     ]);
     if (roles.error) throw roles.error;
     if (profile.error) throw profile.error;
     if (previous.error) throw previous.error;
     if (!profile.data) throw new HttpError(404, 'Finance Member account not found.');
-    if (!roles.data?.some((row) => row.role === 'finance_reviewer') ||
-        roles.data.some((row) => row.role === 'super_administrator')) {
+    if (
+      !roles.data?.some((row) => row.role === 'finance_reviewer') ||
+      roles.data.some((row) => row.role === 'super_administrator')
+    ) {
       throw new HttpError(403, 'Only Finance Member email preferences may be assigned.');
     }
 
@@ -110,7 +116,8 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
       old_values: previous.data ? { allowed_types: previous.data.allowed_types } : null,
       new_values: { allowed_types: input.allowedTypes },
     });
-    if (audit.error) console.error('Finance notification preference audit failed', audit.error.code);
+    if (audit.error)
+      console.error('Finance notification preference audit failed', audit.error.code);
     return json(200, { ok: true, allowedTypes: input.allowedTypes });
   }
 
@@ -206,13 +213,15 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
     if (event.httpMethod === 'GET') {
       const listed = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
       if (listed.error) throw listed.error;
-      const [roleResult, profileResult, headResult, itResult, preferenceResult] = await Promise.all([
-        db.from('user_roles').select('user_id,role'),
-        db.from('profiles').select('*'),
-        db.from('department_approving_heads').select('user_id,department').order('position'),
-        db.from('it_administrators').select('user_id').eq('active', true),
-        db.from('finance_email_preferences').select('user_id,allowed_types'),
-      ]);
+      const [roleResult, profileResult, headResult, itResult, preferenceResult] = await Promise.all(
+        [
+          db.from('user_roles').select('user_id,role'),
+          db.from('profiles').select('*'),
+          db.from('department_approving_heads').select('user_id,department').order('position'),
+          db.from('it_administrators').select('user_id').eq('active', true),
+          db.from('finance_email_preferences').select('user_id,allowed_types'),
+        ],
+      );
       if (roleResult.error) throw roleResult.error;
       if (profileResult.error) throw profileResult.error;
       if (headResult.error) throw headResult.error;

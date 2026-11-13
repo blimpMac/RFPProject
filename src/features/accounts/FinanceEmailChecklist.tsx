@@ -18,27 +18,30 @@ export function FinanceEmailChecklist({
   onClose: () => void;
   onSaved: (allowedTypes: string[]) => Promise<void>;
 }) {
-  const [chosen, setChosen] = useState<FinanceEmailType[]>(
-    () => (user.financeNotificationTypes === null
+  const [chosen, setChosen] = useState<FinanceEmailType[]>(() =>
+    user.financeNotificationTypes === null
       ? [...allFinanceEmailTypeIds]
-      : user.financeNotificationTypes.filter(
-          (type): type is FinanceEmailType => allFinanceEmailTypeIds.includes(type as FinanceEmailType),
-        )),
+      : user.financeNotificationTypes.filter((type): type is FinanceEmailType =>
+          allFinanceEmailTypeIds.includes(type as FinanceEmailType),
+        ),
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const selected = new Set(chosen);
   const allSelected = chosen.length === allFinanceEmailTypeIds.length;
-  const description = chosen.length === 0
-    ? 'This member will receive no Finance request-type notifications.'
-    : allSelected
-      ? 'This member will receive Finance request notifications for all request types.'
-      : `This member will receive Finance request notifications for ${chosen.length} selected type(s) only.`;
+  const description =
+    chosen.length === 0
+      ? 'This member will receive no Finance request-type notifications.'
+      : allSelected
+        ? 'This member will receive Finance request notifications for all request types.'
+        : `This member will receive Finance request notifications for ${chosen.length} selected type(s) only.`;
 
   const toggle = (id: FinanceEmailType, checked: boolean) => {
-    setChosen((current) => checked
-      ? [...current.filter((value) => value !== id), id]
-      : current.filter((value) => value !== id));
+    setChosen((current) =>
+      checked
+        ? [...current.filter((value) => value !== id), id]
+        : current.filter((value) => value !== id),
+    );
   };
 
   const save = async (event: React.FormEvent) => {
@@ -53,7 +56,9 @@ export function FinanceEmailChecklist({
       });
       await onSaved(types);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not save the notification checklist.');
+      setError(
+        cause instanceof Error ? cause.message : 'Could not save the notification checklist.',
+      );
     } finally {
       setBusy(false);
     }
@@ -68,9 +73,9 @@ export function FinanceEmailChecklist({
           </p>
           <p className="mt-1 break-words text-xs text-slate-500">{user.email}</p>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-            Select which RFP request types may generate Finance Member emails for this person.
-            RF includes RF Liquidations. These choices do not change workflow access,
-            Finance Head notifications, or requestor and Department Head emails.
+            Select which RFP request types may generate Finance Member emails for this person. RF
+            includes RF Liquidations. These choices do not change workflow access, Finance Head
+            notifications, or requestor and Department Head emails.
           </p>
         </div>
 
@@ -81,32 +86,54 @@ export function FinanceEmailChecklist({
               {chosen.length} of {financeEmailTypes.length} selected
             </span>
             <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="secondary" disabled={busy || allSelected}
-                onClick={() => setChosen([...allFinanceEmailTypeIds])}>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={busy || allSelected}
+                onClick={() => setChosen([...allFinanceEmailTypeIds])}
+              >
                 <CheckCheck size={15} /> Select all
               </Button>
-              <Button type="button" variant="secondary" disabled={busy || chosen.length === 0}
-                onClick={() => setChosen([])}>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={busy || chosen.length === 0}
+                onClick={() => setChosen([])}
+              >
                 Clear all
               </Button>
             </div>
           </div>
           <div className="grid max-h-[22rem] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
             {financeEmailTypes.map((type) => (
-              <label key={type.id}
-                className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm transition-colors hover:border-emerald-400 dark:border-slate-700">
-                <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-700"
-                  checked={selected.has(type.id)} disabled={busy}
-                  onChange={(event) => toggle(type.id, event.target.checked)} />
+              <label
+                key={type.id}
+                className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm transition-colors hover:border-emerald-400 dark:border-slate-700"
+              >
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-700"
+                  checked={selected.has(type.id)}
+                  disabled={busy}
+                  onChange={(event) => toggle(type.id, event.target.checked)}
+                />
                 <span className="leading-5">{type.label}</span>
               </label>
             ))}
           </div>
         </fieldset>
 
-        <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600 dark:bg-slate-800/60 dark:text-slate-300"
-          role="status">{description}</p>
-        {error && <p className="error" role="alert">{error}</p>}
+        <p
+          className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600 dark:bg-slate-800/60 dark:text-slate-300"
+          role="status"
+        >
+          {description}
+        </p>
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
         <div className="flex flex-wrap justify-end gap-2">
           <Button type="button" variant="secondary" disabled={busy} onClick={onClose}>
             Cancel
