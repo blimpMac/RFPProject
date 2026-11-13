@@ -19,10 +19,7 @@ async function refreshDepartmentReviewers(requestIds: string[]) {
   for (const requestId of requestIds) await flushEmailQueueForRequest(requestId);
 }
 
-async function assertNotITAccount(
-  db: import('../context.js').DatabaseClient,
-  userId: string,
-) {
+async function assertNotITAccount(db: import('../context.js').DatabaseClient, userId: string) {
   const result = await db
     .from('it_administrators')
     .select('active')
