@@ -38,6 +38,12 @@ const DocumentsPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
+const ManualPage = lazy(() =>
+  import('./pages/ManualPage').then((m) => ({ default: m.ManualPage })),
+);
+const PreviewFormsPage = lazy(() =>
+  import('./pages/PreviewFormsPage').then((m) => ({ default: m.PreviewFormsPage })),
+);
 const AuditTrailPage = lazy(() =>
   import('./pages/AuditTrailPage').then((m) => ({ default: m.AuditTrailPage })),
 );
@@ -67,6 +73,8 @@ export default function App() {
               <Route path="monitoring" element={<MonitoringPage />} />
               <Route path="approvals" element={<ApprovalsPage />} />
               <Route path="documents" element={<DocumentsPage />} />
+              <Route path="manual" element={<ManualPage />} />
+              <Route path="preview-forms" element={<PreviewFormsPage />} />
               <Route path="account-management" element={<SettingsPage />} />
               <Route
                 path="approver-management"
