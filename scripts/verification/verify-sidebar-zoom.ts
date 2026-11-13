@@ -107,18 +107,22 @@ function markup() {
 }
 
 async function inspect(page: import('@playwright/test').Page): Promise<Metrics> {
-  return page.evaluate(() => {
-    const button = document.querySelector('#menu-toggle') as HTMLElement;
-    const navLabel = document.querySelector('[data-nav-label]') as HTMLElement;
-    const navIcon = document.querySelector('.admin-nav-icon') as HTMLElement;
-    const sidebar = document.querySelector('#staff-sidebar') as HTMLElement;
-    const input = document.querySelector('.input') as HTMLElement;
-    const action = document.querySelector('.btn') as HTMLElement;
+  // The server-side verification tsconfig intentionally excludes DOM types.
+  // Evaluate a browser-owned string, as the project's other Playwright scripts do.
+  return page.evaluate<Metrics>(`(() => {
+    const button = document.querySelector('#menu-toggle');
+    const navLabel = document.querySelector('[data-nav-label]');
+    const navIcon = document.querySelector('.admin-nav-icon');
+    const sidebar = document.querySelector('#staff-sidebar');
+    const input = document.querySelector('.input');
+    const action = document.querySelector('.btn');
     const rect = button.getBoundingClientRect();
     const style = getComputedStyle(button);
     const center = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
     const labelStyle = getComputedStyle(navLabel);
     const iconStyle = getComputedStyle(navIcon);
+    const asideRect = sidebar.getBoundingClientRect();
+    const navIconRect = navIcon.getBoundingClientRect();
     return {
       visible: style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0.9 &&
         rect.width > 35 && rect.height > 35 && rect.left >= 0 && rect.right <= innerWidth &&
@@ -129,16 +133,17 @@ async function inspect(page: import('@playwright/test').Page): Promise<Metrics> 
       right: rect.right,
       width: rect.width,
       labelVisible: labelStyle.display !== 'none' && labelStyle.visibility !== 'hidden',
-      navIconVisible: iconStyle.display !== 'none' && iconStyle.visibility !== 'hidden',
-      sidebarWidth: sidebar.getBoundingClientRect().width,
+      navIconVisible: iconStyle.display !== 'none' && iconStyle.visibility !== 'hidden' &&
+        navIconRect.right > 0 && navIconRect.left < innerWidth &&
+        asideRect.left >= -1,
+      sidebarWidth: asideRect.width,
       documentWidth: document.documentElement.scrollWidth,
       viewportWidth: innerWidth,
       inputHeight: input.getBoundingClientRect().height,
       actionHeight: action.getBoundingClientRect().height,
     };
-  });
+  })()`);
 }
-
 try {
   for (const width of widths) {
     const page = await browser.newPage({ viewport: { width, height: 850 } });
@@ -150,11 +155,11 @@ try {
     assert.ok(collapsed.documentWidth <= collapsed.viewportWidth + 2,
       `Horizontal overflow at width ${width}: ${JSON.stringify(collapsed)}`);
 
-    await page.evaluate(() => window.scrollTo(0, 520));
+    await page.evaluate('window.scrollTo(0, 520)');
     const scrolled = await inspect(page);
     assert.ok(scrolled.visible && scrolled.hitTest,
       `Burger disappears when scrolled at width ${width}: ${JSON.stringify(scrolled)}`);
-    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.evaluate('window.scrollTo(0, 0)');
 
     if (width >= 1280) {
       assert.ok(collapsed.navIconVisible, `Compact sidebar icons are not available at width ${width}`);
@@ -182,7 +187,7 @@ try {
     const zoomTest = await browser.newPage({ viewport: { width, height: 850 } });
     await zoomTest.setContent(markup());
     await zoomTest.addStyleTag({ content: stylesheet });
-    await zoomTest.evaluate(() => { document.body.style.zoom = '1.5'; });
+    await zoomTest.evaluate("document.body.style.zoom = '1.5'");
     const zoomed = await inspect(zoomTest);
     assert.ok(zoomed.visible && zoomed.hitTest,
       `Burger is missing after 150% visual zoom at width ${width}: ${JSON.stringify(zoomed)}`);
