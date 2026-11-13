@@ -22,7 +22,7 @@ const tableMap: Record<string, { table: string; order: string; roles?: string[] 
 export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db }) => {
   if (route === 'audit-trail') {
     ensureMethod(event, 'GET');
-    await requireStaff(event, financeRoles);
+    await requireStaff(event, ['it_administrator']);
     const input = z
       .object({
         page: z.coerce.number().int().min(1).default(1),
