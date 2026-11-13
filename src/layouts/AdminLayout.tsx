@@ -292,16 +292,20 @@ export function AdminLayout() {
               onClick={toggleSidebar}
               aria-label={
                 desktopNavigation
-                  ? navigationExpanded
-                    ? 'Hide navigation choices'
-                    : 'Show navigation choices'
+                  ? collapsed
+                    ? sidebarPeeked
+                      ? 'Pin navigation open'
+                      : 'Expand navigation choices'
+                    : 'Collapse navigation choices'
                   : 'Close navigation menu'
               }
               title={
                 desktopNavigation
-                  ? navigationExpanded
-                    ? 'Collapse or pin sidebar'
-                    : 'Expand sidebar'
+                  ? collapsed
+                    ? sidebarPeeked
+                      ? 'Keep sidebar expanded'
+                      : 'Expand sidebar'
+                    : 'Collapse sidebar'
                   : 'Close menu'
               }
               aria-controls="staff-navigation"
