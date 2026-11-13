@@ -140,6 +140,9 @@ export function AdminLayout() {
     }
   });
   const [editingName, setEditingName] = useState(false);
+  const [desktopNavigation, setDesktopNavigation] = useState(() =>
+    window.matchMedia('(min-width: 1280px)').matches,
+  );
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const isIT = roles.includes('it_administrator');
@@ -151,6 +154,14 @@ export function AdminLayout() {
       // Navigation still works if browser storage is unavailable.
     }
   }, [collapsed]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1280px)');
+    const onChange = () => setDesktopNavigation(media.matches);
+    onChange();
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
 
   useEffect(() => {
     setOpen(false);
@@ -176,7 +187,7 @@ export function AdminLayout() {
   }, [profileMenuOpen]);
 
   const toggleSidebar = () => {
-    if (window.matchMedia('(min-width: 1280px)').matches) {
+    if (desktopNavigation) {
       setCollapsed((current) => !current);
     } else {
       setOpen(false);
@@ -286,10 +297,16 @@ export function AdminLayout() {
               type="button"
               className="admin-menu-toggle focus-ring"
               onClick={toggleSidebar}
-              aria-label={collapsed ? 'Show navigation choices' : 'Hide navigation choices'}
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={
+                desktopNavigation
+                  ? collapsed
+                    ? 'Show navigation choices'
+                    : 'Hide navigation choices'
+                  : 'Close navigation menu'
+              }
+              title={desktopNavigation ? (collapsed ? 'Expand sidebar' : 'Collapse sidebar') : 'Close menu'}
               aria-controls="staff-navigation"
-              aria-expanded={!collapsed}
+              aria-expanded={desktopNavigation ? !collapsed : open}
             >
               <Menu className="admin-desktop-menu-icon" size={21} />
               <X className="admin-mobile-close-icon" size={21} />
