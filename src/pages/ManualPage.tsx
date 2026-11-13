@@ -4,12 +4,11 @@ import {
   CircleHelp,
   ClipboardList,
   LifeBuoy,
-  Printer,
   Search,
   ShieldCheck,
   Wrench,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useAuth } from '../components/AuthProvider';
 
 type Topic = { title: string; description: string };
 type Section = { id: string; title: string; subtitle: string; topics: Topic[] };
@@ -225,6 +224,149 @@ const sections: Section[] = [
   },
 ];
 
+const itSections: Section[] = [
+  {
+    id: 'it-overview',
+    title: 'IT operations and service health',
+    subtitle: 'How to monitor the system without entering Finance approval workflows',
+    topics: [
+      {
+        title: '1. Open the IT workspace',
+        description:
+          'Sign in through the same Staff Login page as other users. Your IT Administrator role directs you to IT Dashboard. IT operators do not approve, release, or edit RFP payment transactions.',
+      },
+      {
+        title: '2. Monitor production services',
+        description:
+          'Open IT Dashboard → Services to review Supabase connectivity, the configured SMTP sender, the Vercel API integration status, and recent notification queue counts. A status of configured does not guarantee delivery to an inbox.',
+      },
+      {
+        title: '3. Review notification diagnostics',
+        description:
+          'Use Email Queue Diagnostics under Services to inspect queued, retried, sent and failed messages. Check each affected request reference and error context before retrying; do not duplicate financial approvals.',
+      },
+      {
+        title: '4. Interpret dashboard metrics',
+        description:
+          'User Overview lists account profiles and assigned roles. Login Monitoring uses recent authenticated browser heartbeats; online activity is an estimate, not proof of constant user interaction.',
+      },
+      {
+        title: '5. Record service incidents',
+        description:
+          'Capture the time in Philippine time, service affected, relevant request reference if applicable, error text and impact. Never put passwords, SMTP credentials, access tokens or private tracking links in incident reports.',
+      },
+    ],
+  },
+  {
+    id: 'it-access',
+    title: 'User accounts and login monitoring',
+    subtitle: 'Identity, access levels, session activity and controlled password recovery',
+    topics: [
+      {
+        title: '1. Review user access',
+        description:
+          'Open IT Dashboard → Users. Confirm names, email addresses, departments, assigned roles, active status, and the most recent successful sign-in. IT role membership is stored separately from Finance approval roles.',
+      },
+      {
+        title: '2. Monitor active logins',
+        description:
+          'Open Login monitoring. An authenticated session is Active when its last heartbeat is under three minutes old and it has not signed out. A browser that closes unexpectedly changes to Offline when the heartbeat window expires.',
+      },
+      {
+        title: '3. Reset a staff password without OTP',
+        description:
+          'Open Password reset, select an eligible non-protected user, enter and confirm a strong temporary password, then confirm your own current IT password. The server limits resets and records the operator and target; it does not store the new password in audit logs.',
+      },
+      {
+        title: '4. Respect protected accounts',
+        description:
+          'Protected accounts and other IT Administrator accounts cannot be reset using the standard IT reset screen. Never remove protection or grant Finance permissions as a workaround; follow the approved account recovery process.',
+      },
+      {
+        title: '5. Change your display name',
+        description:
+          'Open the upper-right account menu → Edit profile. Updating your own display name does not change your email, department, access level or other users’ records.',
+      },
+    ],
+  },
+  {
+    id: 'it-smtp',
+    title: 'SMTP configuration and email reliability',
+    subtitle: 'Sender changes, deployment state and troubleshooting notification failures',
+    topics: [
+      {
+        title: '1. Know the three editable fields',
+        description:
+          'Open IT Dashboard → SMTP sender. Only Email (SMTP username), SMTP Password, and SMTP From Email may be changed here. SMTP host, port, security mode and the Vercel management token are server-managed settings.',
+      },
+      {
+        title: '2. Verify one-time Vercel API setup',
+        description:
+          'If the SMTP page says Setup required, an authorized operator must configure the RFP project’s server-only VERCEL_API_TOKEN, VERCEL_RFP_PROJECT_ID and VERCEL_RFP_TEAM_ID variables once. Do not paste those secrets into the site or source code.',
+      },
+      {
+        title: '3. Apply a sender change',
+        description:
+          'Enter an authorized SMTP account and From address, confirm your own IT login password, then save. The server updates the three sender variables for the configured RFP project and requests a production rebuild. Changes are not live until the new deployment is READY.',
+      },
+      {
+        title: '4. Test notifications after deployment',
+        description:
+          'Verify deployment success, send an approved test notification, check Email Queue Diagnostics and confirm that the recipient sees the intended From address. Provider acceptance does not guarantee inbox placement.',
+      },
+      {
+        title: '5. Investigate failed mail',
+        description:
+          'Check the recipient, SMTP authentication or app-password status, sender authorization, queue retry state and deployment status. Do not expose SMTP passwords or retry a request in a way that duplicates an approval.',
+      },
+    ],
+  },
+  {
+    id: 'it-maintenance',
+    title: 'Audit, troubleshooting and maintenance',
+    subtitle: 'Security review, common incidents, changes and recovery',
+    topics: [
+      {
+        title: '1. Inspect audit history',
+        description:
+          'Use IT Operations → Audit trail to review recorded system events. IT password resets and sender changes also appear in the IT security actions view. Preserve timestamps and user IDs when investigating an incident.',
+      },
+      {
+        title: '2. Resolve an account access failure',
+        description:
+          'Confirm the email exists in Supabase Authentication, email is confirmed, its staff profile is active, and the correct role is assigned. IT access requires an active it_administrators entry; a Finance role is not a substitute.',
+      },
+      {
+        title: '3. Investigate missing live activity',
+        description:
+          'Confirm the user is actually signed in and the staff presence endpoint is responding. Active status depends on a browser heartbeat and may show Offline after three minutes without one; older logins cannot be reconstructed retroactively.',
+      },
+      {
+        title: '4. Perform regular health checks',
+        description:
+          'Daily: inspect failed or pending notifications and scheduled jobs. Weekly: review accounts, login activity and unusual audit events. Monthly: confirm approved backup/restore processes and review retention and access permissions.',
+      },
+      {
+        title: '5. Prepare and verify a deployment',
+        description:
+          'Review code changes and run formatting, TypeScript, lint, tests and production build before merging. After deployment, verify the login, profile editing, IT-only screens, SMTP status, and representative Finance functions using approved test data.',
+      },
+      {
+        title: '6. Handle incidents and rollback',
+        description:
+          'Capture the impact, time and errors, isolate affected services, and use the approved deployment rollback or a reviewed forward corrective database migration. Never delete audit history or modify payment data to silence an error.',
+      },
+    ],
+  },
+];
+
+const itTabs = [
+  { id: 'it-overview', label: 'IT operations', icon: ClipboardList },
+  { id: 'it-access', label: 'Users & sessions', icon: CircleHelp },
+  { id: 'it-smtp', label: 'SMTP & delivery', icon: LifeBuoy },
+  { id: 'it-maintenance', label: 'Audit & maintenance', icon: Wrench },
+];
+
 const tabs = [
   { id: 'workflow', label: 'How to use', icon: ClipboardList },
   { id: 'faqs', label: 'FAQs', icon: CircleHelp },
@@ -233,44 +375,39 @@ const tabs = [
 ];
 
 export function ManualPage() {
+  const { roles } = useAuth();
+  const isIT = roles.includes('it_administrator');
+  const visibleSections = isIT ? itSections : sections;
+  const visibleTabs = isIT ? itTabs : tabs;
   const [section, setSection] = useState('workflow');
   const [query, setQuery] = useState('');
-  const active = sections.find((item) => item.id === section) || sections[0];
+  const active = visibleSections.find((item) => item.id === section) || visibleSections[0];
   const matches = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return needle
-      ? sections.flatMap((group) =>
+      ? visibleSections.flatMap((group) =>
           group.topics
             .filter((item) => (item.title + ' ' + item.description).toLowerCase().includes(needle))
             .map((item) => ({ ...item, section: group.title })),
         )
       : active.topics.map((item) => ({ ...item, section: active.title }));
-  }, [active, query]);
+  }, [active, query, visibleSections]);
 
   return (
     <div className="space-y-5">
       <section className="dashboard-hero flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="eyebrow">Staff reference guide</p>
+          <p className="eyebrow">{isIT ? 'IT operations reference' : 'Staff reference guide'}</p>
           <h2 className="mt-2 flex items-center gap-3 text-2xl font-semibold sm:text-3xl">
-            <BookOpen size={28} /> RFP System Manual
+            <BookOpen size={28} /> {isIT ? 'IT Technical Manual' : 'RFP System Manual'}
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-            Submission, Department approval, Finance processing, troubleshooting and maintenance in
-            one place.
+            {isIT
+              ? 'Account administration, login monitoring, service diagnostics, SMTP delivery, audit and maintenance.'
+              : 'Submission, Department approval, Finance processing, troubleshooting and maintenance in one place.'}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link to="/admin/new-request" className="btn btn-primary">
-            Create request
-          </Link>
-          <Link to="/admin/preview-forms" className="btn btn-secondary">
-            Preview Forms
-          </Link>
-          <button type="button" className="btn btn-secondary" onClick={() => window.print()}>
-            <Printer size={16} /> Print guide
-          </button>
-        </div>
+
       </section>
       <section className="card p-4 sm:p-5">
         <label className="mb-2 block text-sm font-semibold" htmlFor="manual-search">
@@ -287,19 +424,19 @@ export function ManualPage() {
           />
         </div>
         <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Manual sections">
-          {tabs.map((tab) => {
+          {visibleTabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 type="button"
                 role="tab"
-                aria-selected={!query && section === tab.id}
+                aria-selected={!query && active.id === tab.id}
                 onClick={() => {
                   setSection(tab.id);
                   setQuery('');
                 }}
-                className={section === tab.id && !query ? 'btn btn-primary' : 'btn btn-secondary'}
+                className={active.id === tab.id && !query ? 'btn btn-primary' : 'btn btn-secondary'}
               >
                 <Icon size={16} /> {tab.label}
               </button>
@@ -342,9 +479,9 @@ export function ManualPage() {
         )}
       </section>
       <p className="text-xs leading-5 text-slate-500">
-        This guide follows the RFP monitoring workflow in the current application. Changes to
-        finance policy, document requirements and system settings should be verified by the Finance
-        Head before rollout.
+        {isIT
+          ? 'This is an IT operations reference. Production credential, database and deployment changes require authorized review; IT access does not grant Finance approval authority.'
+          : 'This guide follows the RFP monitoring workflow in the current application. Changes to finance policy, document requirements and system settings should be verified by the Finance Head before rollout.'}
       </p>
     </div>
   );
