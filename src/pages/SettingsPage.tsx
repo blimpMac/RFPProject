@@ -5,6 +5,7 @@ import type { StaffUser } from '../../shared/contracts/accounts';
 import { useAuth } from '../components/AuthProvider';
 import { Button, Spinner } from '../components/ui';
 import { AccountPagination } from '../features/accounts/AccountPagination';
+import { FinanceEmailChecklist } from '../features/accounts/FinanceEmailChecklist';
 import { AccountForm, AccountRow, EmailForm } from '../features/accounts/AccountManagementForms';
 import { useAccountDirectory } from '../features/accounts/useAccountDirectory';
 import { del } from '../lib/api';
@@ -24,6 +25,7 @@ export function SettingsPage() {
   const [notice, setNotice] = useState('');
   const [account, setAccount] = useState<StaffUser | 'new'>();
   const [emailAccount, setEmailAccount] = useState<StaffUser>();
+  const [notificationAccount, setNotificationAccount] = useState<StaffUser>();
 
   useEffect(() => setPage(1), [accessFilter, search, statusFilter]);
 
@@ -81,8 +83,8 @@ export function SettingsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Account Management</h1>
           <p className="mt-1 max-w-3xl text-sm text-slate-500">
-            Manage Finance Members and Department Heads. Your currently signed-in Super Admin
-            profile is managed from the profile card in the sidebar and is not listed here.
+            Manage Finance Members and Department Heads, including which request-type emails each
+            Finance Member receives. Only the Finance Manager can change these checklists.
           </p>
         </div>
         <Button onClick={() => setAccount('new')}>
@@ -153,6 +155,7 @@ export function SettingsPage() {
               busy={busyId === user.id}
               onEdit={() => setAccount(user)}
               onEmail={() => setEmailAccount(user)}
+              onNotifications={() => setNotificationAccount(user)}
               onRemove={() => void removeUser(user)}
             />
           ))}
@@ -191,6 +194,21 @@ export function SettingsPage() {
           onSaved={async () => {
             setEmailAccount(undefined);
             setNotice('Login email updated. The user must sign in with the new email address.');
+            await load();
+          }}
+        />
+      )}
+      {notificationAccount && (
+        <FinanceEmailChecklist
+          user={notificationAccount}
+          onClose={() => setNotificationAccount(undefined)}
+          onSaved={async (allowedTypes) => {
+            setNotificationAccount(undefined);
+            setNotice(
+              allowedTypes.length === 0
+                ? 'Finance request emails disabled for the selected member.'
+                : 'Finance Member email checklist saved. Future emails follow these selections.',
+            );
             await load();
           }}
         />

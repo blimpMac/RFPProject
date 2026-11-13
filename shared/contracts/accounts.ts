@@ -12,6 +12,8 @@ export type StaffUser = {
   assignedDepartments: string[];
   active: boolean;
   accessLevel: AccessLevel | null;
+  /** null = Finance Manager has not restricted this member's request emails. */
+  financeNotificationTypes: string[] | null;
 };
 
 export type SystemSetting = {
