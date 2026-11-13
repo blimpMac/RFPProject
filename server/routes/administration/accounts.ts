@@ -41,16 +41,7 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
   config,
 }) => {
   if (route === 'staff-users/reset-password') {
-    ensureMethod(event, 'POST');
-    await requireStaff(event, ['super_administrator']);
-    const input = z.object({ userId: z.uuid() }).parse(readJson(event));
-    const target = await db.auth.admin.getUserById(input.userId);
-    if (target.error || !target.data.user?.email) throw new HttpError(404, 'Account not found.');
-    const reset = await db.auth.resetPasswordForEmail(target.data.user.email, {
-      redirectTo: `${config.SITE_URL}/admin/reset-password`,
-    });
-    if (reset.error) throw new HttpError(409, reset.error.message);
-    return json(200, { ok: true });
+    throw new HttpError(403, 'Password reset is now restricted to the IT Administrator workspace.');
   }
 
   if (route === 'staff-users/email') {
