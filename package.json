@@ -26,6 +26,7 @@
     "migrate:attachments": "tsx scripts/migration/migrate-attachments.ts",
     "migrate:verify": "tsx scripts/verification/verify-migration.ts",
     "admin:bootstrap": "tsx scripts/setup/bootstrap-admin.ts",
+    "admin:bootstrap-it": "node --env-file=.env --experimental-strip-types scripts/setup/bootstrap-it.ts",
     "email:reconcile": "node --env-file=.env --experimental-strip-types scripts/setup/reconcile-email-queue.ts",
     "admin:promote-protected": "node --env-file=.env --experimental-strip-types scripts/setup/promote-superadmin.ts",
     "test:email-delivery": "node --env-file=.env --import tsx scripts/verification/send-test-emails.ts",
