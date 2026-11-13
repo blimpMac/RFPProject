@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { financeMemberNotificationTemplates } from '../../shared/constants/finance-email-types.js';
 import { adminClient } from '../lib/supabase.js';
 import { config } from '../lib/config.js';
 import { renderEmail, renderEmailPreview, type EmailTemplateKey } from './templates.js';
@@ -107,6 +108,29 @@ export async function deliverNotification(notification: Notification) {
   return result.messageId;
 }
 
+const financeTemplateKeys = new Set<string>(financeMemberNotificationTemplates);
+
+async function shouldSkipForFinancePreference(
+  db: ReturnType<typeof adminClient>,
+  notification: Notification,
+): Promise<boolean> {
+  if (!financeTemplateKeys.has(notification.template_key)) return false;
+  const request = await db
+    .from('rfp_requests')
+    .select('rfp_type')
+    .eq('id', notification.request_id)
+    .single();
+  if (request.error) throw request.error;
+  const check = await db.rpc('finance_notification_allowed', {
+    p_recipient_email: notification.recipient_email,
+    p_request_type: request.data.rfp_type,
+    p_template_key: notification.template_key,
+  });
+  // Never silently bypass the checklist if the database check fails.
+  if (check.error) throw check.error;
+  return check.data === false;
+}
+
 export async function sendEmailPreview(template: EmailTemplateKey, recipient: string) {
   const { c, transport } = smtpTransport();
   const rendered = renderEmailPreview(template, c.SITE_URL);
@@ -172,6 +196,21 @@ export async function processEmailQueue(options: number | QueueOptions = 10) {
   const results = [];
   for (const item of data) {
     try {
+      // Check again immediately before SMTP delivery, including jobs queued
+      // before the Finance Manager changed the recipient's checklist.
+      if (await shouldSkipForFinancePreference(db, item)) {
+        const cancelled = await db
+          .from('email_notifications')
+          .update({
+            status: 'cancelled',
+            last_error: 'Excluded by Finance Manager request-type email preferences',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', item.id);
+        if (cancelled.error) throw cancelled.error;
+        results.push({ id: item.id, status: 'cancelled' });
+        continue;
+      }
       const messageId = await deliverNotification(item);
       await db
         .from('email_notifications')
