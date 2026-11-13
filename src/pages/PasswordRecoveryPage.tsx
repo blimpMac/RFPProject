@@ -81,10 +81,15 @@ export function PasswordRecoveryPage() {
     setBusy(true);
     setError('');
     try {
-      const { error: authError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/admin/reset-password`,
+      const response = await fetch('/api/auth/recover', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
       });
-      if (authError) throw authError;
+      if (!response.ok) {
+        const body: { error?: string } = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Unable to request a recovery email right now.');
+      }
       setSent(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to request a reset email.');
