@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, CheckCircle2, ClipboardList, Copy } from 'lucide-react';
+import { Check, CheckCircle2, Copy } from 'lucide-react';
 import { FileDropzone } from '../components/FileDropzone';
 import {
   RfLiquidationEditor,
@@ -333,13 +333,6 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
                 src="/brands/gemcor.png"
                 alt="GEMCOR — Greenmetal Electric Manufacturing Corporation"
               />
-            </div>
-            <div className="hidden items-center gap-3 border-l border-slate-300 pl-5 md:flex">
-              <ClipboardList />
-              <div>
-                <p className="font-semibold">RFP Monitoring System</p>
-                <p className="text-xs text-slate-600">Request for payment submission</p>
-              </div>
             </div>
             <div className="ml-auto flex items-center gap-2">
               <ThemeToggle compact />
