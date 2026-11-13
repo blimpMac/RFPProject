@@ -55,7 +55,7 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
   }
 
   if (route === 'email-queue') {
-    await requireStaff(event, ['super_administrator']);
+    await requireStaff(event, ['it_administrator']);
     const validateRfp = z.string().regex(/^(RFP|CA|RF)-\d{4,}$/i);
     const rfpNumber =
       event.httpMethod === 'GET'
@@ -166,7 +166,7 @@ export const handleAdministrationRoutes: RouteHandler = async ({ event, route, d
 
   if (route !== 'email-preview') return undefined;
 
-  const staff = await requireStaff(event, administrativeRoles);
+  const staff = await requireStaff(event, ['it_administrator']);
   const templateSchema = z.enum(emailTemplateKeys);
   if (event.httpMethod === 'GET') {
     const template = templateSchema.parse(
