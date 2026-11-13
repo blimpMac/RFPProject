@@ -24,47 +24,76 @@
     color: #f5fbfc;
   }
 
-  .admin-menu-toggle,
-  .admin-mobile-trigger {
-    display: inline-grid;
+  /* A single burger anchored to the viewport at every responsive breakpoint.
+     It must not be a child of the translated sidebar or sticky header. */
+  .admin-navigation-trigger {
+    position: fixed !important;
+    top: 1.2rem;
+    left: 1rem;
+    z-index: 80 !important;
+    display: inline-grid !important;
     width: 2.75rem;
     height: 2.75rem;
-    flex: 0 0 2.75rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
     place-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 0.72rem;
-    background: rgba(255, 255, 255, 0.08);
-    color: #f8fafc;
+    border: 1px solid rgba(107, 225, 201, 0.4);
+    border-radius: 0.75rem;
+    background: #104357;
+    color: #f5fffc;
+    box-shadow: 0 5px 16px rgba(4, 21, 31, 0.24);
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
     transition:
-      background 0.16s ease,
+      background-color 0.16s ease,
       border-color 0.16s ease;
   }
 
-  .admin-menu-toggle:hover,
-  .admin-mobile-trigger:hover {
-    border-color: rgba(126, 231, 207, 0.52);
-    background: rgba(255, 255, 255, 0.16);
+  .admin-navigation-trigger:hover,
+  .admin-navigation-trigger:focus-visible {
+    border-color: #7ee6d1;
+    background: #19685f;
   }
 
-  .admin-mobile-trigger,
-  .admin-mobile-close-icon {
-    display: none;
+  .admin-brand {
+    padding-left: 4.4rem !important;
   }
 
+  .admin-sidebar {
+    z-index: 50 !important;
+    overflow: hidden;
+  }
+
+  .admin-sidebar-backdrop {
+    z-index: 40 !important;
+  }
+
+  /* Hide the accessibility skip link unless it has keyboard focus. */
+  .skip-link:not(:focus-visible) {
+    transform: translateY(-220%) !important;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .skip-link:focus-visible {
+    transform: translateY(0) !important;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* This header participates in document flow, so it cannot cover charts,
+     filters or headings after scrolling or browser zoom. */
   .admin-topbar {
+    position: relative !important;
+    top: auto !important;
+    z-index: 20;
     min-width: 0;
     gap: 0.75rem;
   }
 
   .admin-topbar-actions {
     gap: 0.6rem;
-  }
-
-  .admin-topbar-request {
-    min-height: 2.75rem;
-    gap: 0.45rem;
-    padding: 0.55rem 0.85rem;
-    white-space: nowrap;
   }
 
   .admin-account-trigger {
@@ -235,22 +264,22 @@
   }
 }
 
+/* Wide screens: a visible 76px icon rail becomes a full menu on hover,
+   keyboard focus, or a click on the fixed burger button. */
 @media screen and (min-width: 1280px) {
-  .admin-sidebar,
-  .admin-sidebar.-translate-x-full {
+  .admin-sidebar {
     width: 17rem !important;
-    transform: translateX(0) !important;
+    transform: none !important;
   }
 
   .admin-sidebar.admin-sidebar-is-collapsed {
     width: 4.75rem !important;
   }
 
-  /* Hovering over the compact burger rail previews all the sidebar choices
-     without shifting page content. Clicking the burger pins the wide sidebar. */
-  .admin-sidebar.admin-sidebar-is-collapsed.admin-sidebar-is-peeked {
+  .admin-sidebar.admin-sidebar-is-collapsed.admin-sidebar-is-peeked,
+  .admin-sidebar.admin-sidebar-is-collapsed:focus-within {
     width: 17rem !important;
-    box-shadow: 18px 0 42px rgba(4, 21, 31, 0.2);
+    box-shadow: 16px 0 38px rgba(4, 21, 31, 0.2);
   }
 
   .admin-content {
@@ -261,42 +290,64 @@
     margin-left: 4.75rem !important;
   }
 
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked) .admin-brand {
+  /* Keep navigation LINKS and icons rendered even when compact.
+     Only their text is hidden, preventing the previous empty-sidebar bug. */
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+    .admin-brand-link,
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+    .admin-nav-label,
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+    .admin-sidebar-link > span:not(.admin-nav-icon) {
+    display: none;
+  }
+
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+    .admin-sidebar-link {
     justify-content: center;
-    padding: 0 0.35rem;
+    padding-left: 0.15rem;
+    padding-right: 0.15rem;
   }
 
-  /* Only conceal navigation when the sidebar is collapsed AND not hovered.
-     Previously these were hidden unconditionally, so hovering could never
-     reveal any navigation choices or the bottom User Manual. */
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked) .admin-brand-link,
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked) .admin-sidebar-navigation,
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked) .admin-sidebar-footer {
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+    .admin-sidebar-navigation,
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+    .admin-sidebar-footer {
+    display: block !important;
+    padding-left: 0.55rem;
+    padding-right: 0.55rem;
+  }
+
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+    .admin-brand {
+    padding-left: 0.35rem !important;
+    padding-right: 0.35rem;
+  }
+
+  .admin-sidebar-backdrop {
     display: none !important;
-  }
-
-  /* The burger is kept as the first fixed-width control in both states. */
-  .admin-menu-toggle {
-    flex-shrink: 0;
-  }
-
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked) .admin-menu-toggle {
-    margin: 0 auto;
   }
 }
 
+/* Tablet/phone and large screens at high browser zoom:
+   use a full off-canvas drawer with its own explicit transform. Do not use
+   Tailwind's -translate-x-full utility: it has a separate 'translate' property
+   that is not cancelled by legacy CSS transform overrides. */
 @media screen and (max-width: 1279px) {
-  .admin-sidebar {
-    width: min(17rem, calc(100vw - 1rem)) !important;
-    max-width: calc(100vw - 1rem) !important;
+  .admin-sidebar,
+  .admin-sidebar.admin-sidebar-is-collapsed {
+    width: min(17rem, calc(100vw - 0.75rem)) !important;
+    max-width: calc(100vw - 0.75rem) !important;
+    transform: translateX(calc(-100% - 1rem)) !important;
   }
 
-  .admin-sidebar.-translate-x-full {
-    transform: translateX(-110%) !important;
-  }
-
-  .admin-sidebar.translate-x-0 {
+  .admin-sidebar.admin-sidebar-open {
     transform: translateX(0) !important;
+  }
+
+  .admin-sidebar .admin-sidebar-navigation,
+  .admin-sidebar .admin-sidebar-footer,
+  .admin-sidebar .admin-sidebar-link > span {
+    display: block;
   }
 
   .admin-content,
@@ -304,50 +355,17 @@
     margin-left: 0 !important;
   }
 
-  .admin-mobile-trigger {
-    display: inline-grid;
-    border-color: #d2e0e2;
-    background: #fff;
-    color: #173f55;
-  }
-
-  .admin-mobile-trigger:hover {
-    border-color: #7bb9ad;
-    background: #eff7f5;
-  }
-
-  .admin-desktop-menu-icon {
-    display: none;
-  }
-
-  .admin-mobile-close-icon {
-    display: block;
-  }
-
   .admin-topbar {
-    padding-left: 1rem !important;
+    padding-left: 4.75rem !important;
     padding-right: 1rem !important;
   }
 
-  .admin-sidebar .admin-sidebar-navigation,
-  .admin-sidebar .admin-sidebar-footer {
+  .admin-sidebar-backdrop {
     display: block;
   }
 
-  /* Below desktop width, keep the burger visible in the top bar and show
-     the complete navigation inside the opened drawer. */
-  .admin-mobile-trigger {
-    display: inline-grid !important;
-    visibility: visible;
-    opacity: 1;
-    position: relative;
-    z-index: 1;
-  }
-
-  .dark .admin-mobile-trigger {
-    border-color: #395361;
-    background: #142d3b;
-    color: #e7eff2;
+  .admin-navigation-trigger {
+    left: 0.9rem;
   }
 }
 
@@ -355,18 +373,16 @@
   .admin-topbar {
     min-height: 4.5rem;
     gap: 0.55rem;
-    padding: 0 0.75rem !important;
+    padding: 0 0.75rem 0 4.25rem !important;
+  }
+
+  .admin-navigation-trigger {
+    top: 0.875rem;
+    left: 0.7rem;
   }
 
   .admin-topbar-actions {
     gap: 0.35rem;
-  }
-
-  .admin-topbar-request {
-    width: 2.75rem;
-    min-width: 2.75rem;
-    justify-content: center;
-    padding: 0;
   }
 
   .admin-account-trigger {
@@ -388,7 +404,7 @@
 @media (prefers-reduced-motion: reduce) {
   .admin-sidebar,
   .admin-content,
-  .admin-menu-toggle,
+  .admin-navigation-trigger,
   .admin-account-trigger {
     transition: none !important;
   }
