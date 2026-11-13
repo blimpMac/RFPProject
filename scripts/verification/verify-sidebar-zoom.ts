@@ -162,10 +162,15 @@ try {
       `Burger is not visible at CSS width ${width}: ${JSON.stringify(collapsed)}`,
     );
     assert.ok(collapsed.hitTest, `Burger is blocked by another element at width ${width}`);
-    assert.equal(collapsed.headerPosition, 'relative',
-      `Dashboard header must not stick over charts at width ${width}`);
-    assert.ok(collapsed.mainTop >= collapsed.headerBottom - 1,
-      `Dashboard header overlaps content at width ${width}: ${JSON.stringify(collapsed)}`);
+    assert.equal(
+      collapsed.headerPosition,
+      'relative',
+      `Dashboard header must not stick over charts at width ${width}`,
+    );
+    assert.ok(
+      collapsed.mainTop >= collapsed.headerBottom - 1,
+      `Dashboard header overlaps content at width ${width}: ${JSON.stringify(collapsed)}`,
+    );
     assert.ok(
       collapsed.documentWidth <= collapsed.viewportWidth + 2,
       `Horizontal overflow at width ${width}: ${JSON.stringify(collapsed)}`,

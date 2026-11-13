@@ -292,17 +292,15 @@
 
   /* Keep navigation LINKS and icons rendered even when compact.
      Only their text is hidden, preventing the previous empty-sidebar bug. */
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within) .admin-brand-link,
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within) .admin-nav-label,
   .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
-    .admin-brand-link,
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
-    .admin-nav-label,
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
-    .admin-sidebar-link > span:not(.admin-nav-icon) {
+    .admin-sidebar-link
+    > span:not(.admin-nav-icon) {
     display: none;
   }
 
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
-    .admin-sidebar-link {
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within) .admin-sidebar-link {
     justify-content: center;
     padding-left: 0.15rem;
     padding-right: 0.15rem;
@@ -317,8 +315,7 @@
     padding-right: 0.55rem;
   }
 
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
-    .admin-brand {
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within) .admin-brand {
     padding-left: 0.35rem !important;
     padding-right: 0.35rem;
   }

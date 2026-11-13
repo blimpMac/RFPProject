@@ -303,7 +303,9 @@ export function AdminLayout() {
                 ? 'Close navigation'
                 : 'Open navigation'
           }
-          title={desktopNavigation ? (collapsed ? 'Expand sidebar' : 'Collapse sidebar') : 'Navigation'}
+          title={
+            desktopNavigation ? (collapsed ? 'Expand sidebar' : 'Collapse sidebar') : 'Navigation'
+          }
           aria-expanded={desktopNavigation ? navigationExpanded : open}
           aria-controls="staff-sidebar"
         >
@@ -366,8 +368,16 @@ export function AdminLayout() {
                           to={item.to}
                           end={item.to === '/admin'}
                           onClick={() => setOpen(false)}
-                          aria-label={desktopNavigation && collapsed && !sidebarPeeked ? item.label : undefined}
-                          title={desktopNavigation && collapsed && !sidebarPeeked ? item.label : undefined}
+                          aria-label={
+                            desktopNavigation && collapsed && !sidebarPeeked
+                              ? item.label
+                              : undefined
+                          }
+                          title={
+                            desktopNavigation && collapsed && !sidebarPeeked
+                              ? item.label
+                              : undefined
+                          }
                           className={({ isActive }) =>
                             `admin-sidebar-link ${isActive ? 'admin-sidebar-link-active' : ''}`
                           }
@@ -392,7 +402,9 @@ export function AdminLayout() {
             <NavLink
               to="/admin/manual"
               onClick={() => setOpen(false)}
-              aria-label={desktopNavigation && collapsed && !sidebarPeeked ? 'User Manual' : undefined}
+              aria-label={
+                desktopNavigation && collapsed && !sidebarPeeked ? 'User Manual' : undefined
+              }
               title={desktopNavigation && collapsed && !sidebarPeeked ? 'User Manual' : undefined}
               className={({ isActive }) =>
                 `admin-sidebar-link w-full ${isActive ? 'admin-sidebar-link-active' : ''}`
