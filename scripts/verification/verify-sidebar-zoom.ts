@@ -161,6 +161,9 @@ try {
     const page = await browser.newPage({ viewport: { width, height: 850 } });
     await page.setContent(markup());
     await page.addStyleTag({ content: stylesheet });
+    // Injected production CSS animates the hidden drawer from its initial position.
+    // Wait until its off-canvas transition has completed before hit testing.
+    await page.waitForTimeout(350);
     const collapsed = await inspect(page);
     assert.ok(
       collapsed.visible,
@@ -243,6 +246,7 @@ try {
     const zoomTest = await browser.newPage({ viewport: { width, height: 850 } });
     await zoomTest.setContent(markup());
     await zoomTest.addStyleTag({ content: stylesheet });
+    await zoomTest.waitForTimeout(350);
     for (const zoom of [0.75, 0.8, 1.25, 1.5]) {
       await zoomTest.evaluate(`document.body.style.zoom = '${zoom}'`);
       const zoomed = await inspect(zoomTest);
