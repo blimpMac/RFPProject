@@ -37,7 +37,7 @@ function markup() {
     <header class="admin-topbar flex min-h-[5.25rem] items-center gap-3 px-4 sm:gap-4 lg:px-6">
       <div class="admin-navigation-dropdown relative shrink-0" id="dropdown-anchor">
         <button id="dropdown-toggle" class="admin-dropdown-trigger focus-ring" type="button" aria-expanded="false" aria-controls="staff-navigation-dropdown" aria-label="Navigation menu">
-          <span>Navigation</span><svg width="16" height="16"><path d="m2 5 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <svg class="admin-dropdown-chevron" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <nav id="staff-navigation-dropdown" class="admin-dropdown-panel" aria-label="Staff navigation menu" hidden>
           <div class="admin-dropdown-group">
@@ -106,8 +106,13 @@ try {
 
     if (compact) {
       const trigger = page.locator('#dropdown-toggle');
+      assert.equal(await trigger.locator('.admin-dropdown-chevron').count(), 1);
+      assert.equal((await trigger.innerText()).trim(), '');
       await trigger.click();
       assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
+      await page.waitForTimeout(250);
+      const rotation = await trigger.locator('.admin-dropdown-chevron').evaluate((element) => getComputedStyle(element).transform);
+      assert.equal(rotation, 'matrix(-1, 0, 0, -1, 0, 0)');
       assert.ok(await isVisible(page, '#staff-navigation-dropdown'));
       const menuWithinViewport = await page.evaluate<boolean>(
         "(() => { const rect = document.querySelector('#staff-navigation-dropdown').getBoundingClientRect(); return rect.left >= 0 && rect.right <= innerWidth + 1; })()",
