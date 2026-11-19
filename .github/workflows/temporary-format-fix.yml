@@ -1,0 +1,30 @@
+name: Temporary CSS format repair
+
+on:
+  push:
+    paths:
+      - '.github/workflows/temporary-format-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx prettier --write src/styles/admin-shell-polish.css
+      - name: Commit formatting
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/styles/admin-shell-polish.css
+            git commit -m "style: format transient sidebar focus selectors"
+            git push origin HEAD:main
+          fi
