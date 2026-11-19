@@ -198,7 +198,11 @@ export function AdminLayout() {
       // Click opens a temporary preview; leaving the rail closes it.
       setSidebarHovered(true);
     } else {
-      setOpen((current) => !current);
+      // A mouse hover may already have opened the drawer before the click.
+      // Keep it open until pointer exit; touch devices retain tap-to-toggle.
+      setOpen((current) =>
+        window.matchMedia('(hover: hover) and (pointer: fine)').matches ? true : !current,
+      );
     }
   };
   const sidebarPeeked = desktopNavigation && collapsed && sidebarHovered;
