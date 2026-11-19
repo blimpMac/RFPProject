@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Eye, EyeOff, KeyRound, Mail, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Eye, EyeOff, Mail, ShieldCheck } from 'lucide-react';
 import { Button, Spinner } from '../components/ui';
 import { supabase } from '../lib/supabase';
 
@@ -14,7 +14,7 @@ function RecoveryLayout({
   children: ReactNode;
 }) {
   return (
-    <main className="flex min-h-[100dvh] flex-col bg-[#081824] px-4 py-8 text-slate-100 sm:px-6">
+    <main className="flex min-h-[100dvh] min-w-0 flex-col overflow-x-hidden bg-[#081824] px-3 py-6 text-slate-100 sm:px-6 sm:py-8">
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center">
         <Link
           to="/admin/login"
@@ -25,42 +25,21 @@ function RecoveryLayout({
         </Link>
 
         <section
-          className="overflow-hidden rounded-2xl border border-[#294358] bg-[#102334] shadow-[0_25px_70px_rgba(0,0,0,0.28)]"
+          className="w-full min-w-0 rounded-2xl border border-[#294358] bg-[#102334] shadow-[0_25px_70px_rgba(0,0,0,0.28)]"
           aria-labelledby="password-recovery-title"
         >
-          <div className="border-b border-[#294358] bg-[#0b1c2b] px-6 py-6 sm:px-8">
-            <div className="flex items-center gap-3">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-[#2a7c79] bg-[#123d48] text-base font-extrabold tracking-tight text-[#8af1d8]">
-                RFP
-              </span>
-              <div className="min-w-0">
-                <p className="text-base font-bold leading-5 tracking-tight text-white">
-                  RFP Monitoring System
-                </p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#89b9b9]">
-                  GPI · GEMCOR
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="px-6 pb-7 pt-7 sm:px-8 sm:pb-8">
-            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-[#173c4a] text-[#8af1d8]">
-              <KeyRound size={23} aria-hidden="true" />
-            </div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#60cbb3]">
-              Account security
-            </p>
+          <div className="min-w-0 px-5 pb-7 pt-7 sm:px-8 sm:pb-8 sm:pt-8">
             <h1
               id="password-recovery-title"
-              className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-[1.7rem]"
+              className="break-words text-2xl font-bold leading-tight tracking-tight text-white sm:text-[1.7rem]"
             >
               {title}
             </h1>
-            <p className="mt-3 text-sm leading-6 text-slate-300">{description}</p>
+            <p className="mt-3 break-words text-sm leading-6 text-slate-300">{description}</p>
             {children}
           </div>
         </section>
-        <div className="mt-5 flex items-center justify-center gap-2 text-center text-xs text-slate-400">
+        <div className="mt-5 flex min-w-0 flex-wrap items-center justify-center gap-2 text-center text-xs text-slate-400">
           <ShieldCheck size={15} aria-hidden="true" />
           Secure account recovery · RFP Monitoring System
         </div>
@@ -108,7 +87,7 @@ export function PasswordRecoveryPage() {
       }
     >
       {sent ? (
-        <div className="mt-6 space-y-5">
+        <div className="mt-6 min-w-0 space-y-5">
           <div
             className="flex items-start gap-3 rounded-xl border border-[#256e66] bg-[#12382f] p-4"
             role="status"
@@ -141,21 +120,21 @@ export function PasswordRecoveryPage() {
         </div>
       ) : (
         <form onSubmit={(event) => void submit(event)} className="mt-6 space-y-5">
-          <div className="field">
+          <div className="field min-w-0">
             <label
               htmlFor="recovery-email"
               className="mb-2 block text-sm font-semibold text-slate-100"
             >
               Work email address
             </label>
-            <div className="relative">
+            <div className="relative min-w-0">
               <Mail
                 size={18}
                 className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 aria-hidden="true"
               />
               <input
-                className="input w-full pl-11"
+                className="input w-full min-w-0 !pl-12"
                 id="recovery-email"
                 type="email"
                 autoComplete="email"
@@ -175,7 +154,7 @@ export function PasswordRecoveryPage() {
               {error}
             </p>
           )}
-          <Button className="w-full" disabled={busy}>
+          <Button className="w-full min-w-0" disabled={busy}>
             {busy ? <Spinner label="Sending recovery email" /> : 'Email me a reset link'}
           </Button>
           <p className="text-center text-xs leading-5 text-slate-400">
@@ -259,7 +238,7 @@ export function PasswordResetPage() {
             <div className="relative">
               <input
                 id="new-password"
-                className="input w-full pr-12"
+                className="input w-full min-w-0 !pr-12"
                 type={showPassword ? 'text' : 'password'}
                 minLength={8}
                 required
@@ -319,7 +298,7 @@ export function PasswordResetPage() {
               {error}
             </p>
           )}
-          <Button className="w-full" disabled={busy || password.length < 8 || confirm !== password}>
+          <Button className="w-full min-w-0" disabled={busy || password.length < 8 || confirm !== password}>
             {busy ? <Spinner label="Updating password" /> : 'Save new password'}
           </Button>
         </form>
