@@ -116,7 +116,7 @@ try {
       await page.keyboard.press('Escape');
       assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
       await trigger.click();
-      await page.locator('#main-content').click({ position: { x: 20, y: 30 } });
+      await page.mouse.click(width - 20, 650);
       assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
       await trigger.click();
       await page.locator('#staff-navigation-dropdown a').first().click();
