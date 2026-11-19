@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Eye, EyeOff, Mail, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Eye, EyeOff, Mail } from 'lucide-react';
 import { Button, Spinner } from '../components/ui';
 import { supabase } from '../lib/supabase';
 
@@ -39,10 +39,6 @@ function RecoveryLayout({
             {children}
           </div>
         </section>
-        <div className="mt-5 flex min-w-0 flex-wrap items-center justify-center gap-2 text-center text-xs text-slate-400">
-          <ShieldCheck size={15} aria-hidden="true" />
-          Secure account recovery · RFP Monitoring System
-        </div>
       </div>
     </main>
   );
