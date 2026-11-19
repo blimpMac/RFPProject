@@ -277,7 +277,7 @@
   }
 
   .admin-sidebar.admin-sidebar-is-collapsed.admin-sidebar-is-peeked,
-  .admin-sidebar.admin-sidebar-is-collapsed:focus-within {
+  .admin-sidebar.admin-sidebar-is-collapsed:has(:focus-visible) {
     width: 17rem !important;
     box-shadow: 16px 0 38px rgba(4, 21, 31, 0.2);
   }
@@ -292,30 +292,30 @@
 
   /* Keep navigation LINKS and icons rendered even when compact.
      Only their text is hidden, preventing the previous empty-sidebar bug. */
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within) .admin-brand-link,
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within) .admin-nav-label,
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible)) .admin-brand-link,
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible)) .admin-nav-label,
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible))
     .admin-sidebar-link
     > span:not(.admin-nav-icon) {
     display: none;
   }
 
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within) .admin-sidebar-link {
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible)) .admin-sidebar-link {
     justify-content: center;
     padding-left: 0.15rem;
     padding-right: 0.15rem;
   }
 
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible))
     .admin-sidebar-navigation,
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible))
     .admin-sidebar-footer {
     display: block !important;
     padding-left: 0.55rem;
     padding-right: 0.55rem;
   }
 
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within) .admin-brand {
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible)) .admin-brand {
     padding-left: 0.35rem !important;
     padding-right: 0.35rem;
   }
@@ -548,7 +548,7 @@
 }
 
 @media screen and (min-width: 1280px) {
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible))
     .admin-navigation-desktop {
     left: 1.125rem !important;
   }
