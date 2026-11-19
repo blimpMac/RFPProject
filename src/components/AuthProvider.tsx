@@ -9,7 +9,6 @@ import {
 } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { get } from '../lib/api';
 import type { Role } from '../types';
 
 type StaffIdentity = { fullName: string; email: string };
@@ -24,6 +23,7 @@ type AuthValue = {
   roles: Role[];
   identity: StaffIdentity | null;
   loading: boolean;
+  loadError: boolean;
   refresh: () => Promise<void>;
 };
 
@@ -32,6 +32,7 @@ const AuthContext = createContext<AuthValue>({
   roles: [],
   identity: null,
   loading: true,
+  loadError: false,
   refresh: async () => {},
 });
 
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<Role[]>([]);
   const [identity, setIdentity] = useState<StaffIdentity | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   // Invalidate any in-flight /api/me response when the session changes,
   // particularly when a user signs out before a previous request finishes.
   const sessionVersion = useRef(0);
@@ -60,19 +62,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setRoles([]);
     setIdentity(null);
+    setLoadError(false);
     setLoading(false);
   }, []);
 
   const loadStaff = useCallback(async (currentSession: Session, version: number) => {
     try {
-      const me = await get<MeResponse>('me');
+      // Use the session already supplied by Supabase instead of acquiring its auth
+      // lock again while initialization is in progress.
+      const response = await fetch('/api/me', {
+        headers: { authorization: `Bearer ${currentSession.access_token}` },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!response.ok) throw new Error('Unable to load staff permissions.');
+      const me = (await response.json()) as MeResponse;
+      if (!me.ok) throw new Error('Unable to load staff permissions.');
       if (version !== sessionVersion.current) return;
       setRoles(me.roles);
+      setLoadError(false);
       setIdentity(getIdentity(me, currentSession));
     } catch {
       if (version !== sessionVersion.current) return;
       setRoles([]);
       setIdentity(null);
+      setLoadError(true);
     } finally {
       if (version === sessionVersion.current) setLoading(false);
     }
@@ -89,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setSession(data.session);
+    setLoadError(false);
     setLoading(true);
     await loadStaff(data.session, version);
   }, [clearSession, loadStaff]);
@@ -103,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setSession(nextSession);
+      setLoadError(false);
       setRoles([]);
       setIdentity(null);
       setLoading(true);
@@ -122,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [clearSession, loadStaff]);
 
   return (
-    <AuthContext.Provider value={{ session, roles, identity, loading, refresh }}>
+    <AuthContext.Provider value={{ session, roles, identity, loading, loadError, refresh }}>
       {children}
     </AuthContext.Provider>
   );
