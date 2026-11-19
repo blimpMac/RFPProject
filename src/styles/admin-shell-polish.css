@@ -292,15 +292,18 @@
 
   /* Keep navigation LINKS and icons rendered even when compact.
      Only their text is hidden, preventing the previous empty-sidebar bug. */
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible)) .admin-brand-link,
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible)) .admin-nav-label,
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible))
+    .admin-brand-link,
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible))
+    .admin-nav-label,
   .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible))
     .admin-sidebar-link
     > span:not(.admin-nav-icon) {
     display: none;
   }
 
-  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible)) .admin-sidebar-link {
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:has(:focus-visible))
+    .admin-sidebar-link {
     justify-content: center;
     padding-left: 0.15rem;
     padding-right: 0.15rem;
