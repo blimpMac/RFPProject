@@ -308,27 +308,6 @@ export function AdminLayout() {
         Skip to main content
       </a>
       <div className={`admin-shell min-h-screen ${collapsed ? 'admin-shell-collapsed' : ''}`}>
-        <button
-          type="button"
-          className="admin-navigation-trigger focus-ring"
-          onClick={toggleSidebar}
-          aria-label={
-            desktopNavigation
-              ? collapsed
-                ? 'Expand navigation'
-                : 'Collapse navigation'
-              : open
-                ? 'Close navigation'
-                : 'Open navigation'
-          }
-          title={
-            desktopNavigation ? (collapsed ? 'Expand sidebar' : 'Collapse sidebar') : 'Navigation'
-          }
-          aria-expanded={desktopNavigation ? navigationExpanded : open}
-          aria-controls="staff-sidebar"
-        >
-          {open && !desktopNavigation ? <X size={21} /> : <Menu size={21} />}
-        </button>
         {open && (
           <button
             type="button"
@@ -347,6 +326,18 @@ export function AdminLayout() {
           onMouseLeave={() => setSidebarHovered(false)}
         >
           <div className="admin-brand flex h-[5.25rem] shrink-0 items-center px-3">
+          <button
+            type="button"
+            className="admin-navigation-trigger admin-navigation-desktop focus-ring"
+            onClick={toggleSidebar}
+            aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={navigationExpanded}
+            aria-controls="staff-sidebar"
+          >
+            <Menu size={20} aria-hidden="true" />
+          </button>
+
             <Link
               to="/admin"
               className="admin-brand-link flex min-w-0 items-center gap-3 px-2"
@@ -447,6 +438,17 @@ export function AdminLayout() {
 
         <div className="admin-content transition-all">
           <header className="admin-topbar flex min-h-[5.25rem] items-center gap-3 px-4 sm:gap-4 lg:px-6">
+            <button
+              type="button"
+              className="admin-navigation-trigger admin-navigation-mobile focus-ring"
+              onClick={toggleSidebar}
+              aria-label={open ? 'Close navigation' : 'Open navigation'}
+              title="Navigation"
+              aria-expanded={open}
+              aria-controls="staff-sidebar"
+            >
+              {open ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
+            </button>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[0.68rem] font-bold uppercase tracking-[0.15em] text-slate-400">
                 {isIT ? 'IT operations' : 'Operations workspace'}
