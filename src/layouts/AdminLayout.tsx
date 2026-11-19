@@ -195,14 +195,12 @@ export function AdminLayout() {
 
   const toggleSidebar = () => {
     if (desktopNavigation) {
-      // Click opens a temporary preview; leaving the rail closes it.
+      // Keep the desktop rail a temporary preview instead of pinning it.
       setSidebarHovered(true);
     } else {
-      // A mouse hover may already have opened the drawer before the click.
-      // Keep it open until pointer exit; touch devices retain tap-to-toggle.
-      setOpen((current) =>
-        window.matchMedia('(hover: hover) and (pointer: fine)').matches ? true : !current,
-      );
+      // Do not open the off-canvas drawer on hover. At high browser zoom,
+      // hover can move the drawer over the trigger before the click fires.
+      setOpen((current) => !current);
     }
   };
   const sidebarPeeked = desktopNavigation && collapsed && sidebarHovered;
@@ -450,14 +448,6 @@ export function AdminLayout() {
               type="button"
               className="admin-navigation-trigger admin-navigation-mobile focus-ring"
               onClick={toggleSidebar}
-              onMouseEnter={() => {
-                if (
-                  !desktopNavigation &&
-                  window.matchMedia('(hover: hover) and (pointer: fine)').matches
-                ) {
-                  setOpen(true);
-                }
-              }}
               onMouseLeave={(event) => {
                 if (
                   !desktopNavigation &&
