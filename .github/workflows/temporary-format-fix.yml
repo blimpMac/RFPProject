@@ -1,0 +1,34 @@
+name: Temporary format repair
+
+on:
+  push:
+    paths:
+      - '.github/workflows/temporary-format-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Apply repository formatting to touched files
+        run: |
+          npx prettier --write src/layouts/AdminLayout.tsx src/pages/PasswordRecoveryPage.tsx src/styles/admin-shell-polish.css src/components/AuthProvider.tsx server/lib/auth.ts server/routes/staff/dashboard.ts scripts/verification/verify-sidebar-zoom.ts
+      - name: Commit formatting on main
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/layouts/AdminLayout.tsx src/pages/PasswordRecoveryPage.tsx src/styles/admin-shell-polish.css src/components/AuthProvider.tsx server/lib/auth.ts server/routes/staff/dashboard.ts scripts/verification/verify-sidebar-zoom.ts
+            git commit -m "style: format navigation and performance fixes"
+            git push origin HEAD:main
+          fi
