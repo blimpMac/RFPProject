@@ -16,20 +16,21 @@ export async function requireStaff(event: ApplicationEvent, allowed?: string[]):
     error,
   } = await db.auth.getUser(token);
   if (error || !user) throw new HttpError(401, 'Your session is invalid or expired.');
-  const [{ data, error: roleError }, { data: profile, error: profileError }] = await Promise.all([
+  // These lookups are independent. Run them together instead of waiting
+  // for the profile query before checking IT access.
+  const [
+    { data, error: roleError },
+    { data: profile, error: profileError },
+    itAccess,
+  ] = await Promise.all([
     db.from('user_roles').select('role').eq('user_id', user.id),
     db.from('profiles').select('full_name,department,active').eq('id', user.id).single(),
+    db.from('it_administrators').select('active').eq('user_id', user.id).maybeSingle(),
   ]);
   if (roleError) throw roleError;
   if (profileError || !profile) throw new HttpError(403, 'Your staff profile is not configured.');
   if (!profile.active) throw new HttpError(403, 'This staff account is inactive.');
-  // Separate IT operators from payment authority, even with legacy roles.
-  // Keep the existing application functional before the IT migration is applied.
-  const itAccess = await db
-    .from('it_administrators')
-    .select('active')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  // Preserve legacy compatibility when the IT table has not been migrated.
   if (itAccess.error && !['42P01', 'PGRST205', 'PGRST116'].includes(itAccess.error.code)) {
     throw itAccess.error;
   }
