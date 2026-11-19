@@ -445,6 +445,25 @@ export function AdminLayout() {
               type="button"
               className="admin-navigation-trigger admin-navigation-mobile focus-ring"
               onClick={toggleSidebar}
+              onMouseEnter={() => {
+                if (
+                  !desktopNavigation &&
+                  window.matchMedia('(hover: hover) and (pointer: fine)').matches
+                ) {
+                  setOpen(true);
+                }
+              }}
+              onMouseLeave={(event) => {
+                if (
+                  !desktopNavigation &&
+                  open &&
+                  window.matchMedia('(hover: hover) and (pointer: fine)').matches
+                ) {
+                  const next = event.relatedTarget;
+                  const sidebar = document.getElementById('staff-sidebar');
+                  if (!(next instanceof Node && sidebar?.contains(next))) setOpen(false);
+                }
+              }}
               aria-label={open ? 'Close navigation' : 'Open navigation'}
               title="Navigation"
               aria-expanded={open}
