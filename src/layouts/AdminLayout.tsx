@@ -442,7 +442,10 @@ export function AdminLayout() {
 
         <div className="admin-content transition-all">
           <header className="admin-topbar flex min-h-[5.25rem] items-center gap-3 px-4 sm:gap-4 lg:px-6">
-            <div className="admin-navigation-dropdown relative shrink-0" ref={navigationDropdownRef}>
+            <div
+              className="admin-navigation-dropdown relative shrink-0"
+              ref={navigationDropdownRef}
+            >
               <button
                 type="button"
                 className="admin-dropdown-trigger focus-ring"
@@ -454,11 +457,7 @@ export function AdminLayout() {
               >
                 <span className="hidden sm:inline">Navigation</span>
                 <span className="sm:hidden">Pages</span>
-                <ChevronDown
-                  size={16}
-                  aria-hidden="true"
-                  className={open ? 'rotate-180' : ''}
-                />
+                <ChevronDown size={16} aria-hidden="true" className={open ? 'rotate-180' : ''} />
               </button>
               {open && !desktopNavigation && (
                 <nav
