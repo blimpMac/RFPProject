@@ -15,7 +15,6 @@ import {
   ChevronDown,
   Table2,
   Users,
-  X,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../components/AuthProvider';
@@ -142,6 +141,7 @@ export function AdminLayout() {
   );
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const navigationDropdownRef = useRef<HTMLDivElement>(null);
   const isIT = roles.includes('it_administrator');
 
   useEffect(() => {
@@ -157,14 +157,21 @@ export function AdminLayout() {
 
   useEffect(() => {
     if (desktopNavigation || !open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const onPointerDown = (event: PointerEvent) => {
+      if (
+        navigationDropdownRef.current &&
+        !navigationDropdownRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
     };
+    document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onEscape);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onEscape);
     };
   }, [desktopNavigation, open]);
@@ -311,24 +318,15 @@ export function AdminLayout() {
         Skip to main content
       </a>
       <div className={`admin-shell min-h-screen ${collapsed ? 'admin-shell-collapsed' : ''}`}>
-        {open && (
-          <button
-            type="button"
-            className="admin-sidebar-backdrop fixed inset-0 bg-slate-950/45 backdrop-blur-[2px]"
-            onClick={() => setOpen(false)}
-            aria-label="Close navigation menu"
-          />
-        )}
         <aside
           id="staff-sidebar"
-          className={`admin-sidebar fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden ${collapsed ? 'admin-sidebar-is-collapsed' : ''} ${sidebarPeeked ? 'admin-sidebar-is-peeked' : ''} ${open ? 'admin-sidebar-open' : ''}`}
-          inert={!desktopNavigation && !open}
+          className={`admin-sidebar fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden ${collapsed ? 'admin-sidebar-is-collapsed' : ''} ${sidebarPeeked ? 'admin-sidebar-is-peeked' : ''}`}
+          inert={!desktopNavigation}
           onMouseEnter={() => {
             if (desktopNavigation) setSidebarHovered(true);
           }}
           onMouseLeave={() => {
             setSidebarHovered(false);
-            if (!desktopNavigation) setOpen(false);
           }}
         >
           <div className="admin-brand flex h-[5.25rem] shrink-0 items-center px-3">
@@ -444,28 +442,70 @@ export function AdminLayout() {
 
         <div className="admin-content transition-all">
           <header className="admin-topbar flex min-h-[5.25rem] items-center gap-3 px-4 sm:gap-4 lg:px-6">
-            <button
-              type="button"
-              className="admin-navigation-trigger admin-navigation-mobile focus-ring"
-              onClick={toggleSidebar}
-              onMouseLeave={(event) => {
-                if (
-                  !desktopNavigation &&
-                  open &&
-                  window.matchMedia('(hover: hover) and (pointer: fine)').matches
-                ) {
-                  const next = event.relatedTarget;
-                  const sidebar = document.getElementById('staff-sidebar');
-                  if (!(next instanceof Node && sidebar?.contains(next))) setOpen(false);
-                }
-              }}
-              aria-label={open ? 'Close navigation' : 'Open navigation'}
-              title="Navigation"
-              aria-expanded={open}
-              aria-controls="staff-sidebar"
-            >
-              {open ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
-            </button>
+            <div className="admin-navigation-dropdown relative shrink-0" ref={navigationDropdownRef}>
+              <button
+                type="button"
+                className="admin-dropdown-trigger focus-ring"
+                onClick={() => setOpen((current) => !current)}
+                aria-label="Navigation menu"
+                aria-expanded={open}
+                aria-haspopup="menu"
+                aria-controls="staff-navigation-dropdown"
+              >
+                <span>Navigation</span>
+                <ChevronDown
+                  size={16}
+                  aria-hidden="true"
+                  className={open ? 'rotate-180' : ''}
+                />
+              </button>
+              {open && !desktopNavigation && (
+                <nav
+                  id="staff-navigation-dropdown"
+                  className="admin-dropdown-panel"
+                  aria-label="Staff navigation menu"
+                >
+                  {(['IT Operations', 'Workspace', 'Administration'] as const).map((group) => {
+                    const items = availableItems.filter((item) => item.group === group);
+                    if (!items.length) return null;
+                    return (
+                      <div key={group} className="admin-dropdown-group">
+                        <p className="admin-dropdown-heading">{group}</p>
+                        {items.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <NavLink
+                              key={item.to}
+                              to={item.to}
+                              end={item.to === '/admin'}
+                              onClick={() => setOpen(false)}
+                              className={({ isActive }) =>
+                                `admin-dropdown-link ${isActive ? 'admin-dropdown-link-active' : ''}`
+                              }
+                            >
+                              <Icon size={17} aria-hidden="true" />
+                              <span>{item.label}</span>
+                            </NavLink>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                  <div className="admin-dropdown-group border-t border-slate-200">
+                    <NavLink
+                      to="/admin/manual"
+                      onClick={() => setOpen(false)}
+                      className={({ isActive }) =>
+                        `admin-dropdown-link ${isActive ? 'admin-dropdown-link-active' : ''}`
+                      }
+                    >
+                      <BookOpen size={17} aria-hidden="true" />
+                      <span>{isIT ? 'IT Technical Manual' : 'User Manual'}</span>
+                    </NavLink>
+                  </div>
+                </nav>
+              )}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[0.68rem] font-bold uppercase tracking-[0.15em] text-slate-400">
                 {isIT ? 'IT operations' : 'Operations workspace'}
