@@ -7,7 +7,7 @@
   min-width: 0;
   padding: 1.05rem;
   border: 1px solid #d9e0e8;
-  border-radius: .85rem;
+  border-radius: 0.85rem;
   background: #f8fafc;
   color: #172033;
 }
@@ -15,7 +15,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: .85rem 1.2rem;
+  gap: 0.85rem 1.2rem;
   flex-wrap: wrap;
   min-width: 0;
 }
@@ -25,11 +25,11 @@
 }
 .ca-liquidation-kicker {
   display: block;
-  margin-bottom: .25rem;
+  margin-bottom: 0.25rem;
   color: #315c93;
-  font-size: .7rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  letter-spacing: .07em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 .ca-liquidation-title h3 {
@@ -41,41 +41,41 @@
 }
 .ca-liquidation-title p {
   max-width: 42rem;
-  margin: .3rem 0 0;
+  margin: 0.3rem 0 0;
   color: #596679;
-  font-size: .83rem;
+  font-size: 0.83rem;
   line-height: 1.5;
 }
 .ca-liquidation-header-actions {
   display: flex;
   align-items: center;
-  gap: .6rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
   min-width: 0;
 }
 .ca-liquidation-count {
   display: inline-flex;
   align-items: center;
-  gap: .4rem;
-  padding: .48rem .65rem;
+  gap: 0.4rem;
+  padding: 0.48rem 0.65rem;
   min-height: 2.45rem;
   border: 1px solid #d1dce8;
-  border-radius: .55rem;
+  border-radius: 0.55rem;
   background: #eaf0f7;
   color: #173f6b;
-  font-size: .76rem;
+  font-size: 0.76rem;
   font-weight: 750;
   white-space: nowrap;
 }
 .ca-liquidation-header-actions .ca-liquidation-add {
   min-height: 2.45rem;
-  padding: .55rem .85rem;
-  font-size: .8rem;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.8rem;
   white-space: nowrap;
 }
 .ca-liquidation-entries {
   display: grid;
-  gap: .75rem;
+  gap: 0.75rem;
   min-width: 0;
   margin-top: 1rem;
   padding-top: 1rem;
@@ -84,9 +84,9 @@
 .ca-liquidation-row {
   box-sizing: border-box;
   min-width: 0;
-  padding: .85rem;
+  padding: 0.85rem;
   border: 1px solid #dce4ed;
-  border-radius: .65rem;
+  border-radius: 0.65rem;
   background: #fff;
 }
 .ca-liquidation-row-heading {
@@ -95,13 +95,13 @@
   justify-content: space-between;
   gap: 1rem;
   min-width: 0;
-  margin-bottom: .65rem;
+  margin-bottom: 0.65rem;
 }
 .ca-liquidation-row-number {
   color: #173f6b;
-  font-size: .76rem;
+  font-size: 0.76rem;
   font-weight: 800;
-  letter-spacing: .01em;
+  letter-spacing: 0.01em;
 }
 .ca-liquidation-remove {
   display: inline-grid;
@@ -109,35 +109,40 @@
   place-items: center;
   width: 2rem;
   height: 2rem;
-  padding: .3rem;
+  padding: 0.3rem;
   border: 1px solid #e7d9db;
-  border-radius: .5rem;
+  border-radius: 0.5rem;
   background: #fff;
   color: #a12831;
-  transition: background-color .15s ease, border-color .15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
-.ca-liquidation-remove:hover { background: #fff0f1; border-color: #d5a9ae; }
+.ca-liquidation-remove:hover {
+  background: #fff0f1;
+  border-color: #d5a9ae;
+}
 .ca-liquidation-remove:focus-visible {
-  outline: 3px solid rgba(49,115,219,.36);
+  outline: 3px solid rgba(49, 115, 219, 0.36);
   outline-offset: 2px;
 }
 .ca-liquidation-fields {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr) minmax(0, 1.1fr);
-  gap: .65rem .85rem;
+  gap: 0.65rem 0.85rem;
   align-items: end;
   min-width: 0;
 }
 .ca-liquidation-field {
   display: flex;
   flex-direction: column;
-  gap: .35rem;
+  gap: 0.35rem;
   min-width: 0;
   width: 100%;
 }
 .ca-liquidation-field > span {
   color: #29384b;
-  font-size: .75rem;
+  font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.3;
 }
@@ -148,9 +153,9 @@
   min-width: 0;
   height: 2.65rem;
   min-height: 2.65rem;
-  padding: .55rem .7rem;
-  border-radius: .55rem;
-  font-size: .84rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.55rem;
+  font-size: 0.84rem;
   line-height: 1.25;
 }
 .ca-liquidation-amount {
@@ -160,44 +165,49 @@
 .ca-liquidation-empty {
   display: flex;
   align-items: center;
-  gap: .6rem;
+  gap: 0.6rem;
   min-width: 0;
-  margin-top: .85rem;
-  padding: .75rem .9rem;
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.9rem;
   border: 1px dashed #c5d2df;
-  border-radius: .6rem;
+  border-radius: 0.6rem;
   background: #fff;
   color: #596679;
-  font-size: .8rem;
+  font-size: 0.8rem;
   line-height: 1.4;
 }
-.ca-liquidation-empty svg { flex: none; color: #71849b; }
-.ca-liquidation-empty strong { font-weight: 750; }
+.ca-liquidation-empty svg {
+  flex: none;
+  color: #71849b;
+}
+.ca-liquidation-empty strong {
+  font-weight: 750;
+}
 .ca-liquidation-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: .5rem .9rem;
-  margin-top: .85rem;
-  padding: .7rem .9rem;
+  gap: 0.5rem 0.9rem;
+  margin-top: 0.85rem;
+  padding: 0.7rem 0.9rem;
   border: 1px solid #ccdaea;
-  border-radius: .6rem;
+  border-radius: 0.6rem;
   background: #eaf1f9;
   color: #465c76;
-  font-size: .76rem;
+  font-size: 0.76rem;
 }
 .ca-liquidation-total {
   display: inline-flex;
   align-items: baseline;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: .45rem .8rem;
+  gap: 0.45rem 0.8rem;
   text-align: right;
 }
 .ca-liquidation-total strong {
   color: #173f6b;
-  font-size: .98rem;
+  font-size: 0.98rem;
   font-weight: 850;
   font-variant-numeric: tabular-nums;
 }
@@ -207,19 +217,42 @@
   .ca-liquidation-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .ca-liquidation-field:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  .ca-liquidation-field:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
 }
 @container (max-width: 32rem) {
-  .ca-liquidation-fields { grid-template-columns: minmax(0,1fr); }
-  .ca-liquidation-field:nth-child(2) { grid-column: auto; grid-row: auto; }
-  .ca-liquidation-header-actions { width: 100%; }
-  .ca-liquidation-header-actions .ca-liquidation-add { flex: 1 1 auto; }
-  .ca-liquidation-footer { align-items: flex-start; flex-direction: column; }
-  .ca-liquidation-total { width: 100%; justify-content: space-between; text-align: left; }
+  .ca-liquidation-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ca-liquidation-field:nth-child(2) {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .ca-liquidation-header-actions {
+    width: 100%;
+  }
+  .ca-liquidation-header-actions .ca-liquidation-add {
+    flex: 1 1 auto;
+  }
+  .ca-liquidation-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .ca-liquidation-total {
+    width: 100%;
+    justify-content: space-between;
+    text-align: left;
+  }
 }
 @media (max-width: 420px) {
-  .ca-liquidation-editor { padding: .8rem; }
-  .ca-liquidation-row { padding: .7rem; }
+  .ca-liquidation-editor {
+    padding: 0.8rem;
+  }
+  .ca-liquidation-row {
+    padding: 0.7rem;
+  }
 }
 
 /* Dark mode must not inherit the old pale yellow warning-card appearance. */
@@ -229,13 +262,19 @@
   color: #e7edf6;
 }
 .dark .ca-liquidation-title h3,
-.dark .ca-liquidation-field > span { color: #eaf0f8; }
+.dark .ca-liquidation-field > span {
+  color: #eaf0f8;
+}
 .dark .ca-liquidation-title p,
 .dark .ca-liquidation-footer,
-.dark .ca-liquidation-empty { color: #bdc8d5; }
+.dark .ca-liquidation-empty {
+  color: #bdc8d5;
+}
 .dark .ca-liquidation-kicker,
 .dark .ca-liquidation-row-number,
-.dark .ca-liquidation-total strong { color: #d7e8ff; }
+.dark .ca-liquidation-total strong {
+  color: #d7e8ff;
+}
 .dark .ca-liquidation-count,
 .dark .ca-liquidation-footer {
   border-color: #49637f;
@@ -247,15 +286,23 @@
   border-color: #3a4a5e;
   background: #1d2a3c;
 }
-.dark .ca-liquidation-entries { border-color: #34465c; }
+.dark .ca-liquidation-entries {
+  border-color: #34465c;
+}
 .dark .ca-liquidation-remove {
   border-color: #6b4b55;
   background: #263449;
   color: #ffc1c5;
 }
-.dark .ca-liquidation-remove:hover { background: #44313b; }
-.dark .ca-liquidation-empty svg { color: #b8cde3; }
+.dark .ca-liquidation-remove:hover {
+  background: #44313b;
+}
+.dark .ca-liquidation-empty svg {
+  color: #b8cde3;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .ca-liquidation-remove { transition: none; }
+  .ca-liquidation-remove {
+    transition: none;
+  }
 }

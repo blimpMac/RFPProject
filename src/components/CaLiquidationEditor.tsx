@@ -28,9 +28,7 @@ export function CaLiquidationEditor({
 }) {
   const amountInCentavos = expenses.reduce((total, row) => {
     const amount = Number(row.amount);
-    return Number.isFinite(amount) && amount > 0
-      ? total + Math.round(amount * 100)
-      : total;
+    return Number.isFinite(amount) && amount > 0 ? total + Math.round(amount * 100) : total;
   }, 0);
   const completedCount = expenses.filter(
     (row) =>
@@ -40,9 +38,7 @@ export function CaLiquidationEditor({
   ).length;
 
   const edit = (index: number, key: keyof CaLiquidationExpense, value: string) => {
-    onChange((rows) =>
-      rows.map((row, i) => (i === index ? { ...row, [key]: value } : row)),
-    );
+    onChange((rows) => rows.map((row, i) => (i === index ? { ...row, [key]: value } : row)));
   };
 
   return (
@@ -52,8 +48,8 @@ export function CaLiquidationEditor({
           <span className="ca-liquidation-kicker">Required for CA Liquidation</span>
           <h3>Itemized liquidation expenses</h3>
           <p>
-            List the expense date, description, and peso amount for each item.
-            Completed entries appear on the liquidation expense summary.
+            List the expense date, description, and peso amount for each item. Completed entries
+            appear on the liquidation expense summary.
           </p>
         </div>
         <div className="ca-liquidation-header-actions">
@@ -138,14 +134,17 @@ export function CaLiquidationEditor({
       ) : (
         <div className="ca-liquidation-empty">
           <FileText size={19} aria-hidden="true" />
-          <span>No expenses added yet. Use <strong>Add expense</strong> to begin.</span>
+          <span>
+            No expenses added yet. Use <strong>Add expense</strong> to begin.
+          </span>
         </div>
       )}
 
       {expenses.length > 0 && (
         <div className="ca-liquidation-footer" aria-live="polite">
           <span>
-            <strong>{completedCount}</strong> of <strong>{expenses.length}</strong> entries completed
+            <strong>{completedCount}</strong> of <strong>{expenses.length}</strong> entries
+            completed
           </span>
           <div className="ca-liquidation-total">
             <span>Total itemized expenses</span>
