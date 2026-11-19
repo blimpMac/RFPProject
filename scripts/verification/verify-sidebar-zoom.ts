@@ -38,11 +38,11 @@ function markup() {
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
 <body>
 <div class="admin-shell admin-shell-collapsed min-h-screen">
-  <button id="menu-toggle" type="button" class="admin-navigation-trigger focus-ring" aria-label="Open navigation" aria-expanded="false" aria-controls="staff-sidebar">
-    <svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-  </button>
   <aside id="staff-sidebar" class="admin-sidebar fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden admin-sidebar-is-collapsed">
     <div class="admin-brand flex h-[5.25rem] shrink-0 items-center px-3">
+      <button id="menu-toggle-desktop" type="button" class="admin-navigation-trigger admin-navigation-desktop focus-ring" aria-label="Open navigation" aria-expanded="false" aria-controls="staff-sidebar">
+        <svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
       <a href="#overview" class="admin-brand-link flex min-w-0 items-center gap-3 px-2">RFP CONTROL</a>
     </div>
     <nav id="staff-navigation" class="admin-sidebar-navigation min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-3 pt-4" aria-label="Staff navigation">
@@ -67,6 +67,9 @@ function markup() {
   </aside>
   <div class="admin-content transition-all">
     <header class="admin-topbar flex min-h-[5.25rem] items-center gap-3 px-4 sm:gap-4 lg:px-6">
+      <button id="menu-toggle-mobile" type="button" class="admin-navigation-trigger admin-navigation-mobile focus-ring" aria-label="Open navigation" aria-expanded="false" aria-controls="staff-sidebar">
+        <svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
       <h1 class="min-w-0 flex-1">Overview</h1>
       <button type="button" class="admin-account-trigger">Account</button>
     </header>
@@ -78,7 +81,7 @@ function markup() {
 </div>
 <script>
   (() => {
-    const button = document.getElementById('menu-toggle');
+    const button = document.getElementById(isDesktop() ? 'menu-toggle-desktop' : 'menu-toggle-mobile');
     const sidebar = document.getElementById('staff-sidebar');
     const shell = document.querySelector('.admin-shell');
     const isDesktop = () => matchMedia('(min-width: 1280px)').matches;
@@ -112,7 +115,7 @@ async function inspect(page: import('@playwright/test').Page): Promise<Metrics> 
   // The server-side verification tsconfig intentionally excludes DOM types.
   // Evaluate a browser-owned string, as the project's other Playwright scripts do.
   return page.evaluate<Metrics>(`(() => {
-    const button = document.querySelector('#menu-toggle');
+    const button = document.querySelector(matchMedia('(min-width: 1280px)').matches ? '#menu-toggle-desktop' : '#menu-toggle-mobile');
     const navLabel = document.querySelector('[data-nav-label]');
     const navIcon = document.querySelector('.admin-nav-icon');
     const sidebar = document.querySelector('#staff-sidebar');
@@ -131,7 +134,7 @@ async function inspect(page: import('@playwright/test').Page): Promise<Metrics> 
       visible: style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0.9 &&
         rect.width > 24 && rect.height > 24 && rect.left >= 0 && rect.right <= innerWidth &&
         rect.top >= 0 && rect.bottom <= innerHeight,
-      hitTest: Boolean(center?.closest('#menu-toggle')),
+      hitTest: Boolean(center?.closest('.admin-navigation-trigger')),
       top: rect.top,
       left: rect.left,
       right: rect.right,
@@ -178,10 +181,18 @@ try {
 
     await page.evaluate('window.scrollTo(0, 520)');
     const scrolled = await inspect(page);
-    assert.ok(
-      scrolled.visible && scrolled.hitTest,
-      `Burger disappears when scrolled at width ${width}: ${JSON.stringify(scrolled)}`,
-    );
+    if (width >= 1280) {
+      assert.ok(
+        scrolled.visible && scrolled.hitTest,
+        `Desktop sidebar toggle disappears when scrolled at width ${width}: ${JSON.stringify(scrolled)}`,
+      );
+    } else {
+      // Mobile toggle stays in the normal header flow, not fixed over content.
+      assert.ok(
+        !scrolled.visible,
+        `Mobile header control unexpectedly floats over scrolled content at width ${width}`,
+      );
+    }
     await page.evaluate('window.scrollTo(0, 0)');
 
     if (width >= 1280) {
