@@ -89,20 +89,24 @@ export function PreviewFormsPage() {
 
   return (
     <div className="space-y-5">
-      <section className="dashboard-hero">
-        <p className="eyebrow">Dedicated forms workspace</p>
-        <h2 className="mt-2 flex items-center gap-3 text-2xl font-semibold sm:text-3xl">
-          <Eye size={26} /> Preview Forms
-        </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-          View blank-style sample forms in a separate workspace. Previews are demonstration records
-          only and cannot approve, release, or change any payment.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link to="/admin/manual" className="btn btn-secondary">
-            <BookOpen size={16} /> Open user manual
+      <section className="dashboard-hero !flex !flex-col !items-stretch gap-5 lg:!flex-row lg:!items-center lg:!justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="eyebrow">Dedicated forms workspace</p>
+          <h2 className="mt-2 flex min-w-0 items-center gap-2.5 text-2xl font-semibold leading-tight sm:text-3xl">
+            <Eye size={24} className="shrink-0" aria-hidden="true" />
+            <span>Preview Forms</span>
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            View blank-style sample forms in a separate workspace. Previews are demonstration
+            records only and cannot approve, release, or change any payment.
+          </p>
+        </div>
+        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+          <Link to="/admin/manual" className="btn btn-secondary inline-flex items-center gap-2">
+            <BookOpen size={16} className="shrink-0" />
+            Open user manual
           </Link>
-          <Link to="/admin/new-request" className="btn btn-primary">
+          <Link to="/admin/new-request" className="btn btn-primary inline-flex items-center">
             Create a real request
           </Link>
         </div>
