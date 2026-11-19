@@ -92,7 +92,7 @@ function markup() {
       button.classList.toggle('admin-navigation-trigger-open', value);
     };
     sidebar.addEventListener('mouseenter', () => {
-      if (isDesktop() && collapsed) sidebar.classList.add('admin-sidebar-is-peeked');
+      if (isDesktop()) sidebar.classList.add('admin-sidebar-is-peeked');
     });
     sidebar.addEventListener('mouseleave', () => {
       sidebar.classList.remove('admin-sidebar-is-peeked');
@@ -100,8 +100,8 @@ function markup() {
     });
     button.addEventListener('click', () => {
       if (isDesktop()) {
-        const peeked = sidebar.classList.toggle('admin-sidebar-is-peeked');
-        button.setAttribute('aria-expanded', String(peeked));
+        sidebar.classList.add('admin-sidebar-is-peeked');
+        button.setAttribute('aria-expanded', 'true');
       } else {
         setOpen(!opened);
         button.setAttribute('aria-expanded', String(opened));
