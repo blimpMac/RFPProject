@@ -452,7 +452,8 @@ export function AdminLayout() {
                 aria-haspopup="menu"
                 aria-controls="staff-navigation-dropdown"
               >
-                <span>Navigation</span>
+                <span className="hidden sm:inline">Navigation</span>
+                <span className="sm:hidden">Pages</span>
                 <ChevronDown
                   size={16}
                   aria-hidden="true"
