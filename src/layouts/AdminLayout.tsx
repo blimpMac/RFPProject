@@ -134,13 +134,8 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => {
-    try {
-      return window.localStorage.getItem('rfp-sidebar-collapsed') !== 'expanded';
-    } catch {
-      return true;
-    }
-  });
+  // The desktop rail is transient: clicking must not pin it open.
+  const collapsed = true;
   const [editingName, setEditingName] = useState(false);
   const [desktopNavigation, setDesktopNavigation] = useState(
     () => window.matchMedia('(min-width: 1280px)').matches,
@@ -148,14 +143,6 @@ export function AdminLayout() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const isIT = roles.includes('it_administrator');
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem('rfp-sidebar-collapsed', collapsed ? 'collapsed' : 'expanded');
-    } catch {
-      // Navigation still works if browser storage is unavailable.
-    }
-  }, [collapsed]);
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 1280px)');
@@ -208,8 +195,7 @@ export function AdminLayout() {
 
   const toggleSidebar = () => {
     if (desktopNavigation) {
-      setSidebarHovered(false);
-      setCollapsed((current) => !current);
+      setSidebarHovered((current) => !current);
     } else {
       setOpen((current) => !current);
     }
@@ -337,15 +323,18 @@ export function AdminLayout() {
           onMouseEnter={() => {
             if (desktopNavigation) setSidebarHovered(true);
           }}
-          onMouseLeave={() => setSidebarHovered(false)}
+          onMouseLeave={() => {
+            setSidebarHovered(false);
+            if (!desktopNavigation) setOpen(false);
+          }}
         >
           <div className="admin-brand flex h-[5.25rem] shrink-0 items-center px-3">
             <button
               type="button"
               className="admin-navigation-trigger admin-navigation-desktop focus-ring"
               onClick={toggleSidebar}
-              aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={navigationExpanded ? 'Close navigation' : 'Open navigation'}
+              title={navigationExpanded ? 'Close navigation' : 'Open navigation'}
               aria-expanded={navigationExpanded}
               aria-controls="staff-sidebar"
             >
