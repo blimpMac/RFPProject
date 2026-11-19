@@ -82,10 +82,10 @@ function markup() {
 </div>
 <script>
   (() => {
+    const isDesktop = () => matchMedia('(min-width: 1280px)').matches;
     const button = document.getElementById(isDesktop() ? 'menu-toggle-desktop' : 'menu-toggle-mobile');
     const sidebar = document.getElementById('staff-sidebar');
     const shell = document.querySelector('.admin-shell');
-    const isDesktop = () => matchMedia('(min-width: 1280px)').matches;
     let collapsed = true;
     let opened = false;
     const setOpen = (value) => {
