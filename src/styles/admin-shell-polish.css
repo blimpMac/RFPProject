@@ -409,3 +409,93 @@
     transition: none !important;
   }
 }
+
+
+/* Shared component sizing: avoid the stretched controls and header collisions
+   that occur when a dense finance page is viewed with browser zoom. */
+@media screen {
+  .admin-content,
+  .admin-topbar,
+  .admin-topbar > div:first-child,
+  .admin-topbar-actions,
+  .admin-account {
+    min-width: 0;
+  }
+
+  .admin-topbar > div:first-child {
+    flex: 1 1 0%;
+  }
+
+  .admin-topbar-actions {
+    flex: 0 0 auto;
+  }
+
+  .admin-account-popover {
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  .admin-shell #main-content :is(.card, .table-toolbar, .table-footer) {
+    max-width: 100%;
+  }
+
+  .admin-shell #main-content .table-toolbar > * {
+    min-width: 0;
+  }
+
+  .admin-shell #main-content :is(.btn, .input, select, textarea) {
+    box-sizing: border-box;
+  }
+
+  .admin-shell #main-content .btn {
+    min-width: 0;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .admin-shell #main-content .btn > svg {
+    flex-shrink: 0;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .admin-shell #main-content {
+    padding: 1rem 0.75rem;
+  }
+
+  .admin-topbar > div:first-child {
+    overflow: hidden;
+  }
+
+  .admin-topbar-actions {
+    gap: 0.35rem;
+  }
+
+  .admin-account-popover {
+    right: 0;
+  }
+
+  .admin-shell #main-content .table-toolbar {
+    align-items: stretch;
+  }
+
+  .admin-shell #main-content .table-toolbar .btn {
+    width: 100%;
+    min-height: 2.75rem;
+  }
+}
+
+@media screen and (max-width: 380px) {
+  .admin-topbar {
+    padding-right: 0.5rem !important;
+  }
+
+  .admin-topbar > div:first-child p {
+    display: none;
+  }
+
+  .admin-topbar h1 {
+    font-size: 0.875rem;
+  }
+}
