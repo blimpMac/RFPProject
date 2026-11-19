@@ -410,7 +410,6 @@
   }
 }
 
-
 /* Shared component sizing: avoid the stretched controls and header collisions
    that occur when a dense finance page is viewed with browser zoom. */
 @media screen {
@@ -500,7 +499,6 @@
   }
 }
 
-
 /* Navigation control belongs to its parent surface, never the viewport.
    Desktop: integrated into the sidebar brand row.
    Tablet/mobile: integrated into the top bar's normal flex layout. */
@@ -525,7 +523,9 @@
     background: transparent;
     color: inherit;
     box-shadow: none;
-    transition: background-color 0.16s ease, color 0.16s ease;
+    transition:
+      background-color 0.16s ease,
+      color 0.16s ease;
   }
 
   .admin-navigation-trigger:hover,

@@ -18,15 +18,12 @@ export async function requireStaff(event: ApplicationEvent, allowed?: string[]):
   if (error || !user) throw new HttpError(401, 'Your session is invalid or expired.');
   // These lookups are independent. Run them together instead of waiting
   // for the profile query before checking IT access.
-  const [
-    { data, error: roleError },
-    { data: profile, error: profileError },
-    itAccess,
-  ] = await Promise.all([
-    db.from('user_roles').select('role').eq('user_id', user.id),
-    db.from('profiles').select('full_name,department,active').eq('id', user.id).single(),
-    db.from('it_administrators').select('active').eq('user_id', user.id).maybeSingle(),
-  ]);
+  const [{ data, error: roleError }, { data: profile, error: profileError }, itAccess] =
+    await Promise.all([
+      db.from('user_roles').select('role').eq('user_id', user.id),
+      db.from('profiles').select('full_name,department,active').eq('id', user.id).single(),
+      db.from('it_administrators').select('active').eq('user_id', user.id).maybeSingle(),
+    ]);
   if (roleError) throw roleError;
   if (profileError || !profile) throw new HttpError(403, 'Your staff profile is not configured.');
   if (!profile.active) throw new HttpError(403, 'This staff account is inactive.');

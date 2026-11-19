@@ -294,7 +294,10 @@ export function PasswordResetPage() {
               {error}
             </p>
           )}
-          <Button className="w-full min-w-0" disabled={busy || password.length < 8 || confirm !== password}>
+          <Button
+            className="w-full min-w-0"
+            disabled={busy || password.length < 8 || confirm !== password}
+          >
             {busy ? <Spinner label="Updating password" /> : 'Save new password'}
           </Button>
         </form>

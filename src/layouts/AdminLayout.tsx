@@ -340,17 +340,17 @@ export function AdminLayout() {
           onMouseLeave={() => setSidebarHovered(false)}
         >
           <div className="admin-brand flex h-[5.25rem] shrink-0 items-center px-3">
-          <button
-            type="button"
-            className="admin-navigation-trigger admin-navigation-desktop focus-ring"
-            onClick={toggleSidebar}
-            aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-expanded={navigationExpanded}
-            aria-controls="staff-sidebar"
-          >
-            <Menu size={20} aria-hidden="true" />
-          </button>
+            <button
+              type="button"
+              className="admin-navigation-trigger admin-navigation-desktop focus-ring"
+              onClick={toggleSidebar}
+              aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-expanded={navigationExpanded}
+              aria-controls="staff-sidebar"
+            >
+              <Menu size={20} aria-hidden="true" />
+            </button>
 
             <Link
               to="/admin"
