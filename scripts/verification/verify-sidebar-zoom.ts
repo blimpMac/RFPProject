@@ -47,7 +47,10 @@ function markup() {
           </div>
         </nav>
       </div>
-      <h1 class="min-w-0 flex-1">Overview</h1>
+      <div class="admin-topbar-title min-w-0 flex-1">
+        <p>Operations workspace</p>
+        <h1>Overview</h1>
+      </div>
       <button type="button" class="admin-account-trigger">Account</button>
     </header>
     <main id="main-content" class="page-enter mx-auto w-full max-w-[100rem] p-4 sm:p-6 lg:p-8">
@@ -105,6 +108,19 @@ try {
     );
 
     if (compact) {
+      const geometry = await page.evaluate<{
+        triggerRight: number;
+        titleLeft: number;
+        triggerWidth: number;
+      }>(`(() => {
+        const trigger = document.querySelector('#dropdown-toggle').getBoundingClientRect();
+        const title = document.querySelector('.admin-topbar-title').getBoundingClientRect();
+        return { triggerRight: trigger.right, titleLeft: title.left, triggerWidth: trigger.width };
+      })()`);
+      assert.ok(
+        geometry.triggerWidth <= 48 && geometry.titleLeft - geometry.triggerRight < 35,
+        `Dropdown and title are misaligned at ${width}px: ${JSON.stringify(geometry)}`,
+      );
       const trigger = page.locator('#dropdown-toggle');
       assert.equal(await trigger.locator('.admin-dropdown-chevron').count(), 1);
       assert.equal((await trigger.innerText()).trim(), '');
