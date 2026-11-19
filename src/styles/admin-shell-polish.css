@@ -499,3 +499,105 @@
     font-size: 0.875rem;
   }
 }
+
+
+/* Navigation control belongs to its parent surface, never the viewport.
+   Desktop: integrated into the sidebar brand row.
+   Tablet/mobile: integrated into the top bar's normal flex layout. */
+@media screen {
+  .admin-brand {
+    position: relative;
+  }
+
+  .admin-navigation-trigger {
+    position: relative !important;
+    inset: auto !important;
+    z-index: auto !important;
+    display: inline-grid !important;
+    width: 2.5rem;
+    height: 2.5rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    flex: 0 0 2.5rem;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: 0.625rem;
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
+    transition: background-color 0.16s ease, color 0.16s ease;
+  }
+
+  .admin-navigation-trigger:hover,
+  .admin-navigation-trigger:focus-visible {
+    border-color: transparent;
+    background: rgba(107, 225, 201, 0.13);
+    color: #8af1d8;
+  }
+
+  .admin-navigation-desktop {
+    position: absolute !important;
+    top: 1.375rem !important;
+    left: 1rem !important;
+    color: #e7f5f3;
+  }
+
+  .admin-navigation-mobile {
+    display: none !important;
+  }
+}
+
+@media screen and (min-width: 1280px) {
+  .admin-sidebar-is-collapsed:not(.admin-sidebar-is-peeked):not(:focus-within)
+    .admin-navigation-desktop {
+    left: 1.125rem !important;
+  }
+}
+
+@media screen and (max-width: 1279px) {
+  .admin-navigation-desktop {
+    display: none !important;
+  }
+
+  .admin-navigation-mobile {
+    display: inline-grid !important;
+    color: #284456;
+  }
+
+  .admin-navigation-mobile:hover,
+  .admin-navigation-mobile:focus-visible {
+    background: #e9f4f1;
+    color: #0c6557;
+  }
+
+  .dark .admin-navigation-mobile {
+    color: #dbe8ec;
+  }
+
+  .dark .admin-navigation-mobile:hover,
+  .dark .admin-navigation-mobile:focus-visible {
+    background: #1c3a47;
+    color: #8af1d8;
+  }
+
+  .admin-topbar {
+    padding-left: 1rem !important;
+    gap: 0.75rem;
+  }
+
+  .admin-brand {
+    padding-left: 1rem !important;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .admin-topbar {
+    padding: 0 0.75rem !important;
+    gap: 0.5rem;
+  }
+
+  .admin-navigation-mobile {
+    width: 2.5rem;
+    min-width: 2.5rem;
+  }
+}
