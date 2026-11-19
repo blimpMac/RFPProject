@@ -111,7 +111,9 @@ try {
       await trigger.click();
       assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
       await page.waitForTimeout(250);
-      const rotation = await trigger.locator('.admin-dropdown-chevron').evaluate((element) => getComputedStyle(element).transform);
+      const rotation = await page.evaluate<string>(
+        "getComputedStyle(document.querySelector('#dropdown-toggle .admin-dropdown-chevron')).transform",
+      );
       assert.equal(rotation, 'matrix(-1, 0, 0, -1, 0, 0)');
       assert.ok(await isVisible(page, '#staff-navigation-dropdown'));
       const menuWithinViewport = await page.evaluate<boolean>(
