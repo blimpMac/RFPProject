@@ -85,8 +85,6 @@ function markup() {
     const isDesktop = () => matchMedia('(min-width: 1280px)').matches;
     const button = document.getElementById(isDesktop() ? 'menu-toggle-desktop' : 'menu-toggle-mobile');
     const sidebar = document.getElementById('staff-sidebar');
-    const shell = document.querySelector('.admin-shell');
-    let collapsed = true;
     let opened = false;
     const setOpen = (value) => {
       opened = value;
@@ -96,15 +94,18 @@ function markup() {
     sidebar.addEventListener('mouseenter', () => {
       if (isDesktop() && collapsed) sidebar.classList.add('admin-sidebar-is-peeked');
     });
-    sidebar.addEventListener('mouseleave', () => sidebar.classList.remove('admin-sidebar-is-peeked'));
+    sidebar.addEventListener('mouseleave', () => {
+      sidebar.classList.remove('admin-sidebar-is-peeked');
+      if (!isDesktop()) setOpen(false);
+    });
     button.addEventListener('click', () => {
       if (isDesktop()) {
-        collapsed = !collapsed;
-        sidebar.classList.toggle('admin-sidebar-is-collapsed', collapsed);
-        sidebar.classList.remove('admin-sidebar-is-peeked');
-        shell.classList.toggle('admin-shell-collapsed', collapsed);
-      } else setOpen(!opened);
-      button.setAttribute('aria-expanded', String(isDesktop() ? !collapsed : opened));
+        const peeked = sidebar.classList.toggle('admin-sidebar-is-peeked');
+        button.setAttribute('aria-expanded', String(peeked));
+      } else {
+        setOpen(!opened);
+        button.setAttribute('aria-expanded', String(opened));
+      }
     });
   })();
 </script>
@@ -223,10 +224,19 @@ try {
       await page.waitForFunction(
         "document.querySelector('#staff-sidebar').getBoundingClientRect().width > 200",
       );
-      const pinned = await inspect(page);
+      const clicked = await inspect(page);
       assert.ok(
-        pinned.sidebarWidth > 200 && pinned.labelVisible,
-        `Click did not pin sidebar at width ${width}: ${JSON.stringify(pinned)}`,
+        clicked.sidebarWidth > 200 && clicked.labelVisible,
+        `Click did not open sidebar at width ${width}: ${JSON.stringify(clicked)}`,
+      );
+      await page.mouse.move(Math.min(width - 20, 700), 350);
+      await page.waitForFunction(
+        "document.querySelector('#staff-sidebar').getBoundingClientRect().width < 100",
+      );
+      const autoClosed = await inspect(page);
+      assert.ok(
+        autoClosed.sidebarWidth < 100 && !autoClosed.labelVisible,
+        `Sidebar remained pinned after pointer left at width ${width}: ${JSON.stringify(autoClosed)}`,
       );
     } else {
       await page.getByRole('button', { name: 'Open navigation' }).click();
