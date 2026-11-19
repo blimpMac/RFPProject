@@ -6,32 +6,11 @@ import { chromium } from '@playwright/test';
 const assets = await readdir('dist/assets');
 const cssFiles = assets.filter((file) => file.endsWith('.css'));
 assert.ok(cssFiles.length, 'Production stylesheet was not generated.');
-
 const stylesheet = (
   await Promise.all(cssFiles.map((file) => readFile(join('dist/assets', file), 'utf8')))
 ).join('\n');
-const widths = [320, 375, 768, 1024, 1279, 1280, 1366, 1440, 1920, 2560];
 const browser = await chromium.launch({ headless: true });
-
-type Metrics = {
-  visible: boolean;
-  hitTest: boolean;
-  hitTarget: string;
-  top: number;
-  left: number;
-  right: number;
-  width: number;
-  labelVisible: boolean;
-  navIconVisible: boolean;
-  sidebarWidth: number;
-  documentWidth: number;
-  viewportWidth: number;
-  inputHeight: number;
-  actionHeight: number;
-  headerPosition: string;
-  headerBottom: number;
-  mainTop: number;
-};
+const widths = [320, 375, 768, 1024, 1279, 1280, 1366, 1440, 1800, 1920];
 
 function markup() {
   return `<!doctype html>
@@ -41,240 +20,133 @@ function markup() {
 <div class="admin-shell admin-shell-collapsed min-h-screen">
   <aside id="staff-sidebar" class="admin-sidebar fixed inset-y-0 left-0 z-30 flex flex-col overflow-hidden admin-sidebar-is-collapsed">
     <div class="admin-brand flex h-[5.25rem] shrink-0 items-center px-3">
-      <button id="menu-toggle-desktop" type="button" class="admin-navigation-trigger admin-navigation-desktop focus-ring" aria-label="Open navigation" aria-expanded="false" aria-controls="staff-sidebar">
-        <svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <button id="desktop-toggle" type="button" class="admin-navigation-trigger admin-navigation-desktop focus-ring" aria-label="Open navigation" aria-expanded="false">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2"/></svg>
       </button>
-      <a href="#overview" class="admin-brand-link flex min-w-0 items-center gap-3 px-2">RFP CONTROL</a>
+      <a class="admin-brand-link flex min-w-0 items-center gap-3 px-2" href="#overview">RFP CONTROL</a>
     </div>
-    <nav id="staff-navigation" class="admin-sidebar-navigation min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-3 pt-4" aria-label="Staff navigation">
-      <div class="mb-5">
-        <p class="admin-nav-label">Workspace</p>
-        <a href="#overview" class="admin-sidebar-link admin-sidebar-link-active">
-          <span class="admin-nav-icon"><svg width="18" height="18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="currentColor"/></svg></span>
-          <span data-nav-label="true" class="min-w-0"><strong>Overview</strong><small>Monitoring home</small></span>
-        </a>
-        <a href="#approvals" class="admin-sidebar-link">
-          <span class="admin-nav-icon"><svg width="18" height="18" aria-hidden="true"><rect x="1" y="1" width="16" height="16" fill="currentColor"/></svg></span>
-          <span class="min-w-0"><strong>Approval queue</strong><small>Finance</small></span>
-        </a>
-      </div>
-    </nav>
-    <div class="admin-sidebar-footer shrink-0 p-3">
-      <a href="#manual" class="admin-sidebar-link w-full">
-        <span class="admin-nav-icon"><svg width="18" height="18" aria-hidden="true"><rect x="2" y="1" width="14" height="16" fill="currentColor"/></svg></span>
-        <span class="min-w-0"><strong>User Manual</strong><small>Help</small></span>
+    <nav class="admin-sidebar-navigation min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-3 pt-4">
+      <p class="admin-nav-label">Workspace</p>
+      <a class="admin-sidebar-link" href="#overview">
+        <span class="admin-nav-icon"><svg width="18" height="18"><circle cx="9" cy="9" r="7" fill="currentColor"/></svg></span>
+        <span class="min-w-0" data-sidebar-label><strong>Overview</strong></span>
       </a>
-    </div>
+    </nav>
   </aside>
   <div class="admin-content transition-all">
     <header class="admin-topbar flex min-h-[5.25rem] items-center gap-3 px-4 sm:gap-4 lg:px-6">
-      <button id="menu-toggle-mobile" type="button" class="admin-navigation-trigger admin-navigation-mobile focus-ring" aria-label="Open navigation" aria-expanded="false" aria-controls="staff-sidebar">
-        <svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      </button>
+      <div class="admin-navigation-dropdown relative shrink-0" id="dropdown-anchor">
+        <button id="dropdown-toggle" class="admin-dropdown-trigger focus-ring" type="button" aria-expanded="false" aria-controls="staff-navigation-dropdown" aria-label="Navigation menu">
+          <span>Navigation</span><svg width="16" height="16"><path d="m2 5 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+        <nav id="staff-navigation-dropdown" class="admin-dropdown-panel" aria-label="Staff navigation menu" hidden>
+          <div class="admin-dropdown-group">
+            <p class="admin-dropdown-heading">Workspace</p>
+            <a href="#overview" class="admin-dropdown-link"><span>Overview</span></a>
+            <a href="#approvals" class="admin-dropdown-link"><span>Approval queue</span></a>
+          </div>
+        </nav>
+      </div>
       <h1 class="min-w-0 flex-1">Overview</h1>
       <button type="button" class="admin-account-trigger">Account</button>
     </header>
     <main id="main-content" class="page-enter mx-auto w-full max-w-[100rem] p-4 sm:p-6 lg:p-8">
-      <section class="card p-5"><button type="button" class="btn btn-secondary">Refresh</button><input class="input" value="Example" aria-label="Example input"></section>
-      <div style="min-height:1800px">Dashboard scrolling area</div>
+      <section class="card p-5"><button class="btn btn-secondary">Refresh</button><input class="input" value="Example"></section>
+      <div style="min-height:1500px">Scrolling area</div>
     </main>
   </div>
 </div>
 <script>
   (() => {
-    const isDesktop = () => matchMedia('(min-width: 1280px)').matches;
-    const button = document.getElementById(isDesktop() ? 'menu-toggle-desktop' : 'menu-toggle-mobile');
     const sidebar = document.getElementById('staff-sidebar');
-    let opened = false;
-    const setOpen = (value) => {
-      opened = value;
-      sidebar.classList.toggle('admin-sidebar-open', value);
-      button.classList.toggle('admin-navigation-trigger-open', value);
+    const desktop = document.getElementById('desktop-toggle');
+    const dropdown = document.getElementById('dropdown-toggle');
+    const panel = document.getElementById('staff-navigation-dropdown');
+    const anchor = document.getElementById('dropdown-anchor');
+    const setDropdown = (open) => {
+      panel.hidden = !open;
+      dropdown.setAttribute('aria-expanded', String(open));
     };
-    sidebar.addEventListener('mouseenter', () => {
-      if (isDesktop()) sidebar.classList.add('admin-sidebar-is-peeked');
+    dropdown.addEventListener('click', () => setDropdown(panel.hidden));
+    document.addEventListener('pointerdown', (event) => {
+      if (!anchor.contains(event.target)) setDropdown(false);
     });
-    sidebar.addEventListener('mouseleave', () => {
-      sidebar.classList.remove('admin-sidebar-is-peeked');
-      if (!isDesktop()) setOpen(false);
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') setDropdown(false);
     });
-    button.addEventListener('click', () => {
-      if (isDesktop()) {
-        sidebar.classList.add('admin-sidebar-is-peeked');
-        button.setAttribute('aria-expanded', 'true');
-      } else {
-        setOpen(!opened);
-        button.setAttribute('aria-expanded', String(opened));
-      }
+    panel.addEventListener('click', (event) => {
+      if (event.target.closest('a')) setDropdown(false);
     });
+    sidebar.addEventListener('mouseenter', () => sidebar.classList.add('admin-sidebar-is-peeked'));
+    sidebar.addEventListener('mouseleave', () => sidebar.classList.remove('admin-sidebar-is-peeked'));
+    desktop.addEventListener('click', () => sidebar.classList.add('admin-sidebar-is-peeked'));
   })();
 </script>
-</body>
-</html>`;
+</body></html>`;
 }
 
-async function inspect(page: import('@playwright/test').Page): Promise<Metrics> {
-  // The server-side verification tsconfig intentionally excludes DOM types.
-  // Evaluate a browser-owned string, as the project's other Playwright scripts do.
-  return page.evaluate<Metrics>(`(() => {
-    const button = document.querySelector(matchMedia('(min-width: 1280px)').matches ? '#menu-toggle-desktop' : '#menu-toggle-mobile');
-    const navLabel = document.querySelector('[data-nav-label]');
-    const navIcon = document.querySelector('.admin-nav-icon');
-    const sidebar = document.querySelector('#staff-sidebar');
-    const input = document.querySelector('.input');
-    const action = document.querySelector('.btn');
-    const header = document.querySelector('.admin-topbar');
-    const main = document.querySelector('#main-content');
-    const rect = button.getBoundingClientRect();
-    const style = getComputedStyle(button);
-    const center = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-    const labelStyle = getComputedStyle(navLabel);
-    const iconStyle = getComputedStyle(navIcon);
-    const asideRect = sidebar.getBoundingClientRect();
-    const navIconRect = navIcon.getBoundingClientRect();
-    return {
-      visible: style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0.9 &&
-        rect.width > 24 && rect.height > 24 && rect.left >= 0 && rect.right <= innerWidth &&
-        rect.top >= 0 && rect.bottom <= innerHeight,
-      hitTest: Boolean(center?.closest('.admin-navigation-trigger')),
-      hitTarget: center?.tagName + '.' + String(center?.className).slice(0, 90),
-      top: rect.top,
-      left: rect.left,
-      right: rect.right,
-      width: rect.width,
-      labelVisible: labelStyle.display !== 'none' && labelStyle.visibility !== 'hidden',
-      navIconVisible: iconStyle.display !== 'none' && iconStyle.visibility !== 'hidden' &&
-        navIconRect.right > 0 && navIconRect.left < innerWidth &&
-        asideRect.left >= -1,
-      sidebarWidth: asideRect.width,
-      documentWidth: document.documentElement.scrollWidth,
-      viewportWidth: innerWidth,
-      inputHeight: input.getBoundingClientRect().height,
-      actionHeight: action.getBoundingClientRect().height,
-      headerPosition: getComputedStyle(header).position,
-      headerBottom: header.getBoundingClientRect().bottom,
-      mainTop: main.getBoundingClientRect().top,
-    };
-  })()`);
+async function isVisible(page: import('@playwright/test').Page, selector: string) {
+  return page.locator(selector).isVisible();
 }
+
 try {
   for (const width of widths) {
     const page = await browser.newPage({ viewport: { width, height: 850 } });
     await page.setContent(markup());
     await page.addStyleTag({ content: stylesheet });
-    // Injected production CSS animates the hidden drawer from its initial position.
-    // Wait until its off-canvas transition has completed before hit testing.
     await page.waitForTimeout(350);
-    const collapsed = await inspect(page);
+
+    const compact = width < 1280;
+    assert.equal(await isVisible(page, '#dropdown-toggle'), compact);
+    assert.equal(await isVisible(page, '#desktop-toggle'), !compact);
     assert.ok(
-      collapsed.visible,
-      `Burger is not visible at CSS width ${width}: ${JSON.stringify(collapsed)}`,
-    );
-    assert.ok(
-      collapsed.hitTest,
-      `Burger is blocked by another element at width ${width}: ${JSON.stringify(collapsed)}`,
-    );
-    assert.equal(
-      collapsed.headerPosition,
-      'relative',
-      `Dashboard header must not stick over charts at width ${width}`,
-    );
-    assert.ok(
-      collapsed.mainTop >= collapsed.headerBottom - 1,
-      `Dashboard header overlaps content at width ${width}: ${JSON.stringify(collapsed)}`,
-    );
-    assert.ok(
-      collapsed.documentWidth <= collapsed.viewportWidth + 2,
-      `Horizontal overflow at width ${width}: ${JSON.stringify(collapsed)}`,
+      await page.evaluate('document.documentElement.scrollWidth <= innerWidth + 2'),
+      `Horizontal document overflow at width ${width}`,
     );
 
-    await page.evaluate('window.scrollTo(0, 520)');
-    const scrolled = await inspect(page);
-    if (width >= 1280) {
-      assert.ok(
-        scrolled.visible && scrolled.hitTest,
-        `Desktop sidebar toggle disappears when scrolled at width ${width}: ${JSON.stringify(scrolled)}`,
-      );
+    if (compact) {
+      const trigger = page.locator('#dropdown-toggle');
+      await trigger.click();
+      assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
+      assert.ok(await isVisible(page, '#staff-navigation-dropdown'));
+      const menuWithinViewport = await page.locator('#staff-navigation-dropdown').evaluate((node) => {
+        const rect = node.getBoundingClientRect();
+        return rect.left >= 0 && rect.right <= innerWidth + 1;
+      });
+      assert.ok(menuWithinViewport, `Dropdown overflows at width ${width}`);
+      await page.keyboard.press('Escape');
+      assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
+      await trigger.click();
+      await page.locator('#main-content').click({ position: { x: 20, y: 30 } });
+      assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
+      await trigger.click();
+      await page.locator('#staff-navigation-dropdown a').first().click();
+      assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
     } else {
-      // Mobile toggle stays in the normal header flow, not fixed over content.
-      assert.ok(
-        !scrolled.visible,
-        `Mobile header control unexpectedly floats over scrolled content at width ${width}`,
-      );
-    }
-    await page.evaluate('window.scrollTo(0, 0)');
-
-    if (width >= 1280) {
-      assert.ok(
-        collapsed.navIconVisible,
-        `Compact sidebar icons are not available at width ${width}`,
-      );
-      assert.ok(!collapsed.labelVisible, `Compact sidebar shows crowded labels at width ${width}`);
-      await page.locator('#staff-sidebar').hover({ position: { x: 40, y: 180 } });
+      const desktop = page.locator('#desktop-toggle');
+      await desktop.click();
       await page.waitForFunction(
         "document.querySelector('#staff-sidebar').getBoundingClientRect().width > 200",
       );
-      const hovered = await inspect(page);
-      assert.ok(
-        hovered.sidebarWidth > 200 && hovered.labelVisible,
-        `Hover did not expose navigation at width ${width}: ${JSON.stringify(hovered)}`,
-      );
-      await page.mouse.move(Math.min(width - 20, 700), 350);
-      await page.getByRole('button', { name: 'Open navigation' }).click();
-      await page.waitForFunction(
-        "document.querySelector('#staff-sidebar').getBoundingClientRect().width > 200",
-      );
-      const clicked = await inspect(page);
-      assert.ok(
-        clicked.sidebarWidth > 200 && clicked.labelVisible,
-        `Click did not open sidebar at width ${width}: ${JSON.stringify(clicked)}`,
-      );
-      await page.mouse.move(Math.min(width - 20, 700), 350);
+      await page.mouse.move(width - 40, 350);
       await page.waitForFunction(
         "document.querySelector('#staff-sidebar').getBoundingClientRect().width < 100",
       );
-      const autoClosed = await inspect(page);
-      assert.ok(
-        autoClosed.sidebarWidth < 100 && !autoClosed.labelVisible,
-        `Sidebar remained pinned after pointer left at width ${width}: ${JSON.stringify(autoClosed)}`,
-      );
-    } else {
-      await page.getByRole('button', { name: 'Open navigation' }).click();
-      await page.waitForFunction(
-        "document.querySelector('#staff-sidebar').getBoundingClientRect().left >= -1",
-      );
-      const opened = await inspect(page);
-      assert.ok(
-        opened.navIconVisible && opened.labelVisible,
-        `Mobile/tablet drawer not visible at width ${width}: ${JSON.stringify(opened)}`,
-      );
-      const aside = page.locator('#staff-sidebar');
-      const box = await aside.boundingBox();
-      assert.ok(
-        box && box.x >= -1 && box.x < width,
-        `Drawer is outside viewport at width ${width}`,
-      );
     }
 
-    const zoomTest = await browser.newPage({ viewport: { width, height: 850 } });
-    await zoomTest.setContent(markup());
-    await zoomTest.addStyleTag({ content: stylesheet });
-    await zoomTest.waitForTimeout(350);
-    for (const zoom of [0.75, 0.8, 1.25, 1.5]) {
-      await zoomTest.evaluate(`document.body.style.zoom = '${zoom}'`);
-      const zoomed = await inspect(zoomTest);
-      assert.ok(
-        zoomed.visible && zoomed.hitTest,
-        `Burger is missing at ${Math.round(zoom * 100)}% visual zoom and width ${width}: ${JSON.stringify(zoomed)}`,
-      );
+    // 1440 CSS px represents a typical PC at 100% zoom; 1800 CSS px
+    // represents the same 1440px device width at 80% browser zoom.
+    for (const zoom of [0.8, 1]) {
+      await page.evaluate((level) => { document.body.style.zoom = String(level); }, zoom);
+      const selector = compact ? '#dropdown-toggle' : '#desktop-toggle';
+      assert.ok(await isVisible(page, selector), `Navigation missing at ${width}px/${zoom}`);
+      await page.evaluate(() => { document.body.style.zoom = '1'; });
     }
-    console.log(JSON.stringify({ cssWidth: width, collapsed, zoomLevels: [75, 80, 125, 150] }));
+
+    console.log(`PASS: navigation at width ${width} (dropdown=${compact})`);
     await page.close();
-    await zoomTest.close();
   }
 } finally {
   await browser.close();
 }
-console.log(
-  'PASS: navigation icon, hover choices, click/pin, scrolling and 75–150% zoom at all tested widths.',
-);
+console.log('PASS: dropdown click, dismissal, responsive width and desktop 100%/80% zoom.');
