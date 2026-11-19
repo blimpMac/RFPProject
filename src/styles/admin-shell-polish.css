@@ -418,13 +418,13 @@
 @media screen {
   .admin-content,
   .admin-topbar,
-  .admin-topbar > div:first-child,
+  .admin-topbar-title,
   .admin-topbar-actions,
   .admin-account {
     min-width: 0;
   }
 
-  .admin-topbar > div:first-child {
+  .admin-topbar-title {
     flex: 1 1 0%;
   }
 
@@ -466,7 +466,7 @@
     padding: 1rem 0.75rem;
   }
 
-  .admin-topbar > div:first-child {
+  .admin-topbar-title {
     overflow: hidden;
   }
 
@@ -493,7 +493,7 @@
     padding-right: 0.5rem !important;
   }
 
-  .admin-topbar > div:first-child p {
+  .admin-topbar-title p {
     display: none;
   }
 
