@@ -411,29 +411,29 @@ export function DocumentsPage() {
       <div className="space-y-4">
         {filteredGroups.map((group) => (
           <article className="card overflow-hidden" key={group.requestId}>
-            <div className="border-b bg-slate-50/70 p-4 sm:p-5">
+            <div className="border-b border-slate-200 bg-slate-50 p-4 text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-lg font-semibold text-[#173f6b]">{group.rfpNumber}</h2>
+                    <h2 className="text-lg font-semibold text-[#173f6b] dark:text-sky-200">{group.rfpNumber}</h2>
                     <StatusBadge>{group.finalStatus}</StatusBadge>
                   </div>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     {group.company || 'Company not recorded'} · {group.department}
                   </p>
                 </div>
-                <div className="text-right text-sm">
+                <div className="text-right text-sm text-slate-800 dark:text-slate-100">
                   <p className="font-semibold">
                     {group.documents.length} {group.documents.length === 1 ? 'file' : 'files'}
                   </p>
-                  <p className="text-slate-500">
+                  <p className="text-slate-500 dark:text-slate-300">
                     {fileSize(
                       group.documents.reduce((total, document) => total + document.size_bytes, 0),
                     )}
                   </p>
                 </div>
               </div>
-              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+              <dl className="mt-4 grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
                 <RequestDetail label="Requestor" value={group.requestorName} />
                 <RequestDetail label="Supplier / Payee" value={group.supplierPayee} />
                 <RequestDetail label="Amount" value={php.format(group.amount)} />
@@ -455,14 +455,14 @@ export function DocumentsPage() {
             <div className="divide-y">
               {group.documents.map((document) => (
                 <div className="flex flex-wrap items-center gap-3 p-4" key={document.id}>
-                  <div className="rounded-lg bg-slate-100 p-2.5 text-slate-600">
+                  <div className="rounded-lg bg-slate-100 p-2.5 text-slate-600 dark:bg-slate-800 dark:text-slate-200">
                     <FileText size={20} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium" title={document.original_filename}>
+                    <p className="truncate font-medium text-slate-900 dark:text-slate-100" title={document.original_filename}>
                       {document.original_filename}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                       {fileType(document.mime_type)} · {fileSize(document.size_bytes)} · Added{' '}
                       {manilaDate(document.created_at, true)}
                     </p>
@@ -557,8 +557,8 @@ function RequestDetail({
 }) {
   return (
     <div>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className="mt-1 flex items-center gap-1.5 text-slate-800">
+      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</dt>
+      <dd className="mt-1 flex min-w-0 items-center gap-1.5 break-words text-slate-800 dark:text-slate-100">
         {icon}
         {value}
       </dd>
