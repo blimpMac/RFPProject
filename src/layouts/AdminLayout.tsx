@@ -195,7 +195,8 @@ export function AdminLayout() {
 
   const toggleSidebar = () => {
     if (desktopNavigation) {
-      setSidebarHovered((current) => !current);
+      // Click opens a temporary preview; leaving the rail closes it.
+      setSidebarHovered(true);
     } else {
       setOpen((current) => !current);
     }
