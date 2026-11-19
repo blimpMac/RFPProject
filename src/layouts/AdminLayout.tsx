@@ -455,11 +455,7 @@ export function AdminLayout() {
                 aria-haspopup="menu"
                 aria-controls="staff-navigation-dropdown"
               >
-                <ChevronDown
-                  size={22}
-                  aria-hidden="true"
-                  className="admin-dropdown-chevron"
-                />
+                <ChevronDown size={22} aria-hidden="true" className="admin-dropdown-chevron" />
               </button>
               {open && !desktopNavigation && (
                 <nav
