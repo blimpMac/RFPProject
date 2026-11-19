@@ -129,7 +129,7 @@ function initials(name?: string | null) {
 }
 
 export function AdminLayout() {
-  const { session, roles, identity, loading, refresh } = useAuth();
+  const { session, roles, identity, loading, loadError, refresh } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -280,6 +280,20 @@ export function AdminLayout() {
       </div>
     );
   if (!session) return <Navigate to="/admin/login" replace />;
+  if (loadError)
+    return (
+      <main className="grid min-h-screen place-items-center p-6 text-center">
+        <div className="max-w-md">
+          <h1 className="text-xl font-semibold">Workspace unavailable</h1>
+          <p className="mt-2 text-slate-500">
+            We could not load your account permissions. Check your connection and try again.
+          </p>
+          <button className="btn btn-primary mt-4" onClick={() => void refresh()}>
+            Retry connection
+          </button>
+        </div>
+      </main>
+    );
   if (!roles.length)
     return (
       <div className="grid min-h-screen place-items-center p-6 text-center">
