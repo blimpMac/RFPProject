@@ -604,3 +604,135 @@
     min-width: 2.5rem;
   }
 }
+
+/* Compact layouts use a real anchored dropdown, never an off-canvas drawer.
+   A browser zoom change updates the CSS breakpoint automatically. */
+@media screen {
+  .admin-navigation-dropdown {
+    display: none;
+    min-width: 0;
+  }
+
+  .admin-dropdown-trigger {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    border: 1px solid #cbd8dc;
+    border-radius: 0.7rem;
+    background: #fff;
+    padding: 0.55rem 0.7rem;
+    color: #284456;
+    font-size: 0.82rem;
+    font-weight: 750;
+    white-space: nowrap;
+  }
+
+  .admin-dropdown-trigger:hover,
+  .admin-dropdown-trigger[aria-expanded='true'] {
+    border-color: #73b9ab;
+    background: #eff8f5;
+    color: #076653;
+  }
+
+  .admin-dropdown-panel {
+    position: absolute;
+    top: calc(100% + 0.55rem);
+    left: 0;
+    z-index: 70;
+    box-sizing: border-box;
+    width: min(19rem, calc(100vw - 1.5rem));
+    max-height: min(34rem, calc(100dvh - 7rem));
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 1px solid #d3e0e4;
+    border-radius: 0.85rem;
+    background: #fff;
+    padding: 0.45rem;
+    box-shadow: 0 16px 36px rgba(8, 38, 56, 0.16);
+  }
+
+  .admin-dropdown-group {
+    padding: 0.35rem 0;
+  }
+
+  .admin-dropdown-heading {
+    padding: 0.4rem 0.7rem;
+    color: #667983;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .admin-dropdown-link {
+    display: flex;
+    min-height: 2.6rem;
+    align-items: center;
+    gap: 0.65rem;
+    border-radius: 0.55rem;
+    padding: 0.55rem 0.7rem;
+    color: #304957;
+    font-size: 0.82rem;
+    font-weight: 650;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-dropdown-link svg {
+    flex-shrink: 0;
+  }
+
+  .admin-dropdown-link:hover,
+  .admin-dropdown-link:focus-visible,
+  .admin-dropdown-link-active {
+    background: #eaf6f2;
+    color: #08735e;
+  }
+
+  .dark .admin-dropdown-trigger,
+  .dark .admin-dropdown-panel {
+    border-color: #395361;
+    background: #142d3b;
+    color: #e7eff2;
+  }
+
+  .dark .admin-dropdown-link {
+    color: #dbe8ec;
+  }
+
+  .dark .admin-dropdown-link:hover,
+  .dark .admin-dropdown-link:focus-visible,
+  .dark .admin-dropdown-link-active,
+  .dark .admin-dropdown-trigger:hover,
+  .dark .admin-dropdown-trigger[aria-expanded='true'] {
+    background: #1c3a47;
+    color: #8af1d8;
+  }
+
+  .dark .admin-dropdown-heading {
+    color: #a7bbc4;
+  }
+}
+
+@media screen and (max-width: 1279px) {
+  .admin-navigation-dropdown {
+    display: block;
+  }
+
+  .admin-navigation-mobile {
+    display: none !important;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .admin-dropdown-trigger {
+    gap: 0.3rem;
+    padding: 0.5rem 0.55rem;
+  }
+
+  .admin-topbar {
+    gap: 0.35rem !important;
+  }
+}
