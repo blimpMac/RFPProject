@@ -16,6 +16,7 @@ const browser = await chromium.launch({ headless: true });
 type Metrics = {
   visible: boolean;
   hitTest: boolean;
+  hitTarget: string;
   top: number;
   left: number;
   right: number;
@@ -135,6 +136,7 @@ async function inspect(page: import('@playwright/test').Page): Promise<Metrics> 
         rect.width > 24 && rect.height > 24 && rect.left >= 0 && rect.right <= innerWidth &&
         rect.top >= 0 && rect.bottom <= innerHeight,
       hitTest: Boolean(center?.closest('.admin-navigation-trigger')),
+      hitTarget: center?.tagName + '.' + String(center?.className).slice(0, 90),
       top: rect.top,
       left: rect.left,
       right: rect.right,
@@ -164,7 +166,7 @@ try {
       collapsed.visible,
       `Burger is not visible at CSS width ${width}: ${JSON.stringify(collapsed)}`,
     );
-    assert.ok(collapsed.hitTest, `Burger is blocked by another element at width ${width}`);
+    assert.ok(collapsed.hitTest, `Burger is blocked by another element at width ${width}: ${JSON.stringify(collapsed)}`);
     assert.equal(
       collapsed.headerPosition,
       'relative',
