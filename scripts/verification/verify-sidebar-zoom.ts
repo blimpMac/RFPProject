@@ -169,7 +169,10 @@ try {
       collapsed.visible,
       `Burger is not visible at CSS width ${width}: ${JSON.stringify(collapsed)}`,
     );
-    assert.ok(collapsed.hitTest, `Burger is blocked by another element at width ${width}: ${JSON.stringify(collapsed)}`);
+    assert.ok(
+      collapsed.hitTest,
+      `Burger is blocked by another element at width ${width}: ${JSON.stringify(collapsed)}`,
+    );
     assert.equal(
       collapsed.headerPosition,
       'relative',
