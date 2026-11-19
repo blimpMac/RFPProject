@@ -25,22 +25,22 @@ export const handleDashboardRoute: RouteHandler = async ({ event, route, db }) =
       }
       requestQuery = requestQuery.in('normalized_department', assignedDepartments);
     }
-    const [metrics, requests, submissionOptions] = await Promise.all([
+    const [metrics, requests, submissionOptions, completionLogs] = await Promise.all([
       db.from('dashboard_metrics').select('*').single(),
       requestQuery,
       db.from('system_settings').select('value').eq('key', 'submission_options').maybeSingle(),
+      db
+        .from('approval_logs')
+        .select('request_id,occurred_at')
+        .eq('action', 'Payment Completed')
+        .order('occurred_at', { ascending: false })
+        .limit(5000),
     ]);
     if (metrics.error) throw metrics.error;
     if (requests.error) throw requests.error;
     if (submissionOptions.error) throw submissionOptions.error;
     const requestIds = (requests.data || []).map((request) => request.id);
     const requestIdSet = new Set(requestIds);
-    const completionLogs = await db
-      .from('approval_logs')
-      .select('request_id,occurred_at')
-      .eq('action', 'Payment Completed')
-      .order('occurred_at', { ascending: false })
-      .limit(5000);
     if (completionLogs.error) throw completionLogs.error;
     const completedAtByRequest = new Map<string, string>();
     for (const log of completionLogs.data || []) {
