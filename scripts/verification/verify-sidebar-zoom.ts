@@ -109,10 +109,9 @@ try {
       await trigger.click();
       assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
       assert.ok(await isVisible(page, '#staff-navigation-dropdown'));
-      const menuWithinViewport = await page.locator('#staff-navigation-dropdown').evaluate((node) => {
-        const rect = node.getBoundingClientRect();
-        return rect.left >= 0 && rect.right <= innerWidth + 1;
-      });
+      const menuWithinViewport = await page.evaluate<boolean>(
+        "(() => { const rect = document.querySelector('#staff-navigation-dropdown').getBoundingClientRect(); return rect.left >= 0 && rect.right <= innerWidth + 1; })()",
+      );
       assert.ok(menuWithinViewport, `Dropdown overflows at width ${width}`);
       await page.keyboard.press('Escape');
       assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
@@ -137,10 +136,10 @@ try {
     // 1440 CSS px represents a typical PC at 100% zoom; 1800 CSS px
     // represents the same 1440px device width at 80% browser zoom.
     for (const zoom of [0.8, 1]) {
-      await page.evaluate((level) => { document.body.style.zoom = String(level); }, zoom);
+      await page.evaluate(`document.body.style.zoom = '${zoom}'`);
       const selector = compact ? '#dropdown-toggle' : '#desktop-toggle';
       assert.ok(await isVisible(page, selector), `Navigation missing at ${width}px/${zoom}`);
-      await page.evaluate(() => { document.body.style.zoom = '1'; });
+      await page.evaluate("document.body.style.zoom = '1'");
     }
 
     console.log(`PASS: navigation at width ${width} (dropdown=${compact})`);
