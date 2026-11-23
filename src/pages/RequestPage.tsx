@@ -319,7 +319,7 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
     <div className={embedded ? 'w-full min-w-0' : 'flex min-h-screen flex-col bg-slate-50'}>
       {!embedded && (
         <header className="public-header border-b">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:gap-5">
+          <div className="public-header-inner mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:gap-5">
             <div className="brand-lockup" aria-label="GREENLIGHT POWER and GEMCOR">
               <img
                 className="brand-logo"
@@ -333,7 +333,7 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
                 alt="GEMCOR — Greenmetal Electric Manufacturing Corporation"
               />
             </div>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="public-header-actions ml-auto flex items-center gap-2">
               <ThemeToggle compact />
               <a
                 className="public-header-link rounded-md px-3 py-2 text-sm font-bold text-[#173f6b] hover:bg-slate-100"
