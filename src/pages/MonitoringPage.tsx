@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ClipboardList, Database, RefreshCw, ScrollText } from 'lucide-react';
+import { ClipboardList, Clock3, Database, RefreshCw, ScrollText } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
 import { Button, Spinner } from '../components/ui';
 import { get } from '../lib/api';
 import { useAuth } from '../components/AuthProvider';
+import { FinanceSlaSection, type FinanceSlaEntry } from '../features/monitoring/FinanceSlaSection';
 
 const tabs = [
   ['requests', 'Active requests', 'Current RFP workflow records', Database],
   ['forms', 'Form responses', 'Original submitted response data', ClipboardList],
   ['logs', 'Approval log', 'Recorded decisions and status changes', ScrollText],
+  ['finance-sla', 'Finance SLA', 'Performance by Finance employee', Clock3],
 ] as const;
 const defaults: Record<string, string[]> = {
   requests: [
@@ -45,13 +47,24 @@ const defaults: Record<string, string[]> = {
     'new_status',
   ],
 };
-type Result = { rows: Record<string, unknown>[]; count: number; page: number; pageSize: number };
+type Result = {
+  rows: Record<string, unknown>[];
+  count: number;
+  page: number;
+  pageSize: number;
+  targetBusinessDays?: number;
+};
 export function MonitoringPage() {
   const { roles } = useAuth();
-  const available = tabs.filter(
-    ([key]) =>
-      roles.some((r) => ['super_administrator', 'administrator'].includes(r)) || key !== 'forms',
-  );
+  const available = tabs.filter(([key]) => {
+    const administrative = roles.some((role) =>
+      ['super_administrator', 'administrator'].includes(role),
+    );
+    if (key === 'forms') return administrative;
+    if (key === 'finance-sla')
+      return roles.some((role) => ['super_administrator', 'finance_reviewer'].includes(role));
+    return true;
+  });
   const [tab, setTab] = useState(available[0]?.[0] || 'requests');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
@@ -126,6 +139,11 @@ export function MonitoringPage() {
         </div>
       ) : error ? (
         <p className="rounded bg-red-50 p-4 text-red-700">{error}</p>
+      ) : tab === 'finance-sla' ? (
+        <FinanceSlaSection
+          rows={(data?.rows || []) as unknown as FinanceSlaEntry[]}
+          targetBusinessDays={data?.targetBusinessDays ?? 2}
+        />
       ) : (
         <DataTable
           key={tab}
