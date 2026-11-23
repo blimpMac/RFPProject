@@ -51,6 +51,11 @@ const AuditTrailPage = lazy(() =>
 const ITDashboardPage = lazy(() =>
   import('./pages/ITDashboardPage').then((m) => ({ default: m.ITDashboardPage })),
 );
+const DocumentRequirementsPage = lazy(() =>
+  import('./pages/DocumentRequirementsPage').then((m) => ({
+    default: m.DocumentRequirementsPage,
+  })),
+);
 
 function RoleHome() {
   const { roles } = useAuth();
@@ -87,6 +92,7 @@ export default function App() {
               <Route path="monitoring" element={<MonitoringPage />} />
               <Route path="approvals" element={<ApprovalsPage />} />
               <Route path="documents" element={<DocumentsPage />} />
+              <Route path="document-requirements" element={<DocumentRequirementsPage />} />
               <Route path="manual" element={<ManualPage />} />
               <Route path="preview-forms" element={<PreviewFormsPage />} />
               <Route path="account-management" element={<SettingsPage />} />

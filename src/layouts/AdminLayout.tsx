@@ -9,6 +9,7 @@ import {
   History,
   BookOpen,
   Files,
+  ClipboardList,
   LogOut,
   Menu,
   Pencil,
@@ -77,6 +78,14 @@ const navigationItems: NavigationItem[] = [
     description: 'Dedicated form and email samples',
     group: 'Workspace',
     icon: Files,
+  },
+  {
+    to: '/admin/document-requirements',
+    label: 'Document Requirements',
+    description: 'Reference checklist and hard-copy rules by request type',
+    group: 'Workspace',
+    icon: ClipboardList,
+    allowedRoles: ['super_administrator', 'department_approver', 'finance_reviewer', 'it_administrator'],
   },
   {
     to: '/admin/audit-trail',
@@ -307,7 +316,7 @@ export function AdminLayout() {
 
   if (
     isIT &&
-    !['/admin', '/admin/it', '/admin/audit-trail', '/admin/manual'].includes(location.pathname)
+    !['/admin', '/admin/it', '/admin/audit-trail', '/admin/manual', '/admin/document-requirements'].includes(location.pathname)
   ) {
     return <Navigate to="/admin/it" replace />;
   }

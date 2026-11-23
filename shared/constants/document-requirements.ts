@@ -1,4 +1,27 @@
 export type DocumentRequirementGroup = { label: string; items: string[] };
+export type HardCopyRequirement = 'yes' | 'no' | 'unspecified';
+
+/**
+ * Hard-copy guidance transcribed from the supplied RFP requirements matrix.
+ * Types not explicitly listed in that matrix remain "unspecified" rather than
+ * assuming that a printed copy is or is not required.
+ */
+export const hardCopyRequirements: Record<string, HardCopyRequirement> = {
+  'Trade Suppliers': 'yes',
+  'Kaliwaan Suppliers': 'yes',
+  'Subcon Payment Request': 'yes',
+  'TPC Request': 'no',
+  'Manpower Agency Payments': 'yes',
+  Reimbursement: 'yes',
+  'Opex - non PO transactions': 'yes',
+  'Cash Advance (CA)': 'no',
+  'CA Liquidation': 'yes',
+  'RF Liquidation': 'yes',
+};
+
+export const hardCopyRequirementFor = (rfpType: string): HardCopyRequirement =>
+  hardCopyRequirements[rfpType] || 'unspecified';
+
 
 /** Synchronized with the "Documentary Requirements" worksheet of
  * RFP Request Form (Responses), reviewed 2026-11-04.
