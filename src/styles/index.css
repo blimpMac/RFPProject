@@ -1926,3 +1926,80 @@ body {
     flex-direction: column;
   }
 }
+
+
+/* Public request header: keep the brand and actions usable at every viewport width. */
+.public-header-inner {
+  min-width: 0;
+}
+
+.public-header-inner .brand-lockup {
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: clamp(0.45rem, 1.5vw, 0.8rem);
+}
+
+.public-header-inner .brand-logo {
+  min-width: 0;
+  max-width: min(11rem, 30vw);
+  flex: 0 1 auto;
+}
+
+.public-header-inner .brand-lockup > span {
+  flex: 0 0 1px;
+}
+
+.public-header-actions {
+  min-width: max-content;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 640px) {
+  .public-header-inner {
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .public-header-inner .brand-lockup {
+    width: 100%;
+    flex: 1 1 100%;
+    justify-content: center;
+    gap: clamp(0.45rem, 3vw, 0.75rem);
+    padding: 0.15rem 0;
+  }
+
+  .public-header-inner .brand-logo {
+    max-width: min(7.5rem, 34vw);
+    height: 1.7rem;
+  }
+
+  .public-header-inner .brand-logo-gemcor {
+    height: 1.9rem;
+  }
+
+  .public-header-actions {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    margin-left: 0;
+    gap: 0.5rem;
+  }
+
+  .public-header-actions .public-header-link {
+    padding: 0.45rem 0.75rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .public-header-inner {
+    padding-right: 0.65rem;
+    padding-left: 0.65rem;
+  }
+
+  .public-header-inner .brand-logo {
+    max-width: 7rem;
+  }
+}
