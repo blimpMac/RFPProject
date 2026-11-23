@@ -27,14 +27,10 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
   const hardCopy = hardCopyRequirementFor(rfpType);
 
   return (
-    <section
-      className="md:col-span-2 min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-700 dark:bg-slate-900/70"
-    >
+    <section className="md:col-span-2 min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-700 dark:bg-slate-900/70">
       <header className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <span
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#102a43] text-white dark:bg-[#173f6b]"
-          >
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#102a43] text-white dark:bg-[#173f6b]">
             <ClipboardList size={19} />
           </span>
           <div className="min-w-0">
@@ -45,9 +41,7 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          <span
-            className={`inline-flex w-fit max-w-full items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${hardCopyClass(hardCopy)}`}
-          >
+          <span className={`inline-flex w-fit max-w-full items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${hardCopyClass(hardCopy)}`}>
             Hard copy: {hardCopyText(hardCopy)}
           </span>
         </div>
@@ -64,9 +58,7 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
                 key={group.label}
                 className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4 dark:border-slate-700 dark:bg-slate-800/45"
               >
-                <h4
-                  className="text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300"
-                >
+                <h4 className="text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">
                   {group.label}
                 </h4>
 
@@ -75,9 +67,7 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
                     <div>
                       <div className="mb-2 flex items-center gap-2">
                         <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-600" />
-                        <h5
-                          className="text-xs font-semibold text-emerald-800 dark:text-emerald-300"
-                        >
+                        <h5 className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
                           Required
                         </h5>
                       </div>
@@ -102,9 +92,7 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
                     <div>
                       <div className="mb-2 flex items-center gap-2">
                         <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
-                        <h5
-                          className="text-xs font-semibold text-amber-800 dark:text-amber-300"
-                        >
+                        <h5 className="text-xs font-semibold text-amber-800 dark:text-amber-300">
                           Optional / If applicable
                         </h5>
                       </div>
@@ -136,9 +124,7 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
           })}
         </div>
       ) : (
-        <p
-          className="mt-4 rounded-xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400"
-        >
+        <p className="mt-4 rounded-xl border border-dashed border-slate-200 px-4 py-5 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
           No document requirements are configured for this request type yet.
         </p>
       )}
