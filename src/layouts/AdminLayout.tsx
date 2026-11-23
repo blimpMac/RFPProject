@@ -3,7 +3,6 @@ import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react
 import {
   BarChart3,
   CheckSquare,
-  FilePlus2,
   FileStack,
   ServerCog,
   History,
@@ -50,13 +49,6 @@ const navigationItems: NavigationItem[] = [
     description: 'Performance and request health',
     group: 'Workspace',
     icon: BarChart3,
-  },
-  {
-    to: '/admin/new-request',
-    label: 'Add a new Request',
-    description: 'Create and submit a payment request',
-    group: 'Workspace',
-    icon: FilePlus2,
   },
   {
     to: '/admin/monitoring',
