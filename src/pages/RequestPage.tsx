@@ -10,7 +10,7 @@ import {
 } from '../components/RfLiquidationEditor';
 import { rfTotals } from '../../shared/utils/rf-liquidation';
 import { useAuth } from '../components/AuthProvider';
-import { RequestAttachmentChecklist } from '../components/RequestAttachmentChecklist';
+import { RequestSupportingDocuments } from '../components/RequestSupportingDocuments';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Button, Spinner } from '../components/ui';
 import { get, post } from '../lib/api';
@@ -60,7 +60,6 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
   const PageBody = embedded ? 'section' : 'main';
   const [form, setForm] = useState(initial);
   const [files, setFiles] = useState<File[]>([]);
-  const [attachmentChecklist, setAttachmentChecklist] = useState<string[]>([]);
   const [rfDraft, setRfDraft] = useState(emptyRfLiquidationDraft);
   const [liquidationExpenses, setLiquidationExpenses] = useState<CaLiquidationExpense[]>([]);
   const [options, setOptions] = useState<PublicOptions>({ departments: [], requestTypes: [] });
@@ -163,7 +162,6 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
         request: {
           ...form,
           amount: Number(requestAmount),
-          attachmentChecklist,
           rfLiquidation: isRfLiquidation ? rfLiquidation : undefined,
           liquidationExpenses: isRfLiquidation
             ? rfLiquidation.expenses.map((row) => ({
@@ -210,7 +208,6 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
         requestorEmail: embedded ? identity?.email || '' : '',
       });
       setFiles([]);
-      setAttachmentChecklist([]);
       setLiquidationExpenses([]);
       setRfDraft(emptyRfLiquidationDraft());
     } catch (e) {
@@ -428,7 +425,6 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
               options={options.requestTypes}
               onChange={(v) => {
                 update('rfpType', v);
-                setAttachmentChecklist([]);
               }}
             />
             <Select
@@ -505,13 +501,9 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
             <FormSection
               number="3"
               title="Supporting documents"
-              description="Check the internal and external requirements for the selected Type. Attach the supporting documents available; conditional items apply only when relevant."
+              description="Review the required and optional documents for the selected Type, including whether a hard copy is required. Upload the applicable supporting files below."
             />
-            <RequestAttachmentChecklist
-              rfpType={form.rfpType}
-              selected={attachmentChecklist}
-              onChange={setAttachmentChecklist}
-            />
+            <RequestSupportingDocuments rfpType={form.rfpType} />
             <div className="md:col-span-2">
               <FileDropzone
                 files={files}
