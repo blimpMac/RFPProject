@@ -130,7 +130,7 @@ export function EmailForm({
   };
 
   return (
-    <Modal title="Change login email" onClose={onClose}>
+    <Modal title="Change login email" onClose={onClose} size="compact">
       <form onSubmit={submit} className="space-y-4">
         <div className="rounded border bg-slate-50 p-3 text-sm text-slate-700">
           Changing this address changes the user's sign-in email immediately. Their password and
@@ -213,7 +213,7 @@ export function AccountForm({
     }
   };
   return (
-    <Modal title={editing ? 'Edit account' : 'Add account'} onClose={onClose}>
+    <Modal title={editing ? 'Edit account' : 'Add account'} onClose={onClose} size="compact">
       <form onSubmit={submit} className="space-y-4">
         <Text label="Full name" value={fullName} onChange={setFullName} />
         <Text
