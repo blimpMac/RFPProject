@@ -1927,7 +1927,6 @@ body {
   }
 }
 
-
 /* Public request header: keep the brand and actions usable at every viewport width. */
 .public-header-inner {
   min-width: 0;
