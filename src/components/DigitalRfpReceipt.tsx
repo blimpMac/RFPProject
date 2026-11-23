@@ -176,10 +176,6 @@ export function DigitalRfpReceipt({
               <span>{requestNumberLabel(request.rfp_number)}</span>
               <strong>{request.rfp_number}</strong>
             </div>
-            <div className="digital-rfp-view-badge">
-              <strong>VIEW</strong>
-              <span>IN SYSTEM</span>
-            </div>
           </div>
         </header>
 
