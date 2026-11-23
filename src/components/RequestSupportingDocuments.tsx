@@ -7,7 +7,6 @@ import {
 const isOptionalRequirement = (item: string) =>
   /\bif\b|\bwhen\b|\bwhere applicable\b|\bas applicable\b|\boptional\b/i.test(item);
 
-
 export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
   if (!rfpType) return null;
 
@@ -121,7 +120,6 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
           No document requirements are configured for this request type yet.
         </p>
       )}
-
     </section>
   );
 }
