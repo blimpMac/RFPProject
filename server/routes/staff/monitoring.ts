@@ -124,11 +124,11 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
       ...new Set(approvalLogs.map((log) => log.actor_user_id).filter(Boolean) as string[]),
     ];
 
-    const requestRows: { id: string; department_approval_at: string | null }[] = [];
+    const requestRows: { id: string; department_approval_at: string | null; amount: number | string | null }[] = [];
     for (let offset = 0; offset < requestIds.length; offset += 500) {
       const result = await db
         .from('rfp_requests')
-        .select('id,department_approval_at')
+        .select('id,department_approval_at,amount')
         .in('id', requestIds.slice(offset, offset + 500));
       if (result.error) throw result.error;
       requestRows.push(...((result.data || []) as typeof requestRows));
@@ -194,6 +194,7 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
           approvalId: log.id,
           requestId: log.request_id,
           rfpNumber: log.rfp_number,
+          amount: requestById.get(log.request_id || '')?.amount ?? null,
           employeeId: log.actor_user_id,
           employeeName,
           employeeEmail,
