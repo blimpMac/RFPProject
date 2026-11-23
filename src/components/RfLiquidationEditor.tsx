@@ -246,9 +246,9 @@ export function RfLiquidationEditor({
         />
         <EntryField label="Department" value={department} readOnly onChange={() => {}} />
         <EntryField
-          label="Project / SOF"
+          label="Project / SOF #"
           value={value.projectSof}
-          placeholder="Project name or SOF number"
+          placeholder="Project name or SOF______ (e.g., SOF12345)"
           onChange={(next) => set('projectSof', next)}
         />
         <EntryField
