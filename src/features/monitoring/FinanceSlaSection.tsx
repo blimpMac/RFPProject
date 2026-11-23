@@ -4,6 +4,7 @@ export type FinanceSlaEntry = {
   approvalId: string;
   requestId: string | null;
   rfpNumber: string;
+  amount: number | string | null;
   employeeId: string | null;
   employeeName: string;
   employeeEmail: string;
@@ -21,6 +22,9 @@ type EmployeeSummary = {
   within: number;
   outside: number;
   unmeasurable: number;
+  approvedRequests: number;
+  approvedAmount: number;
+  amountRecords: number;
 };
 
 const localTime = (value: string | null) =>
@@ -53,14 +57,41 @@ export function FinanceSlaSection({
         within: 0,
         outside: 0,
         unmeasurable: 0,
+        approvedRequests: 0,
+        approvedAmount: 0,
+        amountRecords: 0,
       };
       if (row.status === 'within') current.within += 1;
       else if (row.status === 'outside') current.outside += 1;
       else current.unmeasurable += 1;
       grouped.set(key, current);
     }
+    // Rows arrive newest-first. Keep only the latest Finance approval per RFP so
+    // re-approvals do not double-count the request amount.
+    const latestApprovalByRequest = new Map<string, FinanceSlaEntry>();
+    for (const row of rows) {
+      const requestKey = row.requestId || row.approvalId;
+      if (!latestApprovalByRequest.has(requestKey)) latestApprovalByRequest.set(requestKey, row);
+    }
+    for (const row of latestApprovalByRequest.values()) {
+      const key = row.employeeId || row.employeeEmail.toLowerCase() || row.employeeName;
+      const employee = grouped.get(key);
+      if (!employee) continue;
+      employee.approvedRequests += 1;
+      const amount = typeof row.amount === 'number'
+        ? row.amount
+        : row.amount === null || row.amount === ''
+          ? Number.NaN
+          : Number(String(row.amount).replace(/,/g, '').replace(/^₱\\s*/, ''));
+      if (Number.isFinite(amount)) {
+        employee.approvedAmount += amount;
+        employee.amountRecords += 1;
+      }
+    }
     return [...grouped.values()].sort((left, right) => left.name.localeCompare(right.name));
   }, [rows]);
+
+  const formatAmount = (amount: number) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 
   const totals = useMemo(
     () =>
@@ -158,6 +189,44 @@ export function FinanceSlaSection({
           <p className="px-5 py-8 text-center text-sm text-slate-500">
             No completed Finance member approvals have been recorded yet.
           </p>
+        )}
+      </section>
+
+      <section className="card overflow-hidden">
+        <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+          <h3 className="font-semibold">Approved amount per Finance employee</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Total request value is attributed to the employee on the latest Finance approval for each unique RFP. Re-approvals are not counted twice.
+          </p>
+        </div>
+        {employees.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800/70">
+                <tr>
+                  <th className="px-5 py-3 font-semibold">Finance employee</th>
+                  <th className="px-4 py-3 text-center font-semibold">Unique RFPs approved</th>
+                  <th className="px-5 py-3 text-right font-semibold">Total approved amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {employees.map((employee) => (
+                  <tr key={employee.key}>
+                    <td className="px-5 py-3">
+                      <p className="font-semibold text-slate-800 dark:text-slate-100">{employee.name}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">{employee.email || '—'}</p>
+                    </td>
+                    <td className="px-4 py-3 text-center tabular-nums">{employee.approvedRequests}</td>
+                    <td className="px-5 py-3 text-right font-semibold tabular-nums">
+                      {employee.amountRecords ? formatAmount(employee.approvedAmount) : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="px-5 py-8 text-center text-sm text-slate-500">No approved Finance requests to total yet.</p>
         )}
       </section>
 
