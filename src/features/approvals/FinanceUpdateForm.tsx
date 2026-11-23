@@ -128,14 +128,17 @@ export function FinanceUpdateForm({
           />
         </div>
         <div className="field finance-update-wide">
-          <label htmlFor="finance-notes">Finance remarks / internal notes</label>
+          <label htmlFor="finance-notes">Finance remarks / SOF # notes</label>
           <textarea
             id="finance-notes"
             className="input min-h-24"
-            placeholder="Add a note for the Finance team"
+            placeholder="SOF______ — add related Finance remarks here"
             value={financeNotes}
             onChange={(event) => onFinanceNotesChange(event.target.value)}
           />
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            For SOF references, use SOF followed by the number (format: SOF______).
+          </p>
         </div>
       </div>
       <div className="finance-update-footer">
