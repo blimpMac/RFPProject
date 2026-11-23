@@ -18,8 +18,4 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Inspect formatted supporting-documents component
-        run: |
-          npx prettier src/components/RequestSupportingDocuments.tsx --write
-          git diff -- src/components/RequestSupportingDocuments.tsx
       - run: npm run check
