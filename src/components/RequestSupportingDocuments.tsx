@@ -1,4 +1,4 @@
-import { ClipboardList, FileText, Info } from 'lucide-react';
+import { ClipboardList, FileText, Printer } from 'lucide-react';
 import {
   documentRequirementsFor,
   hardCopyRequirementFor,
@@ -7,18 +7,6 @@ import {
 const isOptionalRequirement = (item: string) =>
   /\bif\b|\bwhen\b|\bwhere applicable\b|\bas applicable\b|\boptional\b/i.test(item);
 
-const hardCopyText = (value: ReturnType<typeof hardCopyRequirementFor>) =>
-  value === 'yes' ? 'Required' : value === 'no' ? 'Not required' : 'Not specified';
-
-const hardCopyClass = (value: ReturnType<typeof hardCopyRequirementFor>) => {
-  if (value === 'yes') {
-    return 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200';
-  }
-  if (value === 'no') {
-    return 'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200';
-  }
-  return 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200';
-};
 
 export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
   if (!rfpType) return null;
@@ -40,13 +28,16 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{rfpType}</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        {hardCopy === 'yes' && (
           <span
-            className={`inline-flex w-fit max-w-full items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${hardCopyClass(hardCopy)}`}
+            role="img"
+            aria-label="Hard copy required"
+            title="Hard copy required"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
           >
-            Hard copy: {hardCopyText(hardCopy)}
+            <Printer size={16} aria-hidden="true" />
           </span>
-        </div>
+        )}
       </header>
 
       {groups.length ? (
@@ -131,17 +122,6 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
         </p>
       )}
 
-      <div
-        className="mt-4 flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300"
-        role="note"
-      >
-        <Info className="mt-0.5 shrink-0" size={17} aria-hidden="true" />
-        <p className="leading-6">
-          This is a reference list only—there are no items to tick. Upload the applicable supporting
-          files in the upload area below. The hard-copy status shown above applies to this request
-          type.
-        </p>
-      </div>
     </section>
   );
 }
