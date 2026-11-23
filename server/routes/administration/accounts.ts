@@ -213,6 +213,16 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
     if (event.httpMethod === 'GET') {
       const listed = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
       if (listed.error) throw listed.error;
+
+      // Keep the auth user shape explicit here: some generated Supabase client
+      // configurations infer listUsers()'s users array as never[].
+      const authUsers = listed.data.users as Array<{
+        id: string;
+        email?: string | null;
+        created_at: string;
+        last_sign_in_at?: string | null;
+      }>;
+
       const [roleResult, profileResult, headResult, itResult, preferenceResult] = await Promise.all(
         [
           db.from('user_roles').select('user_id,role'),
@@ -248,7 +258,7 @@ export const handleAccountAdministrationRoutes: RouteHandler = async ({
         departmentsByUser.set(row.user_id, departments);
       }
 
-      const users: StaffUser[] = listed.data.users
+      const users: StaffUser[] = authUsers
         .filter((user) => !itIds.has(user.id))
         .map((user) => {
           const roles = rolesByUser.get(user.id) || [];
