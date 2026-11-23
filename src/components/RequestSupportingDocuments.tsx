@@ -41,7 +41,9 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          <span className={`inline-flex w-fit max-w-full items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${hardCopyClass(hardCopy)}`}>
+          <span
+            className={`inline-flex w-fit max-w-full items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${hardCopyClass(hardCopy)}`}
+          >
             Hard copy: {hardCopyText(hardCopy)}
           </span>
         </div>
