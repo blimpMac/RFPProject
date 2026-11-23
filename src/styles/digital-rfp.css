@@ -60,7 +60,7 @@
 }
 .digital-rfp-number-block {
   display: grid;
-  grid-template-columns: minmax(7.8rem, 1fr) auto;
+  grid-template-columns: minmax(7.8rem, 1fr);
   gap: 0.55rem;
   align-items: stretch;
   justify-self: end;
@@ -84,24 +84,6 @@
   margin-top: 0.15rem;
   color: #122f47;
   font-size: 0.88rem;
-}
-.digital-rfp-view-badge {
-  min-width: 3.8rem;
-  display: grid;
-  place-content: center;
-  border: 1px solid #c5d0da;
-  background: #fff;
-  text-align: center;
-}
-.digital-rfp-view-badge strong {
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
-}
-.digital-rfp-view-badge span {
-  margin-top: 0.08rem;
-  color: #607286;
-  font-size: 0.48rem;
-  letter-spacing: 0.05em;
 }
 .digital-rfp-section {
   margin: 0.55rem 0.8rem;
@@ -497,7 +479,7 @@
     font-size: 6.8pt;
   }
   .digital-rfp-number-block {
-    grid-template-columns: 26mm 12mm;
+    grid-template-columns: 26mm;
     gap: 1.5mm;
     justify-self: end;
   }
@@ -509,12 +491,6 @@
   }
   .digital-rfp-number strong {
     font-size: 7.6pt;
-  }
-  .digital-rfp-view-badge strong {
-    font-size: 5.5pt;
-  }
-  .digital-rfp-view-badge span {
-    font-size: 4.2pt;
   }
   .digital-rfp-section {
     margin: 2.2mm 3.2mm;
