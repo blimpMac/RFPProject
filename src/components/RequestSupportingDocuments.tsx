@@ -31,7 +31,6 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
           <span
             role="img"
             aria-label="Hard copy required"
-            title="Hard copy required"
             className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
           >
             <Printer size={16} aria-hidden="true" />
