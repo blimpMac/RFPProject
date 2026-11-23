@@ -1,13 +1,28 @@
 const DAY_MS = 86_400_000;
+const NOON_MS = 12 * 60 * 60 * 1000;
 
 const weekdayFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: 'Asia/Manila',
   weekday: 'short',
 });
 
+const datePartsFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Manila',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
 function isManilaBusinessDay(timestamp: number) {
   const weekday = weekdayFormatter.format(new Date(timestamp));
   return weekday !== 'Sat' && weekday !== 'Sun';
+}
+
+function manilaDateOrdinal(timestamp: number) {
+  const parts = datePartsFormatter.formatToParts(new Date(timestamp));
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((entry) => entry.type === type)?.value);
+  return Date.UTC(part('year'), part('month') - 1, part('day'));
 }
 
 /**
@@ -32,6 +47,11 @@ export function addManilaBusinessDays(
   return new Date(cursor).toISOString();
 }
 
+/**
+ * Counts elapsed Manila business dates, not completed 24-hour blocks.
+ * For example, a Friday handoff approved on Monday counts one business day
+ * even when the approval happens before Friday's original clock time.
+ */
 export function manilaBusinessDaysElapsed(
   receivedAt: string | number | Date,
   completedAt: string | number | Date,
@@ -42,11 +62,11 @@ export function manilaBusinessDaysElapsed(
     return 0;
   }
 
-  let cursor = received;
+  const firstDate = manilaDateOrdinal(received);
+  const lastDate = manilaDateOrdinal(completed);
   let elapsed = 0;
-  while (cursor + DAY_MS <= completed) {
-    cursor += DAY_MS;
-    if (isManilaBusinessDay(cursor)) elapsed += 1;
+  for (let date = firstDate + DAY_MS; date <= lastDate; date += DAY_MS) {
+    if (isManilaBusinessDay(date + NOON_MS)) elapsed += 1;
   }
   return elapsed;
 }
