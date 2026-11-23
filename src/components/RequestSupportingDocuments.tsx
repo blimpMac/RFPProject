@@ -2,7 +2,7 @@ import { ClipboardList, FileText, Info } from 'lucide-react';
 import { documentRequirementsFor, hardCopyRequirementFor } from '../../shared/constants/document-requirements';
 
 const isOptionalRequirement = (item: string) =>
-  /\\bif\\b|\\bwhen\\b|\\bwhere applicable\\b|\\bas applicable\\b|\\boptional\\b/i.test(item);
+  /\bif\b|\bwhen\b|\bwhere applicable\b|\bas applicable\b|\boptional\b/i.test(item);
 
 const hardCopyText = (value: ReturnType<typeof hardCopyRequirementFor>) =>
   value === 'yes' ? 'Required' : value === 'no' ? 'Not required' : 'Not specified';
