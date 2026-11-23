@@ -30,3 +30,10 @@ testCase('same-day Finance approval remains within SLA', () => {
   assert.equal(manilaBusinessDaysElapsed(receivedAt, approvedAt), 0);
   assert.equal(isWithinManilaBusinessDaySla(receivedAt, approvedAt, 2), true);
 });
+
+testCase('Friday handoff approved Monday before the handoff clock time counts one business day', () => {
+  const receivedAt = '2026-11-20T17:00:00+08:00';
+  const approvedAt = '2026-11-23T09:00:00+08:00';
+  assert.equal(manilaBusinessDaysElapsed(receivedAt, approvedAt), 1);
+  assert.equal(isWithinManilaBusinessDaySla(receivedAt, approvedAt, 2), true);
+});
