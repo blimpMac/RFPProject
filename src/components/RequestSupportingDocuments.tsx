@@ -72,6 +72,11 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
                             />
                             <span className="min-w-0 flex-1 text-sm leading-5 text-slate-700 dark:text-slate-200">
                               {item}
+                              {hardCopy === 'yes' && (
+                                <span className="ml-1 whitespace-nowrap text-xs font-semibold text-amber-700 dark:text-amber-300">
+                                  (Hard copy req.)
+                                </span>
+                              )}
                             </span>
                           </li>
                         ))}
@@ -97,6 +102,11 @@ export function RequestSupportingDocuments({ rfpType }: { rfpType: string }) {
                             />
                             <span className="min-w-0 flex-1 text-sm leading-5 text-slate-700 dark:text-slate-200">
                               {item}
+                              {hardCopy === 'yes' && (
+                                <span className="ml-1 whitespace-nowrap text-xs font-semibold text-amber-700 dark:text-amber-300">
+                                  (Hard copy req.)
+                                </span>
+                              )}
                             </span>
                           </li>
                         ))}
