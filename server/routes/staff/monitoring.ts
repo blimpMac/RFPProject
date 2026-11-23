@@ -60,6 +60,161 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
     });
   }
 
+  if (route === 'monitoring/finance-sla') {
+    ensureMethod(event, 'GET');
+    await requireStaff(event, financeRoles);
+
+    const settings = await db
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'workflow_targets')
+      .maybeSingle();
+    if (settings.error) throw settings.error;
+    const targets =
+      settings.data?.value &&
+      typeof settings.data.value === 'object' &&
+      !Array.isArray(settings.data.value)
+        ? (settings.data.value as Record<string, unknown>)
+        : {};
+    const configuredTarget = Number(targets.financeReviewDays);
+    const targetBusinessDays =
+      Number.isFinite(configuredTarget) && configuredTarget >= 0
+        ? Math.min(30, Math.floor(configuredTarget))
+        : 2;
+
+    type FinanceSlaLog = {
+      id: string;
+      request_id: string | null;
+      rfp_number: string;
+      occurred_at: string;
+      action: string;
+      actor_email: string | null;
+      actor_user_id: string | null;
+    };
+    const logs: FinanceSlaLog[] = [];
+    const batchSize = 1000;
+    for (let offset = 0; ; offset += batchSize) {
+      const result = await db
+        .from('approval_logs')
+        .select('id,request_id,rfp_number,occurred_at,action,actor_email,actor_user_id')
+        .in('action', [
+          'Department Approved',
+          'Department Re-approved',
+          'Finance Member Approved',
+        ])
+        .order('occurred_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(offset, offset + batchSize - 1);
+      if (result.error) throw result.error;
+      const batch = (result.data || []) as FinanceSlaLog[];
+      logs.push(...batch);
+      if (batch.length < batchSize) break;
+    }
+
+    const approvalLogs = logs.filter((log) => log.action === 'Finance Member Approved');
+    const requestIds = [
+      ...new Set(approvalLogs.map((log) => log.request_id).filter(Boolean) as string[]),
+    ];
+    const actorIds = [
+      ...new Set(approvalLogs.map((log) => log.actor_user_id).filter(Boolean) as string[]),
+    ];
+
+    const requestRows: { id: string; department_approval_at: string | null }[] = [];
+    for (let offset = 0; offset < requestIds.length; offset += 500) {
+      const result = await db
+        .from('rfp_requests')
+        .select('id,department_approval_at')
+        .in('id', requestIds.slice(offset, offset + 500));
+      if (result.error) throw result.error;
+      requestRows.push(...((result.data || []) as typeof requestRows));
+    }
+
+    const profileRows: { id: string; full_name: string | null; email: string }[] = [];
+    for (let offset = 0; offset < actorIds.length; offset += 500) {
+      const result = await db
+        .from('profiles')
+        .select('id,full_name,email')
+        .in('id', actorIds.slice(offset, offset + 500));
+      if (result.error) throw result.error;
+      profileRows.push(...((result.data || []) as typeof profileRows));
+    }
+
+    const requestById = new Map(requestRows.map((request) => [request.id, request]));
+    const profileById = new Map(profileRows.map((profile) => [profile.id, profile]));
+    const handoffsByRequest = new Map<string, string[]>();
+    for (const log of logs) {
+      if (
+        !log.request_id ||
+        !['Department Approved', 'Department Re-approved'].includes(log.action)
+      ) {
+        continue;
+      }
+      const handoffs = handoffsByRequest.get(log.request_id) || [];
+      handoffs.push(log.occurred_at);
+      handoffsByRequest.set(log.request_id, handoffs);
+    }
+
+    const rows = approvalLogs
+      .map((log) => {
+        const approvedAt = new Date(log.occurred_at).getTime();
+        const handoffs = handoffsByRequest.get(log.request_id || '') || [];
+        let receivedAt: string | null = null;
+        for (const handoff of handoffs) {
+          if (new Date(handoff).getTime() <= approvedAt) receivedAt = handoff;
+          else break;
+        }
+        const fallbackHandoff = requestById.get(log.request_id || '')?.department_approval_at;
+        if (
+          !receivedAt &&
+          fallbackHandoff &&
+          new Date(fallbackHandoff).getTime() <= approvedAt
+        ) {
+          receivedAt = fallbackHandoff;
+        }
+
+        const profile = log.actor_user_id ? profileById.get(log.actor_user_id) : undefined;
+        const employeeEmail = profile?.email || log.actor_email || '';
+        const employeeName =
+          profile?.full_name?.trim() || employeeEmail || 'Unknown Finance employee';
+        const deadlineAt = receivedAt
+          ? addManilaBusinessDays(receivedAt, targetBusinessDays)
+          : null;
+        const status = !receivedAt
+          ? 'unmeasurable'
+          : isWithinManilaBusinessDaySla(receivedAt, log.occurred_at, targetBusinessDays)
+            ? 'within'
+            : 'outside';
+
+        return {
+          approvalId: log.id,
+          requestId: log.request_id,
+          rfpNumber: log.rfp_number,
+          employeeId: log.actor_user_id,
+          employeeName,
+          employeeEmail,
+          receivedAt,
+          approvedAt: log.occurred_at,
+          deadlineAt,
+          elapsedBusinessDays: receivedAt
+            ? manilaBusinessDaysElapsed(receivedAt, log.occurred_at)
+            : null,
+          status,
+        };
+      })
+      .sort(
+        (left, right) =>
+          new Date(right.approvedAt).getTime() - new Date(left.approvedAt).getTime(),
+      );
+
+    return json(200, {
+      ok: true,
+      rows,
+      count: rows.length,
+      targetBusinessDays,
+      unmeasurableCount: rows.filter((row) => row.status === 'unmeasurable').length,
+    });
+  }
+
   if (route.startsWith('monitoring/')) {
     ensureMethod(event, 'GET');
     const key = route.slice(11);
