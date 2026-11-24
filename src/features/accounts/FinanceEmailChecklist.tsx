@@ -20,7 +20,7 @@ export function FinanceEmailChecklist({
 }) {
   const [chosen, setChosen] = useState<FinanceEmailType[]>(() =>
     user.financeNotificationTypes === null
-      ? [...allFinanceEmailTypeIds]
+      ? []
       : user.financeNotificationTypes.filter((type): type is FinanceEmailType =>
           allFinanceEmailTypeIds.includes(type as FinanceEmailType),
         ),
@@ -73,8 +73,9 @@ export function FinanceEmailChecklist({
           </p>
           <p className="mt-1 break-words text-xs text-slate-500">{user.email}</p>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-            Select which RFP request types may generate Finance Member emails for this person. RF
-            includes RF Liquidations. These choices do not change workflow access, Finance Head
+            Select which RFP request types may generate Finance Member emails for this person. A
+            member with no saved checklist receives no Finance request alerts until types are
+            selected. RF includes RF Liquidations. These choices do not change workflow access, Finance Head
             notifications, or requestor and Department Head emails.
           </p>
         </div>
