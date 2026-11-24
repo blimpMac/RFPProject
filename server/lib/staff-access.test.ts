@@ -37,6 +37,8 @@ test('maps account access levels to workflow roles', () => {
 
 test('limits department-only access without restricting elevated roles', () => {
   assert.equal(isDepartmentOnly(['department_approver']), true);
-  assert.equal(isDepartmentOnly(['department_approver', 'administrator']), false);
+  assert.equal(isDepartmentOnly(['department_approver', 'administrator']), true);
+  assert.equal(isDepartmentOnly(['department_approver', 'finance_reviewer']), false);
+  assert.equal(isDepartmentOnly(['department_approver', 'super_administrator']), false);
   assert.equal(isDepartmentOnly(['finance_reviewer']), false);
 });
