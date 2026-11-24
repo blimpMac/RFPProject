@@ -7,7 +7,11 @@ import type { RouteHandler } from '../context.js';
 export const handleDashboardRoute: RouteHandler = async ({ event, route, db }) => {
   if (route === 'dashboard') {
     ensureMethod(event, 'GET');
-    const staff = await requireStaff(event);
+    const staff = await requireStaff(event, [
+      'super_administrator',
+      'finance_reviewer',
+      'department_approver',
+    ]);
     let requestQuery = db
       .from('rfp_requests')
       .select(
