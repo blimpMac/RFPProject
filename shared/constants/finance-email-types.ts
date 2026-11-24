@@ -1,5 +1,5 @@
 /** Finance Manager-controlled request categories for Finance Member email notifications.
- * Unconfigured members receive all existing request notifications until a manager saves a checklist.
+ * Unconfigured members receive no request notifications until a manager saves a checklist.
  */
 export const financeEmailTypes = [
   { id: 'trade_suppliers', label: 'Trade Suppliers' },
