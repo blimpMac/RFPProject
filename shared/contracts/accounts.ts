@@ -12,7 +12,7 @@ export type StaffUser = {
   assignedDepartments: string[];
   active: boolean;
   accessLevel: AccessLevel | null;
-  /** null = Finance Manager has not restricted this member's request emails. */
+  /** null = Finance Manager has not configured this member; no request alerts are sent. */
   financeNotificationTypes: string[] | null;
 };
 
