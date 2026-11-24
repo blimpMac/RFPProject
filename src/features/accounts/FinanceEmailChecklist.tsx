@@ -72,12 +72,6 @@ export function FinanceEmailChecklist({
             <BellRing size={17} /> {user.fullName || user.email}
           </p>
           <p className="mt-1 break-words text-xs text-slate-500">{user.email}</p>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-            Select which RFP request types may generate Finance Member emails for this person. A
-            member with no saved checklist receives no Finance request alerts until types are
-            selected. RF includes RF Liquidations. These choices do not change workflow access, Finance Head
-            notifications, or requestor and Department Head emails.
-          </p>
         </div>
 
         <fieldset className="space-y-2">
