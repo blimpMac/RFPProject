@@ -53,7 +53,7 @@ export function AccountRow({
           <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
             Request email alerts:{' '}
             {user.financeNotificationTypes === null
-              ? 'All types (default)'
+              ? 'Not configured (no alerts)'
               : user.financeNotificationTypes.length === 0
                 ? 'None'
                 : user.financeNotificationTypes.length === 1 &&
