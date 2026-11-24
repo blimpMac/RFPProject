@@ -23,6 +23,7 @@ const tableMap: Record<string, { table: string; order: string; roles?: string[] 
     roles: financeRoles,
   },
 };
+const requestReadRoles = ['super_administrator', 'finance_reviewer', 'department_approver'];
 
 export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db }) => {
   if (route === 'audit-trail') {
@@ -226,7 +227,7 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
     const key = route.slice(11);
     const specification = tableMap[key];
     if (!specification) throw new HttpError(404, 'Worksheet not found.');
-    const staff = await requireStaff(event, specification.roles);
+    const staff = await requireStaff(event, specification.roles || requestReadRoles);
     const page = Math.max(1, Number(event.queryStringParameters?.page) || 1);
     const pageSize = Math.min(
       200,
