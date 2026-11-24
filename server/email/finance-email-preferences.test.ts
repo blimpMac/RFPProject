@@ -67,3 +67,14 @@ test('Finance Head-only endpoint and send-time protection are present', () => {
   assert.ok(queue.includes("status: 'cancelled'"));
   assert.ok(queue.includes('p_template_key: notification.template_key'));
 });
+
+
+test('Unconfigured Finance Members default to no request alerts in the checklist and database', () => {
+  const checklist = readFileSync('src/features/accounts/FinanceEmailChecklist.tsx', 'utf8');
+  const migration = readFileSync(
+    'supabase/migrations/202611240001_finance_email_preferences_fail_closed.sql',
+    'utf8',
+  );
+  assert.match(checklist, /user\\.financeNotificationTypes === null\\s*\\?\\s*\\[\\]/);
+  assert.ok(migration.includes('if not is_finance_member or selected is null then return false; end if;'));
+});
