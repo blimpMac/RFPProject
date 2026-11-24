@@ -36,7 +36,11 @@ export const handleAttachmentRoutes: RouteHandler = async ({ event, route, db })
 
   if (route === 'request-attachments') {
     ensureMethod(event, 'GET');
-    const staff = await requireStaff(event);
+    const staff = await requireStaff(event, [
+      'super_administrator',
+      'finance_reviewer',
+      'department_approver',
+    ]);
     const requestId = z.uuid().parse(event.queryStringParameters?.requestId);
     const request = await db
       .from('rfp_requests')
@@ -91,7 +95,11 @@ export const handleAttachmentRoutes: RouteHandler = async ({ event, route, db })
   if (route !== 'attachments/url') return undefined;
 
   ensureMethod(event, 'POST');
-  const staff = await requireStaff(event);
+  const staff = await requireStaff(event, [
+      'super_administrator',
+      'finance_reviewer',
+      'department_approver',
+    ]);
   const input = z.object({ attachmentId: z.uuid() }).parse(readJson(event));
   const item = await db
     .from('request_attachments')
