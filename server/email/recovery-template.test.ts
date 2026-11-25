@@ -9,7 +9,7 @@ test('recovery email uses RFP Monitoring System identity and a secure link', () 
 
   assert.equal(recoverySubject, 'RFP Monitoring System | Reset your password');
   assert.ok(html.includes('RFP Monitoring System'));
-  assert.ok(html.includes('GPI &bull; GEMCOR'));
+  assert.ok(!html.includes('GPI &bull; GEMCOR'));
   assert.ok(html.includes('Reset my password'));
   assert.ok(html.includes('token=sample&amp;type=recovery'));
   assert.ok(!html.includes('href="' + tokenLink + '"'));
