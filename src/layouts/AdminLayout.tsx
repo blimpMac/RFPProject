@@ -77,7 +77,12 @@ const navigationItems: NavigationItem[] = [
     description: 'Reference checklist and hard-copy rules by request type',
     group: 'Workspace',
     icon: ClipboardList,
-    allowedRoles: ['super_administrator', 'department_approver', 'finance_reviewer', 'it_administrator'],
+    allowedRoles: [
+      'super_administrator',
+      'department_approver',
+      'finance_reviewer',
+      'it_administrator',
+    ],
   },
   {
     to: '/admin/audit-trail',
@@ -308,7 +313,13 @@ export function AdminLayout() {
 
   if (
     isIT &&
-    !['/admin', '/admin/it', '/admin/audit-trail', '/admin/manual', '/admin/document-requirements'].includes(location.pathname)
+    ![
+      '/admin',
+      '/admin/it',
+      '/admin/audit-trail',
+      '/admin/manual',
+      '/admin/document-requirements',
+    ].includes(location.pathname)
   ) {
     return <Navigate to="/admin/it" replace />;
   }
@@ -597,3 +608,4 @@ export function AdminLayout() {
     </>
   );
 }
+
