@@ -34,7 +34,6 @@ export function renderRecoveryEmail(actionLink: string) {
         <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;border:1px solid #d9e3e9;border-radius:16px;overflow:hidden;background:#ffffff">
           <tr><td style="background:#0b2232;padding:30px 34px">
             <div style="font-size:21px;line-height:28px;font-weight:800;color:#ffffff">RFP Monitoring System</div>
-            <div style="margin-top:5px;font-size:11px;font-weight:700;letter-spacing:2px;color:#94c6bf">GPI &bull; GEMCOR</div>
           </td></tr>
           <tr><td style="padding:36px 34px 30px">
             <p style="margin:0 0 10px;color:#167b70;font-size:11px;font-weight:800;letter-spacing:1.7px;text-transform:uppercase">Account security</p>
