@@ -1,4 +1,5 @@
 import { manilaDate } from '../../lib/format';
+import { philippineWorkingDaysBetween } from '../../../shared/utils/philippine-holidays';
 import type { RfpRequest } from '../../types';
 import { manilaDay } from '../requests/sla';
 import {
@@ -59,7 +60,7 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
       financeWorkflow(request).processing_started_at || request.submitted_at || now;
     const schedule = manilaReceiptSchedule(processingStart);
     const today = manilaDay(now);
-    const overdue = manilaCalendarDaysBetween(schedule.day3, today);
+    const overdue = philippineWorkingDaysBetween(schedule.day3, today);
     if (overdue > 0) {
       return {
         label: `${overdue} day${overdue === 1 ? '' : 's'} overdue`,
@@ -67,7 +68,7 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
         tone: 'danger',
       };
     }
-    const currentDay = Math.max(0, manilaCalendarDaysBetween(schedule.day1, today) + 1);
+    const currentDay = Math.max(0, philippineWorkingDaysBetween(schedule.day1, today) + 1);
     return {
       label:
         currentDay === 0
