@@ -68,7 +68,7 @@ export function ApprovalQueueFilters({
           <input
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search RFP, payee, or requestor"
+            placeholder="Search RFP, CA, RF, request type, payee, or requestor"
           />
           {search && (
             <button
