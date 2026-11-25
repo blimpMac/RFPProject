@@ -599,7 +599,7 @@ export function ApprovalsPage() {
       />
       {selected && (
         <Modal
-          title={`Digital RFP · ${selected.rfp_number}`}
+          title={`${/cash\\s*advance|\\bCA\\b/i.test(selected.rfp_type) ? 'Digital CA Form' : /revolving\\s*fund|\\bRF\\b/i.test(selected.rfp_type) ? 'Digital RF Form' : 'Digital RFP Form'} · ${selected.rfp_number}`}
           size="wide"
           onClose={() => setSelected(undefined)}
         >
