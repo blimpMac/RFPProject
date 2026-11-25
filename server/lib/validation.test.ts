@@ -1,13 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { financeSchema, financeUpdateSchema, requestSchema } from './validation.ts';
+import {
+  financeSchema,
+  financeUpdateSchema,
+  requestSchema,
+  resubmitSchema,
+} from './validation.ts';
 
 const validRequest = {
   requestorName: 'Demo Requestor',
   requestorEmail: 'demo@example.com',
   company: 'Greenlight Power Inc.',
   department: 'Finance',
-  projectClass: 'Demo Project',
+  projectClass: 'SOF12345',
   rfpType: 'Supplier Payment',
   requestType: 'Regular',
   supplierPayee: 'Demo Supplier',
@@ -26,6 +31,35 @@ test('accepts each configured company', () => {
     }).company,
     'Greenmetal Electric Manufacturing Corp.',
   );
+});
+
+test('requires SOF followed by exactly five digits and normalizes lowercase input', () => {
+  const parsed = requestSchema.parse({ ...validRequest, projectClass: ' sof12345 ' });
+  assert.equal(parsed.projectClass, 'SOF12345');
+  for (const projectClass of ['SOF1234', 'SOF123456', 'SOFABCDE', '12345', 'Plant Maintenance']) {
+    assert.equal(requestSchema.safeParse({ ...validRequest, projectClass }).success, false);
+  }
+});
+
+test('applies the SOF format to returned-request corrections', () => {
+  const input = {
+    requestId: 'fe835b06-227f-4e9e-b4db-101833657814',
+    trackingToken: 'tracking-token-value-that-is-long-enough',
+    correctionNote: 'Updated the SOF number.',
+    corrections: {
+      projectClass: 'sof12345',
+      supplierPayee: 'Demo Supplier',
+      purposeDescription: 'Updated payment purpose.',
+      amount: 1000,
+      requiredPaymentDate: '2026-11-25',
+      requestType: 'Regular' as const,
+    },
+  };
+  const parsed = resubmitSchema.parse(input);
+  assert.equal(parsed.corrections?.projectClass, 'SOF12345');
+  assert.equal(resubmitSchema.safeParse({
+    ...input, corrections: { ...input.corrections, projectClass: 'SOF1234' },
+  }).success, false);
 });
 
 test('rejects companies outside the configured list', () => {
