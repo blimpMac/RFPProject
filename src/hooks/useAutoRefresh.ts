@@ -16,6 +16,7 @@ export function useAutoRefresh(refresh: () => void | Promise<void>, intervalMs =
 
   useEffect(() => {
     let disposed = false;
+    lastRefreshAt.current = Date.now();
     const runIfStale = async () => {
       if (disposed || document.visibilityState !== 'visible' || running.current) return;
       if (Date.now() - lastRefreshAt.current < intervalMs) return;
