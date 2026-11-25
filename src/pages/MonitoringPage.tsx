@@ -145,6 +145,7 @@ export function MonitoringPage() {
           targetBusinessDays={data?.targetBusinessDays ?? 3}
         />
       ) : (
+        <div className={`monitoring-data-table monitoring-data-table-${tab}`}>
         <DataTable
           key={tab}
           rows={data?.rows || []}
@@ -159,6 +160,7 @@ export function MonitoringPage() {
           defaultKeys={defaults[tab]}
           title={tabs.find(([key]) => key === tab)?.[1] || tab}
         />
+        </div>
       )}
     </div>
   );
