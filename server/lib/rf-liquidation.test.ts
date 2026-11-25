@@ -46,7 +46,7 @@ const request = {
   requestorEmail: 'juan@example.com',
   company: 'Greenlight Power Inc.' as const,
   department: 'Finance',
-  projectClass: 'Operations',
+  projectClass: 'SOF12345',
   rfpType: 'RF Liquidation',
   requestType: 'Regular' as const,
   supplierPayee: 'Revolving Fund',
