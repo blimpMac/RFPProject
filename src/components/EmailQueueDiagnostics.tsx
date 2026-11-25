@@ -34,7 +34,7 @@ export function EmailQueueDiagnostics() {
   async function inspect() {
     const value = reference.trim().toUpperCase();
     if (!/^(RFP|CA|RF)-\d{4,}$/.test(value)) {
-      setError('Enter a valid RFP-0001, CA-0001, or RF-0001 reference.');
+      setError('Enter a valid RFP-2026-0001 reference.');
       return;
     }
     setError('');
@@ -82,7 +82,7 @@ export function EmailQueueDiagnostics() {
         <div className="mt-4 flex flex-wrap gap-2">
           <input
             className="input min-w-0 flex-1 sm:max-w-64"
-            placeholder="RFP-0002, CA-0001 or RF-0001"
+            placeholder="RFP-2026-0001"
             aria-label="Request reference"
             value={reference}
             onChange={(e) => setReference(e.target.value)}
