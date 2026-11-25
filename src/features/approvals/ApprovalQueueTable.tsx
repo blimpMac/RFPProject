@@ -35,16 +35,16 @@ export function ApprovalQueueTable({
   onOpenRequest: (request: RfpRequest, mode: 'view' | 'edit') => void;
 }) {
   return (
-    <div className="card overflow-hidden">
-      <div className="finance-table-heading">
+    <div className="card approval-queue-card overflow-hidden">
+      <div className="finance-table-heading approval-queue-heading">
         <div>
           <h2>RFP Requests</h2>
           <p>Choose a request to review details and manage its Finance status.</p>
         </div>
         <span>{visibleRows.length} matching requests</span>
       </div>
-      <div className="finance-table-wrap">
-        <table className="finance-request-table">
+      <div className="finance-table-wrap approval-queue-table-wrap" role="region" aria-label="Approval queue requests" tabIndex={0}>
+        <table className="finance-request-table approval-queue-table">
           <thead>
             <tr>
               <th>Request</th>
