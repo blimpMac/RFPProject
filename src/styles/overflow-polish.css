@@ -514,7 +514,7 @@
     overflow: visible !important;
     page-break-inside: auto !important;
   }
-body:has(.track-page) .track-page .tracking-receipt .fund-tracking-documents,
+  body:has(.track-page) .track-page .tracking-receipt .fund-tracking-documents,
   body:has(.track-page) .track-page .tracking-receipt .fund-tracking-receipt,
   body:has(.track-page) .track-page .tracking-receipt .fund-attached-form,
   body:has(.track-page) .track-page .tracking-receipt .fund-expense-attachment {
@@ -613,3 +613,4 @@ body:has(.track-page) .track-page .tracking-receipt .fund-tracking-documents,
     overflow-wrap: anywhere;
   }
 }
+
