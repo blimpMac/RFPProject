@@ -27,6 +27,9 @@ const stageActions = new Set([
   'member_reject',
   'request_documents',
   'hard_copy_approve',
+  'send_check_approval',
+  'check_releasing',
+  'check_released',
   'liquidation_approve',
   'liquidation_return',
 ]);
@@ -245,6 +248,30 @@ export async function performFinanceStageAction(
       break;
     }
 
+    case 'send_check_approval':
+      requireStatus(currentStatus, ['Processing', 'Check Preparation'], 'Check approval handoff');
+      nextStatus = 'Check Approval';
+      actionLabel = 'Sent for Check Approval';
+      nextWorkflow.check_approval_sent_at = nowIso;
+      nextWorkflow.check_approval_sent_by = actor.email;
+      break;
+
+    case 'check_releasing':
+      requireStatus(currentStatus, ['Check Approval', 'Awaiting Signatory'], 'Check releasing');
+      nextStatus = 'Check Releasing';
+      actionLabel = 'Check Approved for Releasing';
+      nextWorkflow.check_releasing_at = nowIso;
+      nextWorkflow.check_releasing_by = actor.email;
+      break;
+
+    case 'check_released':
+      requireStatus(currentStatus, ['Check Releasing'], 'Check release confirmation');
+      nextStatus = 'Check Released';
+      actionLabel = 'Check Released';
+      nextWorkflow.check_released_at = nowIso;
+      nextWorkflow.check_released_by = actor.email;
+      break;
+
     case 'liquidation_approve':
       requireStatus(currentStatus, ['Liquidation Submitted'], 'Expense liquidation approval');
       nextStatus = 'Liquidation Complete';
@@ -344,6 +371,16 @@ export async function performFinanceStageAction(
       'documentation_required',
       `${rfpNumber} needs supporting documents`,
       { remarks: input.remarks.trim() },
+      nextVersion,
+    );
+  } else if (input.action === 'check_released') {
+    await queueNotifications(
+      db,
+      request,
+      [asText(request.requestor_email)],
+      'check_released',
+      `${rfpNumber} check released`,
+      { remarks: input.remarks.trim() || null },
       nextVersion,
     );
   } else if (input.action === 'liquidation_approve' || input.action === 'liquidation_return') {
