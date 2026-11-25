@@ -122,7 +122,11 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
       tone: 'warning',
     };
   }
-  if (['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'].includes(status)) {
+  if (
+    ['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'].includes(
+      status,
+    )
+  ) {
     const days = elapsedDays(request.department_approval_at || request.submitted_at, now);
     return {
       label: `${status === 'Documentation Required' ? 'Documents' : 'Finance review'} · Day ${days + 1}`,
@@ -188,7 +192,11 @@ export const financeActionOptions = (status: string): Action[] => {
       { value: 'liquidation_return', label: 'Return expense summary for correction' },
     ];
   }
-  if (['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'].includes(status)) {
+  if (
+    ['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'].includes(
+      status,
+    )
+  ) {
     return [
       { value: 'member_approve', label: 'Approve as Finance member' },
       { value: 'member_reject', label: 'Return to Department Head' },
@@ -220,3 +228,4 @@ export const financeActionOptions = (status: string): Action[] => {
   }
   return [];
 };
+
