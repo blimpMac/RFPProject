@@ -38,8 +38,17 @@ test('accepts variable-length numeric SOF values and normalizes lowercase input'
     const parsed = requestSchema.parse({ ...validRequest, projectClass: ' sof' + digits + ' ' });
     assert.equal(parsed.projectClass, 'SOF' + digits);
   }
+
   for (const projectClass of ['SOF', 'SOF12A', 'SOF-12', '12345', 'Plant Maintenance']) {
-    assert.equal(requestSchema.saftest('applies variable-length SOF validation to returned-request corrections', () => {
+    assert.equal(
+      requestSchema.safeParse({ ...validRequest, projectClass }).success,
+      false,
+      'Expected invalid SOF value to be rejected: ' + projectClass,
+    );
+  }
+});
+
+test('applies variable-length SOF validation to returned-request corrections', () => {
   const input = {
     requestId: 'fe835b06-227f-4e9e-b4db-101833657814',
     trackingToken: 'tracking-token-value-that-is-long-enough',
@@ -55,9 +64,13 @@ test('accepts variable-length numeric SOF values and normalizes lowercase input'
   };
   const parsed = resubmitSchema.parse(input);
   assert.equal(parsed.corrections?.projectClass, 'SOF12345678901234567');
-  assert.equal(resubmitSchema.safeParse({
-    ...input, corrections: { ...input.corrections, projectClass: 'SOF12A' },
-  }).success, false);
+  assert.equal(
+    resubmitSchema.safeParse({
+      ...input,
+      corrections: { ...input.corrections, projectClass: 'SOF12A' },
+    }).success,
+    false,
+  );
 });
 
 test('rejects companies outside the configured list', () => {
