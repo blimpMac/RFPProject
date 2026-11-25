@@ -314,7 +314,6 @@
   }
 }
 
-
 /* Finance review view: let the complete RF expense form use the modal width and
    flow in the modal's single scroll area instead of a tiny nested paper preview. */
 .finance-receipt-preview.rf-form-preview {
@@ -421,3 +420,4 @@
     padding: 0.25rem;
   }
 }
+
