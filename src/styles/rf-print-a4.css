@@ -313,3 +313,111 @@
     page: rf-gemcor;
   }
 }
+
+
+/* Finance review view: let the complete RF expense form use the modal width and
+   flow in the modal's single scroll area instead of a tiny nested paper preview. */
+.finance-receipt-preview.rf-form-preview {
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  background: transparent;
+}
+
+.rf-form-preview .rf-form-page {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 1.25rem;
+  overflow: visible;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  box-shadow: none;
+}
+
+.rf-form-preview .rf-workbook-header {
+  min-height: 8rem;
+}
+
+.rf-form-preview .rf-workbook-header img {
+  width: min(18rem, 60%);
+  height: 5rem;
+}
+
+.rf-form-preview .rf-workbook-header h1 {
+  margin-top: 5.25rem;
+  font-size: 1rem;
+}
+
+.rf-form-preview .rf-workbook-fields {
+  gap: 0.5rem 1rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.rf-form-preview .rf-workbook-table th,
+.rf-form-preview .rf-workbook-table td,
+.rf-form-preview.rf-form-gpi .rf-workbook-expenses tbody td,
+.rf-form-preview.rf-form-gemcor .rf-workbook-expenses tbody td {
+  height: auto;
+  min-height: 2rem;
+  padding: 0.4rem;
+  overflow: visible;
+  line-height: 1.25;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.rf-form-preview .rf-workbook-money {
+  white-space: nowrap;
+}
+
+.rf-form-preview .rf-workbook-expense-total,
+.rf-form-preview .rf-workbook-advance-total {
+  width: min(30rem, 100%);
+  grid-template-columns: minmax(0, 1fr) 8rem;
+  margin-top: 0.75rem;
+}
+
+.rf-form-preview .rf-workbook-subtitle {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.rf-form-preview .rf-workbook-reconciliation {
+  width: min(36rem, 100%);
+  margin-top: 1rem;
+}
+
+.rf-form-preview .rf-workbook-reconciliation div {
+  grid-template-columns: minmax(0, 1fr) 8rem;
+}
+
+.rf-form-preview .rf-workbook-reconciliation dt,
+.rf-form-preview .rf-workbook-reconciliation dd {
+  min-height: 2rem;
+  padding: 0.45rem;
+}
+
+.rf-form-preview .rf-workbook-signatures {
+  margin-top: 2rem;
+}
+
+@media (max-width: 700px) {
+  .rf-form-preview .rf-form-page {
+    padding: 0.75rem;
+  }
+
+  .rf-form-preview .rf-workbook-fields div {
+    grid-template-columns: minmax(7rem, 0.7fr) minmax(0, 1fr);
+  }
+
+  .rf-form-preview .rf-workbook-table {
+    font-size: 0.7rem;
+  }
+
+  .rf-form-preview .rf-workbook-table th,
+  .rf-form-preview .rf-workbook-table td {
+    padding: 0.25rem;
+  }
+}
