@@ -52,11 +52,11 @@ test('maps the supported company names to the correct logos', () => {
 });
 
 test('prints CA and RF references in the upper-right number block', () => {
-  const receipt = readFileSync('src/components/DigitalRfpReceipt.tsx', 'utf8');
+  const fundReceipt = readFileSync('src/components/RequestTrackingReceipt.tsx', 'utf8');
   const rfForm = readFileSync('src/components/RfLiquidationPrint.tsx', 'utf8');
-  assert.match(receipt, /reference\.startsWith\('CA-'\).*'CA No\.'/);
-  assert.match(receipt, /reference\.startsWith\('RF-'\).*'RF No\.'/);
-  assert.match(receipt, /reference=\{request\.rfp_number\}/);
+  assert.match(fundReceipt, /isCashAdvance \? 'CA No\.' : 'RF No\.'/);
+  assert.match(fundReceipt, /<strong>\{request\.rfp_number\}<\/strong>/);
+  assert.match(fundReceipt, /reference=\{request\.rfp_number\}/);
   assert.match(rfForm, /className="rf-workbook-reference"/);
   assert.match(rfForm, /<strong>\{reference\}<\/strong>/);
 });
