@@ -3,11 +3,11 @@ import { ArrowLeft, Printer } from 'lucide-react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
 import {
-  DigitalRfpReceipt,
   type DigitalRfpAttachment,
   type DigitalRfpOperations,
   type DigitalRfpWorkflow,
 } from '../components/DigitalRfpReceipt';
+import { RequestTrackingReceipt } from '../components/RequestTrackingReceipt';
 import { Button, Spinner } from '../components/ui';
 import { get } from '../lib/api';
 import type { RfpRequest } from '../types';
@@ -78,7 +78,7 @@ export function DigitalRfpPrintPage() {
           Print / Save PDF
         </Button>
       </div>
-      <DigitalRfpReceipt
+      <RequestTrackingReceipt
         request={request}
         attachments={data!.attachments}
         workflow={workflow}
