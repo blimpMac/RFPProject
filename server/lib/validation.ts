@@ -12,7 +12,7 @@ const sofNumberSchema = z
   .trim()
   .max(160)
   .transform(normalizeSofNumber)
-  .pipe(z.string().regex(/^SOF[0-9]{5}$/u, SOF_NUMBER_FORMAT_MESSAGE));
+  .pipe(z.string().regex(/^SOF[0-9]+$/u, SOF_NUMBER_FORMAT_MESSAGE));
 
 export const allowedMimes = [
   'application/pdf',
