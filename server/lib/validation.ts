@@ -74,7 +74,7 @@ export const requestSchema = z
     requestorEmail: z.string().trim().toLowerCase().email().max(160),
     company: z.enum(companies),
     department: z.string().trim().min(1).max(100),
-    projectClass: sofNumberSchema
+    projectClass: sofNumberSchema,
     rfpType: z.string().trim().min(1).max(100),
     requestType: z.enum(['Regular', 'Emergency']),
     supplierPayee: z.string().trim().min(1).max(180),
@@ -188,7 +188,7 @@ export const resubmitSchema = z.object({
   correctionNote: z.string().trim().min(2).max(1500),
   corrections: z
     .object({
-      projectClass: sofNumberSchema
+      projectClass: sofNumberSchema,
       supplierPayee: z.string().trim().min(1).max(180),
       purposeDescription: z.string().trim().min(5).max(3000),
       amount: z.coerce.number().positive().max(999999999999.99),
