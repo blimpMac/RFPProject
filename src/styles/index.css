@@ -2131,3 +2131,34 @@ body {
     min-width: 58rem;
   }
 }
+.monitoring-data-table {
+  min-width: 0;
+}
+.monitoring-data-table .card {
+  border-radius: 1rem;
+  box-shadow: 0 8px 28px rgba(8, 38, 56, 0.045);
+}
+.monitoring-data-table .table-toolbar {
+  gap: 0.65rem;
+  padding: 1rem 1.15rem;
+}
+.monitoring-data-table .data-grid td {
+  padding-top: 0.8rem;
+  padding-bottom: 0.8rem;
+}
+.monitoring-data-table .data-grid tbody tr:focus-within {
+  outline: 2px solid rgba(8, 126, 164, 0.28);
+  outline-offset: -2px;
+}
+.monitoring-data-table .table-footer {
+  gap: 0.75rem;
+}
+.dark .monitoring-data-table .data-grid tbody tr {
+  background: #0f2532;
+}
+.dark .monitoring-data-table .data-grid tbody tr:nth-child(even) {
+  background: #112a37;
+}
+.dark .monitoring-data-table .data-grid tbody tr:hover {
+  background: #15313e;
+}
