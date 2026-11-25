@@ -26,7 +26,10 @@ test('keeps legacy administrators outside Finance permissions', () => {
   assert.equal(canPerformFinanceStageAction('head_approve', ['finance_reviewer']), false);
   assert.equal(canPerformFinanceStageAction('head_approve', ['super_administrator']), false);
   assert.equal(canPerformFinanceStageAction('member_approve', ['super_administrator']), false);
-  assert.equal(canPerformFinanceStageAction('member_approve', ['super_administrator', 'finance_reviewer']), false);
+  assert.equal(
+    canPerformFinanceStageAction('member_approve', ['super_administrator', 'finance_reviewer']),
+    false,
+  );
 });
 
 test('maps account access levels to workflow roles', () => {
@@ -42,7 +45,6 @@ test('limits department-only access without restricting elevated roles', () => {
   assert.equal(isDepartmentOnly(['finance_reviewer']), false);
 });
 
-
 test('request data routes accept only Finance and Department Head roles', () => {
   const dashboard = readFileSync('server/routes/staff/dashboard.ts', 'utf8');
   const monitoring = readFileSync('server/routes/staff/monitoring.ts', 'utf8');
@@ -54,3 +56,4 @@ test('request data routes accept only Finance and Department Head roles', () => 
   }
   assert.ok(monitoring.includes('specification.roles || requestReadRoles'));
 });
+
