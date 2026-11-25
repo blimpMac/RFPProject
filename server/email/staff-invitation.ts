@@ -88,7 +88,6 @@ export function renderStaffInvitationEmail(input: StaffInvitationEmailInput) {
             <tr>
               <td style="padding:18px 28px;background:#f7f9fb;border-top:1px solid #e4e9ef;color:#667085;font-size:12px;line-height:1.55">
                 <strong style="color:#102a43">RFP Monitoring System</strong><br>
-                Greenlight Power Inc. &bull; Greenmetal Electric Manufacturing Corp.<br>
                 <span style="color:#8793a3">Secure internal access invitation</span>
               </td>
             </tr>
@@ -101,7 +100,6 @@ export function renderStaffInvitationEmail(input: StaffInvitationEmailInput) {
 
   const text = [
     'RFP Monitoring System',
-    'Greenlight Power × GEMCOR',
     '',
     'You have been invited to access the Request for Payment monitoring workflow.',
     '',
