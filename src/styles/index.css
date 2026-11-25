@@ -2002,3 +2002,132 @@ body {
     max-width: 7rem;
   }
 }
+
+/* Dashboard usability pass: clearer hierarchy, compact rows and accessible scrolling. */
+.account-directory {
+  border-color: var(--line);
+  border-radius: 1rem;
+  box-shadow: 0 8px 28px rgba(8, 38, 56, 0.045);
+}
+.account-directory-toolbar {
+  background: #f8fbfc;
+}
+.account-directory-row {
+  min-height: 6.25rem;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  transition: background-color 140ms ease;
+}
+.account-directory-row:hover {
+  background: #f5fafb;
+}
+.account-directory-identity > div:first-child {
+  row-gap: 0.45rem;
+}
+.account-directory-identity > div:first-child p {
+  color: #203b49;
+  font-size: 0.88rem;
+  letter-spacing: -0.01em;
+}
+.account-directory-identity > p {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 0.73rem;
+}
+.account-directory-actions {
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.account-directory-actions .btn {
+  min-height: 2.55rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.75rem;
+}
+.account-directory-list > article + article {
+  border-top: 1px solid var(--line);
+}
+.approval-queue-card {
+  border-radius: 1rem;
+  box-shadow: 0 8px 28px rgba(8, 38, 56, 0.045);
+}
+.approval-queue-heading {
+  background: #fbfdfd;
+  padding: 1rem 1.2rem;
+}
+.approval-queue-heading h2 {
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+}
+.approval-queue-heading p {
+  font-size: 0.74rem;
+}
+.approval-queue-table-wrap {
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.approval-queue-table {
+  min-width: 62rem;
+}
+.approval-queue-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.approval-queue-table tbody tr:focus-within,
+.approval-queue-table tbody tr:hover {
+  background: #f0f8f8;
+}
+.approval-queue-table td {
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+}
+.approval-queue-table td:first-child {
+  min-width: 9rem;
+}
+.approval-queue-table td:nth-child(2) {
+  min-width: 12rem;
+}
+.dark .account-directory-toolbar,
+.dark .approval-queue-heading {
+  border-color: #2a414e;
+  background: #102733;
+}
+.dark .account-directory-row:hover,
+.dark .approval-queue-table tbody tr:hover,
+.dark .approval-queue-table tbody tr:focus-within {
+  background: #15313e;
+}
+.dark .account-directory-identity > div:first-child p {
+  color: #e7eff2;
+}
+@media (max-width: 1279px) {
+  .account-directory-row {
+    align-items: flex-start;
+  }
+  .account-directory-actions {
+    justify-content: flex-start;
+  }
+}
+@media (max-width: 640px) {
+  .account-directory-row {
+    padding: 0.9rem;
+  }
+  .account-directory-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .account-directory-actions .btn {
+    justify-content: center;
+    min-width: 0;
+    white-space: normal;
+  }
+  .approval-queue-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .approval-queue-table {
+    min-width: 58rem;
+  }
+}
