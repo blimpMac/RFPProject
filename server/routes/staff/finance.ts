@@ -34,6 +34,10 @@ export const handleFinanceRoutes: RouteHandler = async ({ event, route, db }) =>
           requestId: input.requestId,
           action: normalizedAction,
           remarks: input.remarks,
+          originalsReceivedDate: input.originalsReceivedDate,
+          documentVerification: input.documentVerification,
+          verificationRemarks: input.verificationRemarks,
+          plannedCheckDate: input.plannedCheckDate,
         },
         {
           email: staff.user.email || '',
