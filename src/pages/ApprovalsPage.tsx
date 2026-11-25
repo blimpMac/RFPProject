@@ -197,8 +197,7 @@ export function ApprovalsPage() {
   const [documentVerification, setDocumentVerification] = useState('');
   const [verificationRemarks, setVerificationRemarks] = useState('');
   const [financeNotes, setFinanceNotes] = useState('');
-  const [processingStatus, setProcessingStatus] = useState('');  const [lateDocuments, setLateDocuments] = useState('');  const [modalMode, setModalMode] = useState<ModalMode>('view');  const [updateBusy, setUpdateBusy] = useState(false);
-  const [notice, setNotice] = useState('');
+  const [processingStatus, setProcessingStatus] = useState('');  const [lateDocuments, setLateDocuments] = useState('');  const [modalMode, setModalMode] = useState<ModalMode>('view');  const [updateBusy, setUpdateBusy] = useState(false);  const [notice, setNotice] = useState('');
   const load = useCallback(
     () =>
       get<Result>('monitoring/requests?page=1&pageSize=200')
@@ -271,10 +270,10 @@ export function ApprovalsPage() {
             .includes(query)) &&
         matchesQueueFocus(request) &&
         (view === 'pending'
-          ? !/paid|liquidation complete|returned to requestor|department rejected/i.test(
+          ? !/paid|check released|payment released|liquidation complete|returned to requestor|department rejected/i.test(
               request.final_status,
             )
-          : /paid|liquidation complete|returned to requestor|department rejected/i.test(
+          : /paid|check released|payment released|liquidation complete|returned to requestor|department rejected/i.test(
               request.final_status,
             )),
     );
@@ -318,7 +317,7 @@ export function ApprovalsPage() {
   const queueCounts = useMemo(() => {
     const activeRows = rows.filter(
       (request) =>
-        !/paid|liquidation complete|returned to requestor|department rejected/i.test(
+        !/paid|check released|payment released|liquidation complete|returned to requestor|department rejected/i.test(
           request.final_status,
         ),
     );
@@ -397,8 +396,7 @@ export function ApprovalsPage() {
   const choices = selected    ? departmentStage && department
       ? [          {
             value: 'department_approve',            label: departmentReturn
-              ? 'Re-approve and return to Finance'
-              : 'Approve and send to Finance',
+              ? 'Re-approve and return to Finance'              : 'Approve and send to Finance',
           },
           { value: 'department_reject', label: 'Return to Requestor for correction' },
         ]
@@ -597,8 +595,7 @@ export function ApprovalsPage() {
       <ApprovalQueueTable
         visibleRows={visibleRows}
         paginatedRows={paginatedRows}
-        view={view}
-        page={page}        pageSize={pageSize}        pageCount={pageCount}
+        view={view}        page={page}        pageSize={pageSize}        pageCount={pageCount}
         finance={finance}
         financeMember={financeMember}        department={department}
         now={now}
