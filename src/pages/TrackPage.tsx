@@ -9,6 +9,11 @@ import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { displayRequestStatus } from '../features/requests/sla';
 import type { FinanceReceipt } from '../../shared/contracts/digital-rfp';
 import type { RfLiquidation } from '../../shared/utils/rf-liquidation';
+import {
+  isValidSofNumber,
+  normalizeSofNumber,
+  SOF_NUMBER_FORMAT_MESSAGE,
+} from '../../shared/utils/sof-number';
 
 type Expense = { date: string; description: string; amount: string };
 type Corrections = {
@@ -141,6 +146,10 @@ export function TrackPage() {
       !corrections.requiredPaymentDate
     ) {
       setError('Complete all corrected payment details before resubmitting.');
+      return;
+    }
+    if (!isValidSofNumber(corrections.projectClass)) {
+      setError(SOF_NUMBER_FORMAT_MESSAGE);
       return;
     }
     setBusy(true);
@@ -364,12 +373,26 @@ export function TrackPage() {
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="text-sm font-semibold">
-              Project / Class
+              SOF #
               <input
                 className="input mt-1 min-w-0 w-full"
+                type="text"
+                required
+                minLength={8}
+                maxLength={8}
+                pattern="SOF[0-9]{5}"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                placeholder="SOF12345"
                 value={corrections.projectClass}
-                onChange={(e) => updateCorrections('projectClass', e.target.value)}
+                onChange={(e) =>
+                  updateCorrections('projectClass', normalizeSofNumber(e.target.value))
+                }
               />
+              <span className="mt-1 block text-xs font-normal text-slate-500">
+                Enter SOF followed by exactly five digits.
+              </span>
             </label>
             <label className="text-sm font-semibold">
               Supplier / Payee
