@@ -28,8 +28,10 @@ import {
   type DigitalRfpAttachment,
   type DigitalRfpOperations,
   type DigitalRfpWorkflow,
+  type DigitalRfpRequest,
 } from '../components/DigitalRfpReceipt';
-import { RequestTrackingReceipt } from '../components/RequestTrackingReceipt';
+import { DigitalRfpReceipt } from '../components/DigitalRfpReceipt';
+import { RfLiquidationPrint } from '../components/RfLiquidationPrint';
 import type { FinanceReceipt } from '../../shared/contracts/digital-rfp';
 import type { RfLiquidation } from '../../shared/utils/rf-liquidation';
 import { normalizeFinanceReceipt } from '../../shared/contracts/digital-rfp';
@@ -67,35 +69,98 @@ function SubmittedRfpForm({ requestId }: { requestId: string }) {
         {error}
       </p>
     );
-  if (!data) return <Spinner label="Loading submitted RFP form" />;
+  if (!data) return <Spinner label="Loading submitted form" />;
 
-  const raw = data.request.raw_record || {};
-  const workflow = (raw.finance_workflow || {}) as DigitalRfpWorkflow;
-  const operations = (raw.finance_operations || {}) as DigitalRfpOperations;
-  const financeReceipt = normalizeFinanceReceipt(raw, {
-    finalStatus: data.request.final_status,
-    plannedCheckDate: data.request.planned_check_date,
-  }) as FinanceReceipt;
+  const request = data.request;
+  const raw = request.raw_record || {};
+  const rfLiquidation = raw.rf_liquidation as RfLiquidation | undefined;
+  const liquidationExpenses =
+    (raw.liquidation_expenses as { date: string; description: string; amount: number }[]) || [];
+  const type = request.rfp_type || '';
+  const isRf = /revolving\s*fund|\bRF\b/i.test(type);
+  const isCa = /cash\s*advance|\bCA\b/i.test(type);
+  const isFund = isRf || isCa;
+  const isRfLiquidation = isRf && /liquidation/i.test(type) && !!rfLiquidation;
+  const title = isRf ? 'Digital RF Form' : isCa ? 'Digital CA Form' : 'Digital RFP Form';
+  const fields: [string, string][] = [
+    ['Reference number', request.rfp_number],
+    ['Requestor', request.requestor_name],
+    ['Requestor email', request.requestor_email],
+    ['Company', request.company || '—'],
+    ['Department', request.department],
+    ['Request type', String(raw.request_type || request.request_type || '—')],
+    ['Payee / custodian', request.supplier_payee],
+    ['Project / class', request.project_class],
+    ['Purpose', request.purpose_description],
+    ['Amount', php.format(request.amount)],
+    ['Required payment date', manilaDate(request.required_payment_date)],
+    ['Department head', request.approving_head],
+    ['Date submitted', manilaDate(request.submitted_at, true)],
+  ];
 
   return (
-    <div
-      className="finance-receipt-preview"
-      aria-label={`Submitted RFP form ${data.request.rfp_number}`}
-    >
-      <RequestTrackingReceipt
-        request={data.request}
-        attachments={data.attachments}
-        workflow={workflow}
-        financeOperations={operations}
-        financeReceipt={financeReceipt}
-        submissionChecklist={raw.submission_checklist || []}
-        liquidationExpenses={
-          (raw.liquidation_expenses as { date: string; description: string; amount: number }[]) ||
-          []
-        }
-        rfLiquidation={raw.rf_liquidation as RfLiquidation | undefined}
-      />
-    </div>
+    <section className="mt-5" aria-labelledby="submitted-request-form-heading">
+      <h3 id="submitted-request-form-heading" className="finance-section-title">
+        {title}
+      </h3>
+      {isRfLiquidation ? (
+        <div className="finance-receipt-preview">
+          <RfLiquidationPrint
+            form={rfLiquidation}
+            company={request.company || ''}
+            department={request.department}
+            departmentHead={request.approving_head}
+            reference={request.rfp_number}
+          />
+        </div>
+      ) : isFund ? (
+        <div className="finance-detail-grid finance-detail-grid-compact">
+          {fields.map(([label, value]) => (
+            <div className="finance-detail" key={label}>
+              <span>{label}</span>
+              <strong>{value || '—'}</strong>
+            </div>
+          ))}
+          {isCa && liquidationExpenses.length > 0 && (
+            <div className="finance-update-wide">
+              <h4 className="font-semibold">Liquidation expenses</h4>
+              <div className="finance-table-wrap mt-2">
+                <table className="finance-request-table">
+                  <thead>
+                    <tr><th>Date</th><th>Description</th><th>Amount</th></tr>
+                  </thead>
+                  <tbody>
+                    {liquidationExpenses.map((expense, index) => (
+                      <tr key={index}>
+                        <td>{expense.date || '—'}</td>
+                        <td>{expense.description || '—'}</td>
+                        <td>{php.format(Number(expense.amount || 0))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="finance-receipt-preview">
+          <DigitalRfpReceipt
+            request={request as unknown as DigitalRfpRequest}
+            attachments={data.attachments}
+            workflow={(raw.finance_workflow || {}) as DigitalRfpWorkflow}
+            financeOperations={(raw.finance_operations || {}) as DigitalRfpOperations}
+            financeReceipt={normalizeFinanceReceipt(raw, {
+              finalStatus: request.final_status,
+              plannedCheckDate: request.planned_check_date,
+            }) as FinanceReceipt}
+            submissionChecklist={(raw.submission_checklist as string[]) || []}
+            liquidationExpenses={liquidationExpenses}
+            rfLiquidation={rfLiquidation}
+          />
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -534,7 +599,7 @@ export function ApprovalsPage() {
       />
       {selected && (
         <Modal
-          title={`Digital RFP · ${selected.rfp_number}`}
+          title={`${/cash\s*advance|\bCA\b/i.test(selected.rfp_type) ? 'Digital CA Form' : /revolving\s*fund|\bRF\b/i.test(selected.rfp_type) ? 'Digital RF Form' : 'Digital RFP Form'} · ${selected.rfp_number}`}
           size="wide"
           onClose={() => setSelected(undefined)}
         >
@@ -585,13 +650,12 @@ export function ApprovalsPage() {
             </p>
           )}
           {modalMode === 'view' && (department || finance) ? (
-            <section className="mt-5" aria-labelledby="submitted-request-form-heading">
-              <h3 id="submitted-request-form-heading" className="finance-section-title">
-                Submitted request form
-              </h3>
+            <>
               <SubmittedRfpForm requestId={selected.id} />
-              <AttachmentPreviewSection requestId={selected.id} />
-            </section>
+              {!/cash\s*advance|revolving\s*fund|\bCA\b|\bRF\b|liquidation/i.test(selected.rfp_type) && (
+                <AttachmentPreviewSection requestId={selected.id} />
+              )}
+            </>
           ) : (
             <>
               <h3 className="finance-section-title">Request overview</h3>

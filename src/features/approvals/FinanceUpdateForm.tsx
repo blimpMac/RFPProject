@@ -112,8 +112,14 @@ export function FinanceUpdateForm({
             onChange={(event) => onProcessingStatusChange(event.target.value)}
           >
             <option value="">Use workflow status</option>
-            {['Check Preparation', 'Check Approval', 'Check Released', 'Paid'].map((status) => (
-              <option key={status}>{status}</option>
+            {[
+              { value: 'Check Approval', label: 'For releasing' },
+              { value: 'Check Released', label: 'Check Released' },
+              { value: 'Paid', label: 'Paid' },
+            ].map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
             ))}
           </select>
         </div>
