@@ -197,8 +197,7 @@ export function ApprovalsPage() {
   const [documentVerification, setDocumentVerification] = useState('');
   const [verificationRemarks, setVerificationRemarks] = useState('');
   const [financeNotes, setFinanceNotes] = useState('');
-  const [processingStatus, setProcessingStatus] = useState('');  const [lateDocuments, setLateDocuments] = useState('');  const [modalMode, setModalMode] = useState<ModalMode>('view');
-  const [updateBusy, setUpdateBusy] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');  const [lateDocuments, setLateDocuments] = useState('');  const [modalMode, setModalMode] = useState<ModalMode>('view');  const [updateBusy, setUpdateBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const load = useCallback(
     () =>
@@ -397,8 +396,7 @@ export function ApprovalsPage() {
   const departmentStage = departmentPending || departmentReturn;
   const choices = selected    ? departmentStage && department
       ? [          {
-            value: 'department_approve',
-            label: departmentReturn
+            value: 'department_approve',            label: departmentReturn
               ? 'Re-approve and return to Finance'
               : 'Approve and send to Finance',
           },
@@ -459,6 +457,11 @@ export function ApprovalsPage() {
           originalsReceivedDate: action === 'member_approve' ? originalsDate : null,
           documentVerification: action === 'member_approve' ? documentVerification : null,
           verificationRemarks: action === 'member_approve' ? verificationRemarks : null,
+          financeRemarks: action === 'member_approve' ? financeNotes : null,
+          lateDocuments:
+            action === 'member_approve'
+              ? lateDocuments.split('\n').map((item) => item.trim()).filter(Boolean)
+              : undefined,
         });
       setSelected(undefined);
       setAction('');
@@ -597,8 +600,7 @@ export function ApprovalsPage() {
         view={view}
         page={page}        pageSize={pageSize}        pageCount={pageCount}
         finance={finance}
-        financeMember={financeMember}
-        department={department}
+        financeMember={financeMember}        department={department}
         now={now}
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
