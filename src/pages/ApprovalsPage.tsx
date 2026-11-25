@@ -104,7 +104,7 @@ function SubmittedRfpForm({ requestId }: { requestId: string }) {
         {title}
       </h3>
       {isRfLiquidation ? (
-        <div className="finance-receipt-preview">
+        <div className="finance-receipt-preview rf-form-preview">
           <RfLiquidationPrint
             form={rfLiquidation}
             company={request.company || ''}
