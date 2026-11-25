@@ -203,25 +203,20 @@ export const financeActionOptions = (status: string): Action[] => {
       { value: 'request_documents', label: 'Request documents / clarification' },
     ];
   }
-  if (status === 'Awaiting Hard Copy Verification') {
-    return [
-      {
-        value: 'hard_copy_approve',
-        label: 'Approve hard copies and start 3-day processing',
-      },
-    ];
-  }
   if (['Approved for Payment', 'Payment Processing'].includes(status)) {
     return [{ value: 'payment_processing', label: 'Start legacy processing' }];
   }
   if (status === 'Processing') {
-    return [{ value: 'check_preparation', label: 'Prepare check and documents' }];
+    return [{ value: 'awaiting_signatory', label: 'Send for check approval' }];
   }
   if (status === 'Check Preparation') {
     return [{ value: 'awaiting_signatory', label: 'Send for check approval' }];
   }
   if (['Check Approval', 'Awaiting Signatory'].includes(status)) {
-    return [{ value: 'check_released', label: 'Record check release' }];
+    return [{ value: 'check_releasing', label: 'Approve check for releasing' }];
+  }
+  if (status === 'Check Releasing') {
+    return [{ value: 'check_released', label: 'Confirm check released' }];
   }
   if (['Check Released', 'Payment Released'].includes(status)) {
     return [{ value: 'payment_released', label: 'Mark payment completed' }];
