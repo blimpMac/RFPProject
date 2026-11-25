@@ -326,17 +326,11 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
       {!embedded && (
         <header className="public-header border-b">
           <div className="public-header-inner mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:gap-5">
-            <div className="brand-lockup" aria-label="GREENLIGHT POWER and GEMCOR">
+            <div className="brand-lockup" aria-label={form.company || 'Company'}>
               <img
                 className="brand-logo"
-                src="/brands/greenlight-power.png"
-                alt="GREENLIGHT POWER"
-              />
-              <span className="h-8 w-px bg-slate-300" aria-hidden="true" />
-              <img
-                className="brand-logo brand-logo-gemcor"
-                src="/brands/gemcor.png"
-                alt="GEMCOR — Greenmetal Electric Manufacturing Corporation"
+                src={/greenmetal|gemcor/i.test(form.company) ? '/brands/gemcor.png' : '/brands/greenlight-power.png'}
+                alt={form.company || 'Select a company'}
               />
             </div>
             <div className="public-header-actions ml-auto flex items-center gap-2">
