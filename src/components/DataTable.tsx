@@ -72,7 +72,8 @@ const omitted = new Set([
   'normalized_department',
   'normalized_rfp_type',
 ]);
-const columnLabel = (key: string) => (key === 'rfp_type' ? 'Type' : labelize(key));
+const columnLabel = (key: string) =>
+  key === 'rfp_type' ? 'Type' : key === 'project_class' ? 'SOF #' : labelize(key);
 const features = tableFeatures({
   columnFilteringFeature,
   columnVisibilityFeature,
