@@ -34,8 +34,6 @@ function accessLabel(accessLevel: AccessLevel) {
 export function renderStaffInvitationEmail(input: StaffInvitationEmailInput) {
   const role = accessLabel(input.accessLevel);
   const inviteUrl = escapeHtml(input.inviteUrl);
-  const greenlightLogo = escapeHtml(`${input.siteUrl}/brands/greenlight-power.png`);
-  const gemcorLogo = escapeHtml(`${input.siteUrl}/brands/gemcor.png`);
   const subject = 'RFP Monitoring System access invitation';
   const preheader = `You have been invited as ${role} for ${input.department}.`;
 
@@ -53,22 +51,8 @@ export function renderStaffInvitationEmail(input: StaffInvitationEmailInput) {
           <table role="presentation" width="620" cellspacing="0" cellpadding="0" style="width:100%;max-width:620px;background:#ffffff;border:1px solid #d8e0e8;border-radius:16px;overflow:hidden;box-shadow:0 10px 32px rgba(16,42,67,.10)">
             <tr><td style="height:6px;background:#2f855a;font-size:0">&nbsp;</td></tr>
             <tr>
-              <td style="padding:22px 28px 18px;background:#ffffff;border-bottom:1px solid #e5eaf0">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                  <tr>
-                    <td valign="middle" style="width:50%;padding-right:12px">
-                      <img src="${greenlightLogo}" alt="Greenlight Power Inc." style="display:block;max-width:165px;max-height:48px;width:auto;height:auto">
-                    </td>
-                    <td valign="middle" align="right" style="width:50%;padding-left:12px">
-                      <img src="${gemcorLogo}" alt="GEMCOR" style="display:inline-block;max-width:145px;max-height:48px;width:auto;height:auto">
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            <tr>
               <td style="padding:22px 28px;background:#102a43;color:#ffffff">
-                <div style="font-size:12px;letter-spacing:.11em;text-transform:uppercase;color:#b9c8d8;font-weight:700">Greenlight Power × GEMCOR</div>
+                
                 <div style="margin-top:6px;font-size:20px;font-weight:800;line-height:1.3">RFP Monitoring System</div>
               </td>
             </tr>
