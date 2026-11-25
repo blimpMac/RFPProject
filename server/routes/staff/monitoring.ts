@@ -86,7 +86,7 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
     const targetBusinessDays =
       Number.isFinite(configuredTarget) && configuredTarget >= 0
         ? Math.min(30, Math.floor(configuredTarget))
-        : 2;
+        : 3;
 
     type FinanceSlaLog = {
       id: string;
