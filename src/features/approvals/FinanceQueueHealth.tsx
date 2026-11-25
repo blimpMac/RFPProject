@@ -1,10 +1,9 @@
-import { CalendarClock, FileCheck2, ShieldCheck, WalletCards } from 'lucide-react';
+import { CalendarClock, FileCheck2, WalletCards } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { QueueFocus } from './workflow';
 
 export type FinanceQueueCounts = {
   member: number;
-  head: number;
   hardcopy: number;
   processing: number;
   overdue: number;
@@ -29,15 +28,6 @@ export function FinanceQueueHealth({
           label="Finance member review"
           detail="At least one member approval"
           onClick={() => onFocus('member')}
-        />
-        <QueueHealthCard
-          active={queueFocus === 'head'}
-          count={counts.head}
-          icon={<ShieldCheck size={18} />}
-          label="Finance Head review"
-          detail="Super Administrator decision"
-          tone="violet"
-          onClick={() => onFocus('head')}
         />
         <QueueHealthCard
           active={queueFocus === 'hardcopy'}
