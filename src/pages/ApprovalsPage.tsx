@@ -217,16 +217,13 @@ export function ApprovalsPage() {
   }, [load]);
   useAutoRefresh(load);
   const finance = roles.some((role) => ['super_administrator', 'finance_reviewer'].includes(role));
-  const financeHead = roles.includes('super_administrator');
-  const department = roles.some((role) =>
-    ['super_administrator', 'administrator', 'department_approver'].includes(role),
-  );
+  const financeMember = roles.includes('finance_reviewer') && !roles.includes('super_administrator');
+  const department = roles.includes('department_approver');
   const matchesQueueFocus = useCallback(
     (request: RfpRequest) => {
       if (queueFocus === 'all') return true;
       if (queueFocus === 'member')
-        return ['Pending Finance Review', 'Documentation Required'].includes(request.final_status);
-      if (queueFocus === 'head') return request.final_status === 'Pending Finance Head Review';
+        return ['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'].includes(request.final_status);
       if (queueFocus === 'hardcopy')
         return request.final_status === 'Awaiting Hard Copy Verification';
       if (queueFocus === 'processing')
@@ -319,10 +316,8 @@ export function ApprovalsPage() {
     );
     return {
       member: activeRows.filter((request) =>
-        ['Pending Finance Review', 'Documentation Required'].includes(request.final_status),
+        ['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'].includes(request.final_status),
       ).length,
-      head: activeRows.filter((request) => request.final_status === 'Pending Finance Head Review')
-        .length,
       hardcopy: activeRows.filter(
         (request) => request.final_status === 'Awaiting Hard Copy Verification',
       ).length,
@@ -396,10 +391,10 @@ export function ApprovalsPage() {
               ? 'Re-approve and return to Finance'
               : 'Approve and send to Finance',
           },
-          { value: 'department_reject', label: 'Return to Requestor' },
+          { value: 'department_reject', label: 'Return to Requestor for correction' },
         ]
-      : finance
-        ? financeActionOptions(selected.final_status, financeHead)
+      : financeMember
+        ? financeActionOptions(selected.final_status)
         : []
     : [];
   const departmentAction = action.startsWith('department_');
@@ -412,7 +407,7 @@ export function ApprovalsPage() {
       return;
     }
     if (
-      ['department_reject', 'member_reject', 'head_reject', 'request_documents'].includes(action) &&
+      ['department_reject', 'member_reject', 'request_documents'].includes(action) &&
       !remarks.trim()
     ) {
       setError('Remarks are required for return, decline, or document-request actions.');
@@ -591,6 +586,7 @@ export function ApprovalsPage() {
         pageSize={pageSize}
         pageCount={pageCount}
         finance={finance}
+        financeMember={financeMember}
         department={department}
         now={now}
         onPageChange={setPage}
@@ -681,7 +677,6 @@ export function ApprovalsPage() {
                     'Finance member review',
                     financeWorkflow(selected).member_status || selected.finance_review,
                   ],
-                  ['Finance head review', financeWorkflow(selected).head_status || 'Pending'],
                   ['Hard-copy approval', financeWorkflow(selected).hard_copy_status || 'Pending'],
                   [
                     '3-day processing due',
@@ -711,7 +706,7 @@ export function ApprovalsPage() {
               <AttachmentPreviewSection requestId={selected.id} />
             </>
           )}
-          {finance && modalMode === 'edit' && (
+          {financeMember && modalMode === 'edit' && (
             <FinanceUpdateForm
               request={selected}
               originalsDate={originalsDate}
@@ -741,7 +736,7 @@ export function ApprovalsPage() {
               remarks={remarks}
               departmentAction={departmentAction}
               busy={busy}
-              finance={finance}
+              finance={financeMember}
               department={department}
               onActionChange={setAction}
               onRemarksChange={setRemarks}
