@@ -1,7 +1,9 @@
 import { addPhilippineWorkingDaysToDate, nextPhilippineWorkingDay } from './philippine-holidays.js';
-/** Philippine calendar-day SLA. Day 1 is the receipt date before 3:00 PM;
- * receipts at/after 3:00 PM count as Day 1 the following calendar day.
- * Day 3 is the end of the third counted day (Asia/Manila, UTC+08:00).
+/**
+ * Philippine working-day SLA. Day 1 is the receipt date before 3:00 PM if it
+ * is a working day; receipts at/after 3:00 PM start on the next working day.
+ * Saturdays, Sundays, and nationwide non-working holidays are excluded.
+ * Day 3 is the end of the third counted working day (Asia/Manila).
  */
 const DAY_MS = 86_400_000;
 const formatter = new Intl.DateTimeFormat('en-GB', {
