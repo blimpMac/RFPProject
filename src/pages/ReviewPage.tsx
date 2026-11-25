@@ -32,9 +32,7 @@ export function ReviewPage() {
   const [searchParams] = useSearchParams();
   const preferredAction = searchParams.get('action');
   const [selectedAction, setSelectedAction] = useState<'approve' | 'return' | null>(
-    preferredAction === 'approve' || preferredAction === 'return'
-      ? preferredAction
-      : null,
+    preferredAction === 'approve' || preferredAction === 'return' ? preferredAction : null,
   );
   const [data, setData] = useState<Review>();
   const [remarks, setRemarks] = useState('');
@@ -43,9 +41,7 @@ export function ReviewPage() {
   const [done, setDone] = useState('');
   useEffect(() => {
     setSelectedAction(
-      preferredAction === 'approve' || preferredAction === 'return'
-        ? preferredAction
-        : null,
+      preferredAction === 'approve' || preferredAction === 'return' ? preferredAction : null,
     );
     setError('');
     setDone('');
@@ -169,7 +165,11 @@ export function ReviewPage() {
           >
             {(
               [
-                { value: 'approve', label: 'Approve and send to Finance', note: 'Forward to Finance Members' },
+                {
+                  value: 'approve',
+                  label: 'Approve and send to Finance',
+                  note: 'Forward to Finance Members',
+                },
                 { value: 'return', label: 'Return to Requestor', note: 'Request corrections' },
               ] as const
             ).map((item) => (
@@ -232,3 +232,4 @@ export function ReviewPage() {
     </main>
   );
 }
+
