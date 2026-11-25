@@ -78,11 +78,16 @@ export function FinanceSlaSection({
       const employee = grouped.get(key);
       if (!employee) continue;
       employee.approvedRequests += 1;
-      const amount = typeof row.amount === 'number'
-        ? row.amount
-        : row.amount === null || row.amount === ''
-          ? Number.NaN
-          : Number(String(row.amount).replace(/,/g, '').replace(/^₱\\s*/, ''));
+      const amount =
+        typeof row.amount === 'number'
+          ? row.amount
+          : row.amount === null || row.amount === ''
+            ? Number.NaN
+            : Number(
+                String(row.amount)
+                  .replace(/,/g, '')
+                  .replace(/^₱\\s*/, ''),
+              );
       if (Number.isFinite(amount)) {
         employee.approvedAmount += amount;
         employee.amountRecords += 1;
@@ -91,7 +96,8 @@ export function FinanceSlaSection({
     return [...grouped.values()].sort((left, right) => left.name.localeCompare(right.name));
   }, [rows]);
 
-  const formatAmount = (amount: number) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
+  const formatAmount = (amount: number) =>
+    new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
 
   const totals = useMemo(
     () =>
@@ -121,7 +127,11 @@ export function FinanceSlaSection({
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Metric label="Measured approvals" value={measured} detail="Within or outside SLA" />
-          <Metric label="Within SLA" value={totals.within} detail="Approved on or before deadline" />
+          <Metric
+            label="Within SLA"
+            value={totals.within}
+            detail="Approved on or before deadline"
+          />
           <Metric label="Outside SLA" value={totals.outside} detail="Approved after deadline" />
           <Metric
             label="Compliance rate"
@@ -196,7 +206,8 @@ export function FinanceSlaSection({
         <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
           <h3 className="font-semibold">Approved amount per Finance employee</h3>
           <p className="mt-1 text-xs text-slate-500">
-            Total request value is attributed to the employee on the latest Finance approval for each unique RFP. Re-approvals are not counted twice.
+            Total request value is attributed to the employee on the latest Finance approval for
+            each unique RFP. Re-approvals are not counted twice.
           </p>
         </div>
         {employees.length ? (
@@ -213,10 +224,14 @@ export function FinanceSlaSection({
                 {employees.map((employee) => (
                   <tr key={employee.key}>
                     <td className="px-5 py-3">
-                      <p className="font-semibold text-slate-800 dark:text-slate-100">{employee.name}</p>
+                      <p className="font-semibold text-slate-800 dark:text-slate-100">
+                        {employee.name}
+                      </p>
                       <p className="mt-0.5 text-xs text-slate-500">{employee.email || '—'}</p>
                     </td>
-                    <td className="px-4 py-3 text-center tabular-nums">{employee.approvedRequests}</td>
+                    <td className="px-4 py-3 text-center tabular-nums">
+                      {employee.approvedRequests}
+                    </td>
                     <td className="px-5 py-3 text-right font-semibold tabular-nums">
                       {employee.amountRecords ? formatAmount(employee.approvedAmount) : '—'}
                     </td>
@@ -226,7 +241,9 @@ export function FinanceSlaSection({
             </table>
           </div>
         ) : (
-          <p className="px-5 py-8 text-center text-sm text-slate-500">No approved Finance requests to total yet.</p>
+          <p className="px-5 py-8 text-center text-sm text-slate-500">
+            No approved Finance requests to total yet.
+          </p>
         )}
       </section>
 
@@ -282,7 +299,15 @@ export function FinanceSlaSection({
   );
 }
 
-function Metric({ label, value, detail }: { label: string; value: number | string; detail: string }) {
+function Metric({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: number | string;
+  detail: string;
+}) {
   return (
     <article className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/40">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
@@ -307,8 +332,11 @@ function SlaStatus({ status }: { status: FinanceSlaEntry['status'] }) {
     unmeasurable: 'Not measurable',
   }[status];
   return (
-    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${classes}`}>
+    <span
+      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${classes}`}
+    >
       {label}
     </span>
   );
 }
+
