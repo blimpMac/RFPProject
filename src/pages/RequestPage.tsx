@@ -18,6 +18,11 @@ import { supabase } from '../lib/supabase';
 import type { PublicOptions } from '../types';
 import { companies } from '../../shared/constants/companies';
 import { isAfterManilaCutoff, manilaReceiptSchedule } from '../../shared/utils/processing-sla';
+import {
+  isValidSofNumber,
+  normalizeSofNumber,
+  SOF_NUMBER_FORMAT_MESSAGE,
+} from '../../shared/utils/sof-number';
 
 type FormState = {
   requestorName: string;
@@ -133,6 +138,10 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
       setError(
         'Complete every required field and choose a department with an active Approving Head.',
       );
+      return;
+    }
+    if (!isValidSofNumber(form.projectClass)) {
+      setError(SOF_NUMBER_FORMAT_MESSAGE);
       return;
     }
     if (form.requestorName.trim().split(/\s+/u).length < 2) {
@@ -414,11 +423,30 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
               title="Payment details"
               description="Classify the request, identify the payee, and provide the amount and date needed."
             />
-            <Field
-              label="Project / Class"
-              value={form.projectClass}
-              onChange={(v) => update('projectClass', v)}
-            />
+            <div className="field">
+              <label htmlFor="sof-number">
+                SOF # <span aria-hidden="true" className="text-red-600">*</span>
+              </label>
+              <input
+                id="sof-number"
+                className="input"
+                type="text"
+                required
+                minLength={8}
+                maxLength={8}
+                pattern="SOF[0-9]{5}"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                placeholder="SOF12345"
+                aria-describedby="sof-number-help"
+                value={form.projectClass}
+                onChange={(e) => update('projectClass', normalizeSofNumber(e.target.value))}
+              />
+              <p id="sof-number-help" className="mt-1 text-xs text-slate-500">
+                Enter SOF followed by exactly five digits (for example, SOF12345).
+              </p>
+            </div>
             <Select
               label="Type"
               value={form.rfpType}
