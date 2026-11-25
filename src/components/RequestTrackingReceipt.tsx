@@ -63,7 +63,7 @@ function FundTrackingReceipt({ request, liquidationExpenses = [], rfLiquidation 
             label={rfLiquidation ? 'RF custodian' : 'Payee / custodian'}
             value={rfLiquidation?.custodianName || request.supplier_payee}
           />
-          <Field label="Project / SOF" value={rfLiquidation?.projectSof || request.project_class} />
+          <Field label="SOF #" value={rfLiquidation?.projectSof || request.project_class} />
           <Field
             label={rfSummary ? 'Total expenses / replenishment' : 'Amount'}
             value={php.format(rfSummary?.expenses ?? request.amount)}
