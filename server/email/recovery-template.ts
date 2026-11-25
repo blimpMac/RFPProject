@@ -49,7 +49,7 @@ export function renderRecoveryEmail(actionLink: string) {
             </div>
           </td></tr>
           <tr><td style="border-top:1px solid #e8edf0;background:#f8fafb;padding:22px 34px">
-            <p style="margin:0;font-size:12px;line-height:19px;color:#637987">RFP Monitoring System — GPI / GEMCOR. Never reply with your password or forward this recovery email.</p>
+            <p style="margin:0;font-size:12px;line-height:19px;color:#637987">RFP Monitoring System. Never reply with your password or forward this recovery email.</p>
           </td></tr>
         </table>
       </td></tr>
