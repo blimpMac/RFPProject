@@ -38,6 +38,8 @@ export const handleFinanceRoutes: RouteHandler = async ({ event, route, db }) =>
           documentVerification: input.documentVerification,
           verificationRemarks: input.verificationRemarks,
           plannedCheckDate: input.plannedCheckDate,
+          financeRemarks: input.financeRemarks,
+          lateDocuments: input.lateDocuments,
         },
         {
           email: staff.user.email || '',
