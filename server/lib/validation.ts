@@ -1,8 +1,4 @@
 import { z } from 'zod';
-import {
-  normalizeSofNumber,
-  SOF_NUMBER_FORMAT_MESSAGE,
-} from '../../shared/utils/sof-number.js';
 const toCentavos = (amount: number) => Math.round(amount * 100);
 const rfExpenseRowsPerForm = (company: string) => (/greenmetal|gemcor/i.test(company) ? 35 : 49);
 
@@ -11,8 +7,15 @@ const sofNumberSchema = z
   .string()
   .trim()
   .max(160)
-  .transform(normalizeSofNumber)
-  .pipe(z.string().regex(/^SOF[0-9]+$/u, SOF_NUMBER_FORMAT_MESSAGE));
+  .transform((value) => value.toUpperCase().replace(/\s+/gu, ''))
+  .pipe(
+    z
+      .string()
+      .regex(
+        /^SOF[0-9]+$/u,
+        'Enter SOF followed by digits. The number of digits may vary (for example, SOF12, SOF123, or SOF12345678901234567).',
+      ),
+  );
 
 export const allowedMimes = [
   'application/pdf',
