@@ -43,6 +43,12 @@ export function FinanceUpdateForm({
   onFinanceNotesChange: (value: string) => void;
   onSave: () => void;
 }) {
+  const combinedApproval = [
+    'Pending Finance Review',
+    'Documentation Required',
+    'Pending Finance Head Review',
+  ].includes(request.final_status);
+
   return (
     <section className="finance-update-section">
       <h3 className="finance-section-title">Finance updates</h3>
@@ -150,13 +156,15 @@ export function FinanceUpdateForm({
       </div>
       <div className="finance-update-footer">
         <p>
-          Every RFP must record received hard copies and a Complete verification after Finance Head
-          approval. The 3-day processing clock starts only when a Finance member approves this
-          hard-copy gate.
+          {combinedApproval
+            ? 'Complete the original-document receipt details above, then choose “Approve as Finance member” below. One action will record receipt, verify the documents and start the 3-day processing clock.'
+            : 'Original-document receipt and verification are recorded here. Any later changes are added to the approval log.'}
         </p>
-        <Button onClick={onSave} disabled={busy}>
-          {busy ? <Spinner label="Saving" /> : 'Save Finance updates'}
-        </Button>
+        {!combinedApproval && (
+          <Button onClick={onSave} disabled={busy}>
+            {busy ? <Spinner label="Saving" /> : 'Save Finance updates'}
+          </Button>
+        )}
       </div>
     </section>
   );
