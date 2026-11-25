@@ -18,11 +18,8 @@ export const isDepartmentOnly = (roles: string[]) =>
 export const canAccessFinance = (roles: string[]) =>
   roles.some((role) => ['super_administrator', 'finance_reviewer'].includes(role));
 
-export const canActAsFinanceHead = (roles: string[]) => roles.includes('super_administrator');
-
 export const canPerformFinanceStageAction = (action: string, roles: string[]) => {
-  if (!canAccessFinance(roles)) return false;
-  if (['head_approve', 'head_reject'].includes(action)) return canActAsFinanceHead(roles);
+  if (!roles.includes('finance_reviewer') || roles.includes('super_administrator')) return false;
   return [
     'member_approve',
     'member_reject',
