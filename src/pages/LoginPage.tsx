@@ -34,8 +34,14 @@ export function LoginPage() {
 
   return (
     <main className="flex min-h-screen flex-col bg-slate-100">
-      <header className="flex items-center justify-end px-4 py-4 sm:px-8">
-        <ThemeToggle compact />
+      <header className="staff-login-header flex items-center justify-between gap-4 px-4 py-4 sm:px-8">
+        <Link to="/" aria-label="Back to request form" className="staff-login-brand">
+          <img src="/brands/greenlight-power.png" alt="Greenlight Power Inc." />
+        </Link>
+        <div className="flex items-center gap-3">
+          <span className="staff-login-header-label">Staff Login</span>
+          <ThemeToggle compact />
+        </div>
       </header>
 
       <section className="staff-login-stage grid flex-1 place-items-center px-4 py-6 sm:py-8">
