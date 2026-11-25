@@ -79,19 +79,25 @@ export function SettingsPage() {
   if (loading) return <Spinner label="Loading accounts" />;
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Account Management</h1>
-          <p className="mt-1 max-w-3xl text-sm text-slate-500">
-            Manage Finance Members and Department Heads, including which request-type emails each
-            Finance Member receives. Only the Finance Manager can change these checklists.
-          </p>
+      <section className="account-page-hero">
+        <div className="account-page-heading">
+          <div>
+            <p className="eyebrow">Administration / Access control</p>
+            <h1>Account Management</h1>
+            <p>Manage staff access, department ownership, login emails and Finance notification rules.</p>
+          </div>
+          <Button onClick={() => setAccount('new')}>
+            <UserPlus size={16} />
+            Add account
+          </Button>
         </div>
-        <Button onClick={() => setAccount('new')}>
-          <UserPlus size={16} />
-          Add account
-        </Button>
-      </div>
+        <div className="account-summary-grid" aria-label="Account summary">
+          <article><span>Total accounts</span><strong>{users.length}</strong><small>Excluding your own login</small></article>
+          <article><span>Active accounts</span><strong>{users.filter((user) => user.active).length}</strong><small>Currently enabled</small></article>
+          <article><span>Finance Members</span><strong>{users.filter((user) => user.accessLevel === 'staff').length}</strong><small>Finance processing access</small></article>
+          <article><span>Department Heads</span><strong>{users.filter((user) => user.accessLevel === 'approver').length}</strong><small>Department approval access</small></article>
+        </div>
+      </section>
       {error && (
         <p className="rounded bg-red-50 p-3 text-sm text-red-700" role="alert">
           {error}
@@ -102,8 +108,8 @@ export function SettingsPage() {
           {notice}
         </p>
       )}
-      <section className="card account-directory overflow-hidden" aria-label="Account directory">
-        <div className="account-directory-toolbar grid gap-3 border-b p-4 md:grid-cols-[minmax(14rem,1fr)_12rem_12rem]">
+      <section className="account-directory card overflow-hidden" aria-label="Account directory">
+        <div className="account-directory-toolbar grid gap-3 border-b p-4 lg:grid-cols-[minmax(18rem,1fr)_13rem_13rem]">
           <div className="field">
             <label htmlFor="account-search">Search</label>
             <div className="relative">
@@ -147,7 +153,7 @@ export function SettingsPage() {
             </select>
           </div>
         </div>
-        <div className="account-directory-list divide-y">
+        <div className="account-directory-list">
           {paginatedUsers.map((user) => (
             <AccountRow
               key={user.id}
