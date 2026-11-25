@@ -14,7 +14,10 @@ export const handleFinanceRoutes: RouteHandler = async ({ event, route, db }) =>
     ensureMethod(event, 'POST');
     const staff = await requireStaff(event, financeActionRoles);
     if (staff.roles.includes('super_administrator')) {
-      throw new HttpError(403, 'Finance Head accounts can monitor requests but cannot perform Finance workflow actions.');
+      throw new HttpError(
+        403,
+        'Finance Head accounts can monitor requests but cannot perform Finance workflow actions.',
+      );
     }
     const input = financeSchema.parse(readJson(event));
     const normalizedAction =
@@ -60,7 +63,10 @@ export const handleFinanceRoutes: RouteHandler = async ({ event, route, db }) =>
     ensureMethod(event, 'POST');
     const staff = await requireStaff(event, financeActionRoles);
     if (staff.roles.includes('super_administrator')) {
-      throw new HttpError(403, 'Finance Head accounts can monitor requests but cannot perform Finance workflow actions.');
+      throw new HttpError(
+        403,
+        'Finance Head accounts can monitor requests but cannot perform Finance workflow actions.',
+      );
     }
     const input = financeUpdateSchema.parse(readJson(event));
     let current = await db.from('rfp_requests').select('*').eq('id', input.requestId).single();
@@ -249,3 +255,4 @@ export const handleFinanceRoutes: RouteHandler = async ({ event, route, db }) =>
 
   return undefined;
 };
+
