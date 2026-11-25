@@ -77,8 +77,8 @@ function SubmittedRfpForm({ requestId }: { requestId: string }) {
   const liquidationExpenses =
     (raw.liquidation_expenses as { date: string; description: string; amount: number }[]) || [];
   const type = request.rfp_type || '';
-  const isRf = /revolving\\s*fund|\\bRF\\b/i.test(type);
-  const isCa = /cash\\s*advance|\\bCA\\b/i.test(type);
+  const isRf = /revolving\s*fund|\bRF\b/i.test(type);
+  const isCa = /cash\s*advance|\bCA\b/i.test(type);
   const isFund = isRf || isCa;
   const isRfLiquidation = isRf && /liquidation/i.test(type) && !!rfLiquidation;
   const title = isRf ? 'Digital RF Form' : isCa ? 'Digital CA Form' : 'Digital RFP Form';
@@ -652,7 +652,7 @@ export function ApprovalsPage() {
           {modalMode === 'view' && (department || finance) ? (
             <>
               <SubmittedRfpForm requestId={selected.id} />
-              {!/cash\\s*advance|revolving\\s*fund|\\bCA\\b|\\bRF\\b|liquidation/i.test(selected.rfp_type) && (
+              {!/cash\s*advance|revolving\s*fund|\bCA\b|\bRF\b|liquidation/i.test(selected.rfp_type) && (
                 <AttachmentPreviewSection requestId={selected.id} />
               )}
             </>
