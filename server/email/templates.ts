@@ -168,7 +168,7 @@ export function renderEmail(
       subject: `${request.rfp_number} is processing`,
       html: brandedShell(
         `${rfp} is processing`,
-        `<p>Hard-copy verification is approved and the 3-day Finance processing clock has started.</p>${digitalReceipt(request, siteUrl)}<div style="margin:20px 0;padding:14px 16px;background:#edf8f2;border-radius:8px"><strong>3-day processing deadline:</strong> ${escape(payload.processingDueAt || payload.plannedCheckDate || 'To be confirmed')}</div>${remarks}`,
+        `<p>Finance Member approval and original-document receipt verification are complete. The 3-day Finance processing clock has started, and this request is ready for Check Approval.</p>${digitalReceipt(request, siteUrl)}<div style="margin:20px 0;padding:14px 16px;background:#edf8f2;border-radius:8px"><strong>3-day processing deadline:</strong> ${escape(payload.processingDueAt || payload.plannedCheckDate || 'To be confirmed')}</div>${remarks}`,
       ),
     };
   if (template === 'finance_returned')
