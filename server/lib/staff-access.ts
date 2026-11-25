@@ -11,9 +11,7 @@ export const normalizeDepartment = (value: string | null | undefined) =>
 
 export const isDepartmentOnly = (roles: string[]) =>
   roles.includes('department_approver') &&
-  !roles.some((role) =>
-    ['super_administrator', 'finance_reviewer'].includes(role),
-  );
+  !roles.some((role) => ['super_administrator', 'finance_reviewer'].includes(role));
 
 export const canAccessFinance = (roles: string[]) =>
   roles.some((role) => ['super_administrator', 'finance_reviewer'].includes(role));
@@ -36,3 +34,4 @@ export const canAccessDepartment = (
 ) =>
   Boolean(normalizeDepartment(staffDepartment)) &&
   normalizeDepartment(staffDepartment) === normalizeDepartment(requestDepartment);
+
