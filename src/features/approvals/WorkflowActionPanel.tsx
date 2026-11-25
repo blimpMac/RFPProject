@@ -5,7 +5,6 @@ import type { Action } from './workflow';
 const workflowSteps = [
   'Submit RFP / Department Head review',
   'Finance Member review',
-  'Finance Head approval',
   'Hard-copy receipt and verification',
   '3-day processing window (3 PM Philippine-time cutoff)',
   'Check preparation and approval',
