@@ -59,3 +59,16 @@ export function nextPhilippineWorkingDay(day: string, includeToday = true): stri
   }
   return new Date(cursor).toISOString().slice(0, 10);
 }
+
+export function philippineWorkingDaysBetween(fromDay: string, toDay: string): number {
+  const [fromYear, fromMonth, fromDate] = fromDay.split('-').map(Number);
+  const [toYear, toMonth, toDate] = toDay.split('-').map(Number);
+  let cursor = Date.UTC(fromYear, fromMonth - 1, fromDate) + 86_400_000;
+  const end = Date.UTC(toYear, toMonth - 1, toDate);
+  let count = 0;
+  while (cursor <= end) {
+    if (isPhilippineWorkingDay(new Date(cursor + 12 * 60 * 60 * 1000))) count += 1;
+    cursor += 86_400_000;
+  }
+  return count;
+}
