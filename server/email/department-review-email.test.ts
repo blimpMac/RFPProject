@@ -107,3 +107,20 @@ test('digital RFP receipt uses the full email column without orphan rows', () =>
   assert.match(email.html, /table-layout:fixed/);
   assert.doesNotMatch(email.html, /<\/table>\s*<tr\b/iu);
 });
+test('email branding follows the selected company without combined Greenlight and Gemcor branding', () => {
+  const greenlight = renderEmail('submission_received', request, {}, url, []);
+  assert.match(greenlight.html, /\/brands\/greenlight-power\.png/);
+  assert.match(greenlight.html, /Greenlight Power Inc\./);
+  assert.doesNotMatch(greenlight.html, /GREENLIGHT POWER\s*&times;\s*GEMCOR/i);
+
+  const gemcor = renderEmail(
+    'submission_received',
+    { ...request, company: 'Greenmetal Electric Manufacturing Corp.' },
+    {},
+    url,
+    [],
+  );
+  assert.match(gemcor.html, /\/brands\/gemcor\.png/);
+  assert.match(gemcor.html, /Greenmetal Electric Manufacturing Corp\./);
+  assert.doesNotMatch(gemcor.html, /GREENLIGHT POWER\s*&times;\s*GEMCOR/i);
+});
