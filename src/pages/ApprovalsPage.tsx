@@ -611,13 +611,15 @@ export function ApprovalsPage() {
               </p>
               {finance && (
                 <>
-                  <Button
-                    variant="secondary"
-                    onClick={() => openRequest(selected, modalMode === 'view' ? 'edit' : 'view')}
-                  >
-                    {modalMode === 'view' ? <Pencil size={16} /> : <Eye size={16} />}
-                    {modalMode === 'view' ? 'Edit receipt' : 'View receipt'}
-                  </Button>
+                  {financeMember && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => openRequest(selected, modalMode === 'view' ? 'edit' : 'view')}
+                    >
+                      {modalMode === 'view' ? <Pencil size={16} /> : <Eye size={16} />}
+                      {modalMode === 'view' ? 'Edit receipt' : 'View receipt'}
+                    </Button>
+                  )}
                   <Button
                     variant="secondary"
                     onClick={() =>
