@@ -14,6 +14,8 @@ type FinanceStageInput = {
   documentVerification?: 'Complete' | 'Incomplete' | null;
   verificationRemarks?: string | null;
   plannedCheckDate?: string | null;
+  financeRemarks?: string | null;
+  lateDocuments?: string[];
 };
 
 type FinanceActor = {
@@ -163,6 +165,28 @@ export async function performFinanceStageAction(
         updated_at: nowIso,
         updated_by: actor.email,
       };
+      const receipt = asRecord(raw.finance_receipt);
+      const receiptHardCopy = asRecord(receipt.hard_copy);
+      const receiptProcessing = asRecord(receipt.processing);
+      raw.finance_receipt = {
+        ...receipt,
+        hard_copy: {
+          ...receiptHardCopy,
+          received_date: input.originalsReceivedDate,
+          status: 'Complete',
+          remarks: asText(input.verificationRemarks) || null,
+          verified_by: actor.email,
+          verified_at: nowIso,
+        },
+        processing: {
+          ...receiptProcessing,
+          target_release_date: input.plannedCheckDate || schedule.day3,
+          status: 'Processing',
+        },
+        late_documents: input.lateDocuments || receipt.late_documents || [],
+        updated_at: nowIso,
+        updated_by: actor.email,
+      };
       nextStatus = 'Check Approval';
       actionLabel = 'Finance Member Approved · Documents Received · Processing Started';
       nextWorkflow.member_status = 'Approved';
@@ -179,7 +203,8 @@ export async function performFinanceStageAction(
       updateFields.finance_review = 'Approved';
       updateFields.finance_review_at = nowIso;
       updateFields.finance_reviewed_by = actor.userId;
-      updateFields.finance_remarks = input.remarks.trim() || request.finance_remarks || null;
+      updateFields.finance_remarks =
+        asText(input.financeRemarks) || input.remarks.trim() || request.finance_remarks || null;
       updateFields.planned_check_date = input.plannedCheckDate || schedule.day3;
       raw.finance_operations = operations;
       break;
