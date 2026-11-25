@@ -415,7 +415,9 @@ export function DocumentsPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-lg font-semibold text-[#173f6b] dark:text-sky-200">{group.rfpNumber}</h2>
+                    <h2 className="text-lg font-semibold text-[#173f6b] dark:text-sky-200">
+                      {group.rfpNumber}
+                    </h2>
                     <StatusBadge>{group.finalStatus}</StatusBadge>
                   </div>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
@@ -459,7 +461,10 @@ export function DocumentsPage() {
                     <FileText size={20} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-slate-900 dark:text-slate-100" title={document.original_filename}>
+                    <p
+                      className="truncate font-medium text-slate-900 dark:text-slate-100"
+                      title={document.original_filename}
+                    >
                       {document.original_filename}
                     </p>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -557,7 +562,9 @@ function RequestDetail({
 }) {
   return (
     <div>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</dt>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        {label}
+      </dt>
       <dd className="mt-1 flex min-w-0 items-center gap-1.5 break-words text-slate-800 dark:text-slate-100">
         {icon}
         {value}
@@ -565,3 +572,4 @@ function RequestDetail({
     </div>
   );
 }
+
