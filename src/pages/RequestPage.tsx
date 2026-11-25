@@ -352,7 +352,7 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
             : 'page-enter mx-auto w-full max-w-5xl flex-1 px-4 py-8'
         }
       >
-        <div className="mb-6">
+        <div className="request-page-intro mb-6">
           <p className="text-sm font-bold uppercase tracking-[0.14em] text-[#315c93]">
             Payment request
           </p>
