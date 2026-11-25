@@ -31,8 +31,8 @@ export function ReviewPage() {
   const { token = '' } = useParams();
   const [searchParams] = useSearchParams();
   const preferredAction = searchParams.get('action');
-  const [selectedAction, setSelectedAction] = useState<'approve' | 'reject' | 'return' | null>(
-    preferredAction === 'approve' || preferredAction === 'reject' || preferredAction === 'return'
+  const [selectedAction, setSelectedAction] = useState<'approve' | 'return' | null>(
+    preferredAction === 'approve' || preferredAction === 'return'
       ? preferredAction
       : null,
   );
@@ -43,7 +43,7 @@ export function ReviewPage() {
   const [done, setDone] = useState('');
   useEffect(() => {
     setSelectedAction(
-      preferredAction === 'approve' || preferredAction === 'reject' || preferredAction === 'return'
+      preferredAction === 'approve' || preferredAction === 'return'
         ? preferredAction
         : null,
     );
@@ -63,11 +63,11 @@ export function ReviewPage() {
   }, [token, preferredAction]);
   const decide = async () => {
     if (!selectedAction) {
-      setError('Select Approve, Reject or Return for Correction first.');
+      setError('Select Approve and send to Finance or Return to Requestor for correction.');
       return;
     }
     if (selectedAction !== 'approve' && !remarks.trim()) {
-      setError('Remarks are required for a rejection or correction return.');
+      setError('Remarks are required when returning a request for correction.');
       return;
     }
     const decision = selectedAction;
@@ -100,9 +100,7 @@ export function ReviewPage() {
             This request was{' '}
             {done === 'approve'
               ? 'approved and sent to Finance'
-              : done === 'return'
-                ? 'returned to the requestor for correction under the same reference number'
-                : 'rejected and returned to the requestor'}
+              : 'returned to the requestor for correction under the same reference number'}
             .
           </p>
         </div>
@@ -171,9 +169,8 @@ export function ReviewPage() {
           >
             {(
               [
-                { value: 'approve', label: 'Approve', note: 'Forward to Finance' },
-                { value: 'reject', label: 'Reject', note: 'Decline the request' },
-                { value: 'return', label: 'Return for Correction', note: 'Request changes' },
+                { value: 'approve', label: 'Approve and send to Finance', note: 'Forward to Finance Members' },
+                { value: 'return', label: 'Return to Requestor', note: 'Request corrections' },
               ] as const
             ).map((item) => (
               <button
@@ -199,7 +196,7 @@ export function ReviewPage() {
           <label className="mt-4 block text-sm font-semibold" htmlFor="review-remarks">
             Remarks{' '}
             <span className="font-normal text-slate-500">
-              ({selectedAction === 'approve' ? 'optional' : 'required for Reject / Return'})
+              ({selectedAction === 'approve' ? 'optional' : 'required for return'})
             </span>
           </label>
           <textarea
@@ -218,7 +215,7 @@ export function ReviewPage() {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <span className="text-xs text-slate-600">
               {selectedAction
-                ? `Selected: ${selectedAction === 'return' ? 'Return for Correction' : selectedAction === 'approve' ? 'Approve' : 'Reject'}`
+                ? `Selected: ${selectedAction === 'return' ? 'Return to Requestor' : 'Approve and send to Finance'}`
                 : 'Select an action above'}
             </span>
             <Button
