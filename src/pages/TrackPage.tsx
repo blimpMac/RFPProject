@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { get, post } from '../lib/api';
 import { manilaDate, php } from '../lib/format';
 import { Button, Spinner, StatusBadge } from '../components/ui';
-import { DigitalRfpReceipt } from '../components/DigitalRfpReceipt';
+import { RequestTrackingReceipt } from '../components/RequestTrackingReceipt';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { displayRequestStatus } from '../features/requests/sla';
 import type { FinanceReceipt } from '../../shared/contracts/digital-rfp';
@@ -467,7 +467,7 @@ export function TrackPage() {
             </Button>
           </div>
           <div className="tracking-receipt">
-            <DigitalRfpReceipt
+            <RequestTrackingReceipt
               request={r}
               attachments={data!.attachments}
               workflow={data!.workflow}
