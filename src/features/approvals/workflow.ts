@@ -52,6 +52,13 @@ function elapsedDays(value: string | null, now: number) {
 export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
   const status = request.final_status;
   const processingDue = financeWorkflow(request).processing_due_at;
+  if (status === 'Check Released') {
+    return {
+      label: 'Check released',
+      detail: 'The check has been released and the 3-day processing SLA is complete',
+      tone: 'good',
+    };
+  }
   if (
     processingDue &&
     !/paid|check released|payment released|returned to requestor|department rejected|liquidation/i.test(status)
@@ -69,12 +76,18 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
       };
     }
     const currentDay = Math.max(0, philippineWorkingDaysBetween(schedule.day1, today) + 1);
+    const stageLabel =
+      status === 'Check Approval'
+        ? 'Check Approval'
+        : status === 'Check Releasing'
+          ? 'Check Releasing'
+          : 'Processing';
     return {
       label:
         currentDay === 0
-          ? 'Processing · Day 1 tomorrow'
-          : `Processing · Day ${Math.min(3, currentDay)} of 3`,
-      detail: `Day 1: ${schedule.day1} · Day 3 deadline: ${schedule.day3} (Philippine time)`,
+          ? `${stageLabel} · Day 1 tomorrow`
+          : `${stageLabel} · Day ${Math.min(3, currentDay)} of 3`,
+      detail: `Day 1: ${schedule.day1} · Day 3 deadline: ${schedule.day3} (Philippine working days)`,
       tone: currentDay >= 3 ? 'warning' : 'good',
     };
   }
