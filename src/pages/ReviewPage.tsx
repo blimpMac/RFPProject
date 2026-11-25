@@ -143,7 +143,7 @@ export function ReviewPage() {
             ['Requestor', `${r.requestor_name} (${r.requestor_email})`],
             ['Company', r.company || 'Not recorded'],
             ['Department', r.department],
-            ['Project / Class', r.project_class],
+            ['SOF #', r.project_class],
             ['Type', r.rfp_type],
             ['Type of Request', r.request_type || 'Not recorded'],
             ['Supplier / Payee', r.supplier_payee],
