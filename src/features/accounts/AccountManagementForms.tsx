@@ -33,8 +33,8 @@ export function AccountRow({
       ? 'Department Head'
       : 'Finance Member';
   return (
-    <article className="flex flex-col gap-3 p-4 xl:flex-row xl:items-center">
-      <div className="min-w-0 flex-1">
+    <article className="account-directory-row flex flex-col gap-3 p-4 xl:flex-row xl:items-center">
+      <div className="account-directory-identity min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-semibold">{user.fullName || 'Account'}</p>
           <StatusBadge>{accessLabel}</StatusBadge>
@@ -63,7 +63,7 @@ export function AccountRow({
           </p>
         )}
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="account-directory-actions flex flex-wrap gap-2">
         {user.accessLevel === 'staff' && !isSuperAdministrator && (
           <Button variant="secondary" disabled={busy} onClick={onNotifications}>
             <BellRing size={16} />
