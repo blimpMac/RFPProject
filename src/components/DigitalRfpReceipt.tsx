@@ -171,7 +171,7 @@ export function DigitalRfpReceipt({
               <ReferenceRow label="Requestor" value={request.requestor_name} />
               <ReferenceRow label="Payee / Supplier" value={request.supplier_payee} />
               <ReferenceRow label="Purpose" value={request.purpose_description} />
-              <ReferenceRow label="Project / Cost Center" value={request.project_class} />
+              <ReferenceRow label="SOF #" value={request.project_class} />
               <ReferenceRow label="Company" value={request.company || brand.name} />
             </div>
             <div>
