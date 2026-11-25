@@ -204,6 +204,14 @@ export const financeActionOptions = (status: string): Action[] => {
       { value: 'request_documents', label: 'Request documents / clarification' },
     ];
   }
+  if (status === 'Awaiting Hard Copy Verification') {
+    return [
+      {
+        value: 'hard_copy_approve',
+        label: 'Approve hard copies and start processing (existing requests)',
+      },
+    ];
+  }
   if (['Approved for Payment', 'Payment Processing'].includes(status)) {
     return [{ value: 'payment_processing', label: 'Start legacy processing' }];
   }
