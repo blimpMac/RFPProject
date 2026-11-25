@@ -378,20 +378,20 @@ export function TrackPage() {
                 className="input mt-1 min-w-0 w-full"
                 type="text"
                 required
-                minLength={8}
-                maxLength={8}
-                pattern="SOF[0-9]{5}"
+                minLength={4}
+                maxLength={160}
+                pattern="SOF[0-9]+"
                 autoCapitalize="characters"
                 autoCorrect="off"
                 spellCheck={false}
-                placeholder="SOF12345"
+                placeholder="SOF12"
                 value={corrections.projectClass}
                 onChange={(e) =>
                   updateCorrections('projectClass', normalizeSofNumber(e.target.value))
                 }
               />
               <span className="mt-1 block text-xs font-normal text-slate-500">
-                Enter SOF followed by exactly five digits.
+                Enter SOF followed by digits. The digit count may vary.
               </span>
             </label>
             <label className="text-sm font-semibold">
