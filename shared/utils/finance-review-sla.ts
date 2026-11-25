@@ -1,28 +1,11 @@
+import { addPhilippineWorkingDaysToDate, isPhilippineWorkingDay, manilaDateKey } from './philippine-holidays.js';
+
 const DAY_MS = 86_400_000;
 const NOON_MS = 12 * 60 * 60 * 1000;
 
-const weekdayFormatter = new Intl.DateTimeFormat('en-US', {
-  timeZone: 'Asia/Manila',
-  weekday: 'short',
-});
-
-const datePartsFormatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Asia/Manila',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-});
-
-function isManilaBusinessDay(timestamp: number) {
-  const weekday = weekdayFormatter.format(new Date(timestamp));
-  return weekday !== 'Sat' && weekday !== 'Sun';
-}
-
 function manilaDateOrdinal(timestamp: number) {
-  const parts = datePartsFormatter.formatToParts(new Date(timestamp));
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((entry) => entry.type === type)?.value);
-  return Date.UTC(part('year'), part('month') - 1, part('day'));
+  const [year, month, day] = manilaDateKey(timestamp).split('-').map(Number);
+  return Date.UTC(year, month - 1, day);
 }
 
 /**
@@ -38,13 +21,19 @@ export function addManilaBusinessDays(
     throw new RangeError('A valid Finance handoff timestamp is required.');
   }
 
-  let cursor = received.getTime();
+  const receivedDate = manilaDateKey(received);
+  const [year, month, day] = receivedDate.split('-').map(Number);
+  let cursor = Date.UTC(year, month - 1, day);
   let remaining = Math.max(0, Math.floor(businessDays));
   while (remaining > 0) {
     cursor += DAY_MS;
-    if (isManilaBusinessDay(cursor)) remaining -= 1;
+    if (isPhilippineWorkingDay(new Date(cursor + NOON_MS))) remaining -= 1;
   }
-  return new Date(cursor).toISOString();
+  const resultDay = new Date(cursor).toISOString().slice(0, 10);
+  const [resultYear, resultMonth, resultDate] = resultDay.split('-').map(Number);
+  const manilaOffsetMs = 8 * 60 * 60 * 1000;
+  const receivedTimeOfDay = ((received.getTime() + manilaOffsetMs) % DAY_MS + DAY_MS) % DAY_MS;
+  return new Date(Date.UTC(resultYear, resultMonth - 1, resultDate) + receivedTimeOfDay - manilaOffsetMs).toISOString();
 }
 
 /**
@@ -66,7 +55,7 @@ export function manilaBusinessDaysElapsed(
   const lastDate = manilaDateOrdinal(completed);
   let elapsed = 0;
   for (let date = firstDate + DAY_MS; date <= lastDate; date += DAY_MS) {
-    if (isManilaBusinessDay(date + NOON_MS)) elapsed += 1;
+    if (isPhilippineWorkingDay(new Date(date + NOON_MS))) elapsed += 1;
   }
   return elapsed;
 }
