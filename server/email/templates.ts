@@ -47,8 +47,10 @@ const companyLogoPath = (request: RequestRecord) =>
 const digitalReceipt = (request: RequestRecord, siteUrl: string) =>
   `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;margin:22px 0;border-collapse:separate;border-spacing:0;border:1px solid #cbd5df;border-radius:10px;overflow:hidden"><tbody><tr><td style="padding:14px 16px;background:#f7f9fb;border-bottom:1px solid #dce3ea"><img src="${escape(`${siteUrl}${companyLogoPath(request)}`)}" alt="${escape(request.company || 'Company')}" width="170" style="display:block;width:170px;max-width:100%;height:auto;max-height:55px;object-fit:contain"><div style="margin-top:10px;font-size:17px;font-weight:800;color:#153b59">REQUEST FOR PAYMENT (RFP)</div><div style="font-size:12px;color:#667085">Digital RFP – System Generated · ${escape(request.rfp_number)}</div></td></tr><tr><td style="padding:14px 16px 18px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;background:#f8fafc;border:1px solid #e4e9ef"><tbody>${summaryRows(request)}${row('Type', request.rfp_type || '—')}${row('SOF #', request.project_class || '—')}${row('Purpose', request.purpose_description || '—')}</tbody></table></td></tr></tbody></table>`;
 
-function shell(title: string, body: string, preheader = title) {
-  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head><body style="width:100%;margin:0;background:#eef2f6;font-family:Arial,sans-serif;color:#172033"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${escape(preheader)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;background:#eef2f6"><tbody><tr><td align="center" style="padding:32px 12px"><table role="presentation" width="620" cellspacing="0" cellpadding="0" style="width:100%;max-width:620px;table-layout:fixed;background:#fff;border:1px solid #d8e0e8;border-radius:14px;overflow:hidden;box-shadow:0 8px 30px rgba(16,42,67,.08)"><tbody><tr><td style="height:5px;background:#2f855a;font-size:0">&nbsp;</td></tr><tr><td style="padding:22px 28px;background:#102a43;color:#fff"><div style="font-size:18px;font-weight:700">RFP Monitoring System</div><div style="margin-top:4px;color:#c9d5e2;font-size:12px">GREENLIGHT POWER &times; GEMCOR</div></td></tr><tr><td style="padding:30px 28px"><h1 style="font-size:23px;line-height:1.3;margin:0 0 18px;color:#102a43">${escape(title)}</h1>${body}</td></tr><tr><td style="padding:18px 28px;background:#f7f9fb;border-top:1px solid #e4e9ef;color:#667085;font-size:12px;line-height:1.55">This is an automated workflow notification. Please keep the RFP number in the subject when following up.<br><span style="color:#8793a3">RFP Monitoring System &bull; Asia/Manila</span></td></tr></tbody></table></td></tr></tbody></table></body></html>`;
+function shell(title: string, body: string, preheader = title, request?: RequestRecord) {
+  const logo = companyLogoPath(request || {});
+  const company = String(request?.company || 'Greenlight Power Inc.');
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head><body style="width:100%;margin:0;background:#eef2f6;font-family:Arial,sans-serif;color:#172033"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${escape(preheader)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;background:#eef2f6"><tbody><tr><td align="center" style="padding:32px 12px"><table role="presentation" width="620" cellspacing="0" cellpadding="0" style="width:100%;max-width:620px;table-layout:fixed;background:#fff;border:1px solid #d8e0e8;border-radius:14px;overflow:hidden;box-shadow:0 8px 30px rgba(16,42,67,.08)"><tbody><tr><td style="height:5px;background:#2f855a;font-size:0">&nbsp;</td></tr><tr><td style="padding:22px 28px;background:#102a43;color:#fff"><img src="${escape(`${request ? '' : ''}`)}" alt="" style="display:none"><img src="${escape(`${process.env?.SITE_URL || ''}${logo}`)}" alt="${escape(company)}" width="190" style="display:block;width:190px;max-width:100%;height:auto;max-height:58px;object-fit:contain"><div style="margin-top:8px;color:#c9d5e2;font-size:12px">${escape(company)}</div></td></tr><tr><td style="padding:30px 28px"><h1 style="font-size:23px;line-height:1.3;margin:0 0 18px;color:#102a43">${escape(title)}</h1>${body}</td></tr><tr><td style="padding:18px 28px;background:#f7f9fb;border-top:1px solid #e4e9ef;color:#667085;font-size:12px;line-height:1.55">This is an automated workflow notification. Please keep the RFP number in the subject when following up.<br><span style="color:#8793a3">${escape(company)} &bull; Asia/Manila</span></td></tr></tbody></table></td></tr></tbody></table></body></html>`;
 }
 
 export function renderEmail(
@@ -59,6 +61,8 @@ export function renderEmail(
   attachmentLinks: EmailAttachmentLink[],
 ) {
   const rfp = escape(request.rfp_number);
+  const brandedShell = (title: string, body: string, preheader = title) =>
+    brandedShell(title, body, preheader, request);
   const remarks = payload.remarks
     ? `<div style="margin:20px 0;padding:14px 16px;border-left:4px solid #d39b22;background:#fff8e5"><strong>Remarks</strong><div style="margin-top:5px">${escape(payload.remarks)}</div></div>`
     : '';
@@ -69,7 +73,7 @@ export function renderEmail(
         : '';
     return {
       subject: `${request.rfp_number} was submitted`,
-      html: shell(
+      html: brandedShell(
         `${rfp} received`,
         `<p>Your payment request was submitted successfully and is now waiting for department approval.</p>${summary(request)}${trackingUrl ? `<p style="margin-top:24px">${button('View live request status', trackingUrl, '#315c93')}</p>` : ''}<p style="font-size:12px;color:#667085;line-height:1.5">Keep your private tracking link secure. It can be used to view updates and respond to correction requests.</p>`,
         `Request ${request.rfp_number} was received`,
@@ -96,7 +100,7 @@ export function renderEmail(
       : '';
     return {
       subject: `Review required: ${request.rfp_number}`,
-      html: shell(
+      html: brandedShell(
         `Department approval — ${rfp}`,
         `<p style="margin-top:0;color:#526174">A payment request is ready for your review.</p>${details}${correction}${documents}<p style="margin-top:24px;font-size:14px;font-weight:700;color:#102a43">Choose your next action:</p>${reviewUrl ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;margin:10px 0 16px;table-layout:fixed;border-collapse:collapse"><tbody><tr><td width="22%" style="width:50%;padding:4px 4px 4px 0">${actionButton('Approve and send to Finance', actionUrl('approve'), '#1f6f4a')}</td><td width="50%" style="width:50%;padding:4px 0 4px 4px">${actionButton('Return to Requestor', actionUrl('return'), '#315c93')}</td></tr></tbody></table><p style="font-size:12px;line-height:1.5">If the buttons are not clickable, copy this secure review URL into your browser:<br><a style="overflow-wrap:anywhere;color:#315c93" href="${escape(reviewUrl)}">${escape(reviewUrl)}</a></p>` : previewOnly ? '<div style="padding:14px;border:1px solid #f0ce81;background:#fff8e7;border-radius:8px;color:#664d03;font-size:13px"><strong>DEMO PREVIEW ONLY — not an actual Department Head invitation.</strong><p style="margin-bottom:8px">The buttons below are examples and deliberately have no active links. To approve a real RFP, open the notification generated for that pending request. Super Admins can regenerate expired links in Email Delivery Diagnostics.</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;table-layout:fixed;border-collapse:collapse"><tbody><tr><td width="50%" style="padding:4px 4px 4px 0"><span style="display:block;background:#1f6f4a;color:white;padding:10px 6px;border-radius:6px;text-align:center;white-space:nowrap">Approve and send to Finance</span></td><td width="50%" style="padding:4px 0 4px 4px"><span style="display:block;background:#315c93;color:white;padding:10px 6px;border-radius:6px;text-align:center;white-space:nowrap">Return to Requestor</span></td></tr></tbody></table></div>' : '<p style="color:#b42318">No active review link was included. Ask the system administrator to regenerate the Department Head approval invitation.</p>'}<p style="font-size:12px;color:#667085;line-height:1.5">For your security, these buttons only open the review page. Check the request and confirm your choice there. A returned request goes back to the requestor for correction. If your link is expired or already used, sign in to your Department Head workspace or contact the administrator for a new invitation.</p>`,
         `Review required for ${request.rfp_number}`,
@@ -106,7 +110,7 @@ export function renderEmail(
   if (template === 'department_approved')
     return {
       subject: `${request.rfp_number} approved by department`,
-      html: shell(
+      html: brandedShell(
         `${rfp} approved by Department Head`,
         `<p>Your Department Head approved this request. Finance members have been notified and your digital RFP receipt is below.</p>${digitalReceipt(request, siteUrl)}${remarks}`,
       ),
@@ -114,7 +118,7 @@ export function renderEmail(
   if (template === 'department_rejected')
     return {
       subject: `${request.rfp_number} requires your attention`,
-      html: shell(
+      html: brandedShell(
         `${rfp} not approved`,
         `<p>Your request is not approved. Please provide the requested documentation or clarify the reason.</p>${summary(request)}${remarks}`,
       ),
@@ -122,7 +126,7 @@ export function renderEmail(
   if (template === 'department_returned')
     return {
       subject: `${request.rfp_number} returned for correction`,
-      html: shell(
+      html: brandedShell(
         `${rfp} returned for correction`,
         `<p>Your Department Head returned this request for correction. Update the request through your private tracking link, then resubmit it using the same RFP number.</p>${summary(request)}${remarks}`,
       ),
@@ -130,7 +134,7 @@ export function renderEmail(
   if (template === 'finance_review_required')
     return {
       subject: `Finance member review required: ${request.rfp_number}`,
-      html: shell(
+      html: brandedShell(
         `Finance member review — ${rfp}`,
         `<p>Department approval is complete. Finance members have been notified to review this request.</p>${digitalReceipt(request, siteUrl)}<p style="margin-top:24px">${button('Open Finance approvals', `${siteUrl}/admin/approvals`, '#315c93')}</p>`,
       ),
@@ -138,7 +142,7 @@ export function renderEmail(
   if (template === 'finance_head_review_required')
     return {
       subject: `Finance Head review required: ${request.rfp_number}`,
-      html: shell(
+      html: brandedShell(
         `Finance Head approval — ${rfp}`,
         `<p>A Finance member approved this request. The Super Administrator, acting as Finance Head, must now approve or decline it.</p>${digitalReceipt(request, siteUrl)}${remarks}<p style="margin-top:24px">${button('Open Finance approvals', `${siteUrl}/admin/approvals`, '#315c93')}</p>`,
       ),
@@ -146,7 +150,7 @@ export function renderEmail(
   if (template === 'finance_head_rejected')
     return {
       subject: `${request.rfp_number} declined by Finance Head`,
-      html: shell(
+      html: brandedShell(
         `${rfp} declined by Finance Head`,
         `<p>The Finance Head declined this request and returned it directly to you.</p>${digitalReceipt(request, siteUrl)}${remarks}`,
       ),
@@ -154,7 +158,7 @@ export function renderEmail(
   if (template === 'hard_copy_verification_required')
     return {
       subject: `Hard-copy verification required: ${request.rfp_number}`,
-      html: shell(
+      html: brandedShell(
         `Hard-copy verification — ${rfp}`,
         `<p>The Finance Head approved this request. Finance must receive and manually verify the hard-copy documents in the website before actual processing can start.</p>${digitalReceipt(request, siteUrl)}${remarks}<p style="margin-top:24px">${button('Open Finance approvals', `${siteUrl}/admin/approvals`, '#315c93')}</p>`,
       ),
@@ -162,7 +166,7 @@ export function renderEmail(
   if (template === 'processing_started')
     return {
       subject: `${request.rfp_number} is processing`,
-      html: shell(
+      html: brandedShell(
         `${rfp} is processing`,
         `<p>Hard-copy verification is approved and the 3-day Finance processing clock has started.</p>${digitalReceipt(request, siteUrl)}<div style="margin:20px 0;padding:14px 16px;background:#edf8f2;border-radius:8px"><strong>3-day processing deadline:</strong> ${escape(payload.processingDueAt || payload.plannedCheckDate || 'To be confirmed')}</div>${remarks}`,
       ),
@@ -170,7 +174,7 @@ export function renderEmail(
   if (template === 'finance_returned')
     return {
       subject: `${request.rfp_number} returned for attention`,
-      html: shell(
+      html: brandedShell(
         `${rfp} returned`,
         `<p>Finance returned this request to the Department Approver for correction or clarification.</p>${summary(request)}${remarks}<p style="margin-top:24px">${button('Open department re-review', `${siteUrl}/admin/approvals`, '#315c93')}</p>`,
       ),
@@ -178,7 +182,7 @@ export function renderEmail(
   if (template === 'documentation_required')
     return {
       subject: `${request.rfp_number} needs documentation`,
-      html: shell(
+      html: brandedShell(
         `Documentation required for ${rfp}`,
         `<p>Finance needs additional supporting documentation before continuing.</p>${summary(request)}${remarks}`,
       ),
@@ -186,7 +190,7 @@ export function renderEmail(
   if (template === 'check_released')
     return {
       subject: `${request.rfp_number} check released`,
-      html: shell(
+      html: brandedShell(
         `Check released for ${rfp}`,
         `<p>The check has been released. Please coordinate with the responsible finance staff for receipt.</p>${summary(request)}`,
       ),
@@ -198,7 +202,7 @@ export function renderEmail(
         : '';
     return {
       subject: `Expense liquidation required: ${request.rfp_number}`,
-      html: shell(
+      html: brandedShell(
         `Expense liquidation due — ${rfp}`,
         `<p>Three days have elapsed since payment for your Cash Advance or Revolving Fund. Submit the itemized expense dates, descriptions and amounts through your private tracking page.</p>${summary(request)}${trackingUrl ? `<p style="margin-top:24px">${button('Submit expense liquidation', trackingUrl, '#315c93')}</p>` : '<p>Use the private monitoring link from your submission receipt to submit the expense list.</p>'}`,
       ),
@@ -207,7 +211,7 @@ export function renderEmail(
   if (template === 'liquidation_submitted')
     return {
       subject: `Expense liquidation review required: ${request.rfp_number}`,
-      html: shell(
+      html: brandedShell(
         `Expense liquidation submitted — ${rfp}`,
         `<p>The requestor has submitted ${escape(payload.expenseCount || 0)} expense line(s) for Finance verification.</p>${summary(request)}<p style="margin-top:24px">${button('Review liquidation in Finance', `${siteUrl}/admin/approvals`, '#315c93')}</p>`,
       ),
@@ -215,7 +219,7 @@ export function renderEmail(
   if (template === 'liquidation_approved')
     return {
       subject: `Expense liquidation completed: ${request.rfp_number}`,
-      html: shell(
+      html: brandedShell(
         `Expense liquidation completed — ${rfp}`,
         `<p>Finance has reviewed and approved the submitted expense details.</p>${summary(request)}`,
       ),
@@ -223,7 +227,7 @@ export function renderEmail(
   if (template === 'liquidation_returned')
     return {
       subject: `Expense liquidation requires corrections: ${request.rfp_number}`,
-      html: shell(
+      html: brandedShell(
         `Expense liquidation returned — ${rfp}`,
         `<p>Finance returned your liquidation for corrections. Open your private monitoring link and resubmit the expense list.</p>${summary(request)}${remarks}`,
       ),
@@ -231,14 +235,14 @@ export function renderEmail(
   if (template === 'payment_completed')
     return {
       subject: `${request.rfp_number} payment completed`,
-      html: shell(
+      html: brandedShell(
         `Payment completed for ${rfp}`,
         `<p>The payment process is complete and this request is now marked Paid.</p>${summary(request)}`,
       ),
     };
   return {
     subject: `${request.rfp_number} finance update`,
-    html: shell(
+    html: brandedShell(
       `Update for ${rfp}`,
       `<p>The finance review status has changed.</p>${summary(request)}${remarks}`,
     ),
