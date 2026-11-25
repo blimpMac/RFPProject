@@ -102,8 +102,8 @@ export function SettingsPage() {
           {notice}
         </p>
       )}
-      <section className="card overflow-hidden">
-        <div className="grid gap-3 border-b p-4 md:grid-cols-[minmax(14rem,1fr)_12rem_12rem]">
+      <section className="card account-directory overflow-hidden" aria-label="Account directory">
+        <div className="account-directory-toolbar grid gap-3 border-b p-4 md:grid-cols-[minmax(14rem,1fr)_12rem_12rem]">
           <div className="field">
             <label htmlFor="account-search">Search</label>
             <div className="relative">
@@ -147,7 +147,7 @@ export function SettingsPage() {
             </select>
           </div>
         </div>
-        <div className="divide-y">
+        <div className="account-directory-list divide-y">
           {paginatedUsers.map((user) => (
             <AccountRow
               key={user.id}
