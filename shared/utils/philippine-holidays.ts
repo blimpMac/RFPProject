@@ -1,13 +1,13 @@
 /**
  * Philippine nationwide non-working holidays used by Finance SLA calculations.
  * Source calendars: Proclamation No. 1006 (2026) and Proclamation No. 1427 (2027).
- * Eid'l Fitr / Eid'l Adha are intentionally not guessed; add them when separately
- * proclaimed by the Office of the President.
+ * Eid'l Fitr / Eid'l Adha 2026 dates are included from separate proclamations.
+ * Add future-year Eid dates when separately proclaimed by the Office of the President.
  */
 const PH_NON_WORKING_HOLIDAYS = new Set([
   // 2026 — regular and special non-working days
-  '2026-01-01', '2026-02-17', '2026-04-02', '2026-04-03', '2026-04-04',
-  '2026-04-09', '2026-05-01', '2026-06-12', '2026-08-21', '2026-08-31',
+  '2026-01-01', '2026-02-17', '2026-03-20', '2026-04-02', '2026-04-03', '2026-04-04',
+  '2026-04-09', '2026-05-01', '2026-05-27', '2026-06-12', '2026-08-21', '2026-08-31',
   '2026-11-01', '2026-11-02', '2026-11-30', '2026-12-08', '2026-12-24',
   '2026-12-25', '2026-12-30', '2026-12-31',
   // 2027 — regular and special non-working days
