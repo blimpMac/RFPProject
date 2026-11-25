@@ -206,11 +206,8 @@ export const financeActionOptions = (status: string): Action[] => {
   if (['Approved for Payment', 'Payment Processing'].includes(status)) {
     return [{ value: 'payment_processing', label: 'Start legacy processing' }];
   }
-  if (status === 'Processing') {
-    return [{ value: 'awaiting_signatory', label: 'Send for check approval' }];
-  }
-  if (status === 'Check Preparation') {
-    return [{ value: 'awaiting_signatory', label: 'Send for check approval' }];
+  if (['Processing', 'Check Preparation'].includes(status)) {
+    return [{ value: 'send_check_approval', label: 'Send for check approval' }];
   }
   if (['Check Approval', 'Awaiting Signatory'].includes(status)) {
     return [{ value: 'check_releasing', label: 'Approve check for releasing' }];
