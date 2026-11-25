@@ -142,7 +142,7 @@ export function FinanceUpdateForm({
       <div className="finance-update-footer">
         <p>
           {combinedApproval
-            ? 'Complete the original-document receipt details above, then choose “Approve as Finance member” below. One action will record receipt, verify the documents and start the 3-day processing clock.'
+            ? 'Complete the original-document receipt details above, then choose “Approve as Finance member” below. That single action records receipt, verifies the documents, starts the 3-working-day clock and sends the request directly to Check Approval.'
             : 'Original-document receipt and verification are recorded here. Any later changes are added to the approval log.'}
         </p>
         {!combinedApproval && (
