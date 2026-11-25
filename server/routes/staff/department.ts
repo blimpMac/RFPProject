@@ -1,4 +1,4 @@
-import { administrativeRoles, departmentDecisionRoles } from '../../domain/access.js';
+import { departmentDecisionRoles } from '../../domain/access.js';
 import { flushEmailQueueForRequest } from '../../email/service.js';
 import { requireStaff } from '../../lib/auth.js';
 import { ensureMethod, HttpError, json, readJson } from '../../lib/http.js';
@@ -18,8 +18,7 @@ export const handleDepartmentRoutes: RouteHandler = async ({ event, route, db })
       .eq('id', input.requestId)
       .single();
     if (request.error || !request.data) throw new HttpError(404, 'Request not found.');
-    const isAdministrator = staff.roles.some((role) => administrativeRoles.includes(role));
-    if (!isAdministrator) {
+    {
       const assignment = await db
         .from('department_approving_heads')
         .select('id')
