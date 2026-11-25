@@ -238,7 +238,7 @@ export function ApprovalsPage() {
         return request.final_status === 'Awaiting Hard Copy Verification';
       if (queueFocus === 'processing')
         return (
-          ['Processing', 'Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
+          ['Processing', 'Check Preparation', 'Check Approval', 'Awaiting Signatory', 'Check Releasing'].includes(
             request.final_status,
           ) || processingOverdue(request, now)
         );
@@ -336,7 +336,7 @@ export function ApprovalsPage() {
         (request) => request.final_status === 'Awaiting Hard Copy Verification',
       ).length,
       processing: activeRows.filter((request) =>
-        ['Processing', 'Check Preparation', 'Check Approval', 'Awaiting Signatory'].includes(
+        ['Processing', 'Check Preparation', 'Check Approval', 'Awaiting Signatory', 'Check Releasing'].includes(
           request.final_status,
         ),
       ).length,
