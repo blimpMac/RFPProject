@@ -1,3 +1,4 @@
+import { addPhilippineWorkingDaysToDate, nextPhilippineWorkingDay } from './philippine-holidays.js';
 /** Philippine calendar-day SLA. Day 1 is the receipt date before 3:00 PM;
  * receipts at/after 3:00 PM count as Day 1 the following calendar day.
  * Day 3 is the end of the third counted day (Asia/Manila, UTC+08:00).
@@ -22,8 +23,8 @@ export function addManilaCalendarDays(day: string, offset: number): string {
 export function manilaReceiptSchedule(receivedAt: string | number | Date) {
   const received = partsFor(new Date(receivedAt));
   const afterCutoff = received.hour >= 15;
-  const day1 = addManilaCalendarDays(received.day, afterCutoff ? 1 : 0);
-  const day3 = addManilaCalendarDays(day1, 2);
+  const day1 = nextPhilippineWorkingDay(received.day, !afterCutoff);
+  const day3 = addPhilippineWorkingDaysToDate(day1, 2);
   return {
     afterCutoff,
     day1,
