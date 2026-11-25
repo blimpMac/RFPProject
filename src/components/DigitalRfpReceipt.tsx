@@ -69,9 +69,9 @@ export type DigitalRfpAttachment = {
 const value = (input: string | null | undefined, fallback = '—') => input?.trim() || fallback;
 
 const financeStages = [
-  { label: 'For Processing', statuses: ['Processing', 'Payment Processing'] },
-  { label: 'Check Preparation', statuses: ['Check Preparation'] },
-  { label: 'Check Approval', statuses: ['Check Approval', 'Awaiting Signatory'] },
+  { label: 'Finance processing', statuses: ['Processing', 'Payment Processing'] },
+  { label: 'Check Approval', statuses: ['Check Approval', 'Awaiting Signatory', 'Check Preparation'] },
+  { label: 'Check Releasing', statuses: ['Check Releasing'] },
   { label: 'Check Released', statuses: ['Check Released'] },
   { label: 'Paid', statuses: ['Paid', 'Payment Released'] },
 ];
