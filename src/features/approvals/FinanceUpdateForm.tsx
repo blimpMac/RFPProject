@@ -18,7 +18,6 @@ export function FinanceUpdateForm({
   onVerificationRemarksChange,
   onCheckDateChange,
   onReasonChange,
-  onProcessingStatusChange,
   onLateDocumentsChange,
   onFinanceNotesChange,
   onSave,
@@ -38,7 +37,6 @@ export function FinanceUpdateForm({
   onVerificationRemarksChange: (value: string) => void;
   onCheckDateChange: (value: string) => void;
   onReasonChange: (value: string) => void;
-  onProcessingStatusChange: (value: string) => void;
   onLateDocumentsChange: (value: string) => void;
   onFinanceNotesChange: (value: string) => void;
   onSave: () => void;
@@ -110,24 +108,13 @@ export function FinanceUpdateForm({
           />
         </div>
         <div className="field">
-          <label htmlFor="processing-status">Receipt processing status</label>
-          <select
-            id="processing-status"
-            className="input"
-            value={processingStatus}
-            onChange={(event) => onProcessingStatusChange(event.target.value)}
-          >
-            <option value="">Use workflow status</option>
-            {[
-              { value: 'Check Approval', label: 'For releasing' },
-              { value: 'Check Released', label: 'Check Released' },
-              { value: 'Paid', label: 'Paid' },
-            ].map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <label>Workflow stage</label>
+          <div className="input flex min-h-11 items-center bg-slate-50 text-sm font-semibold text-slate-700">
+            {request.final_status}
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            Advance the request using the guarded Next Workflow Actions below.
+          </p>
         </div>
         <div className="field">
           <label htmlFor="late-documents">Late documents received</label>
