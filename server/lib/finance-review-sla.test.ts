@@ -49,3 +49,10 @@ testCase(
   },
 );
 
+
+testCase('Finance SLA skips Philippine regular and special non-working holidays', () => {
+  const receivedAt = '2026-12-23T09:00:00+08:00';
+  const deadline = addManilaBusinessDays(receivedAt, 3);
+  assert.equal(deadline, '2027-01-04T01:00:00.000Z');
+  assert.equal(manilaBusinessDaysElapsed(receivedAt, deadline), 3);
+});
