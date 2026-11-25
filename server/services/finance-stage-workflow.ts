@@ -1,7 +1,7 @@
 import { HttpError } from '../lib/http.js';
 import { manilaReceiptSchedule } from '../../shared/utils/processing-sla.js';
 import { adminClient } from '../lib/supabase.js';
-import { canActAsFinanceHead, canPerformFinanceStageAction } from '../lib/staff-access.js';
+import { canPerformFinanceStageAction } from '../lib/staff-access.js';
 
 type DatabaseClient = ReturnType<typeof adminClient>;
 type RequestRow = Record<string, unknown>;
@@ -22,8 +22,6 @@ const stageActions = new Set([
   'member_approve',
   'member_reject',
   'request_documents',
-  'head_approve',
-  'head_reject',
   'hard_copy_approve',
   'liquidation_approve',
   'liquidation_return',
@@ -140,10 +138,10 @@ export async function performFinanceStageAction(
     case 'member_approve':
       requireStatus(
         currentStatus,
-        ['Pending Finance Review', 'Documentation Required'],
+        ['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'],
         'Finance member approval',
       );
-      nextStatus = 'Pending Finance Head Review';
+      nextStatus = 'Awaiting Hard Copy Verification';
       actionLabel = 'Finance Member Approved';
       nextWorkflow.member_status = 'Approved';
       nextWorkflow.member_reviewed_at = nowIso;
@@ -157,7 +155,7 @@ export async function performFinanceStageAction(
     case 'member_reject':
       requireStatus(
         currentStatus,
-        ['Pending Finance Review', 'Documentation Required'],
+        ['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'],
         'Finance member return',
       );
       requireRemarks(input.remarks, 'Returning a request to the Department Head');
@@ -175,7 +173,7 @@ export async function performFinanceStageAction(
     case 'request_documents':
       requireStatus(
         currentStatus,
-        ['Pending Finance Review', 'Documentation Required'],
+        ['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'],
         'Document request',
       );
       requireRemarks(input.remarks, 'Requesting documents');
@@ -187,41 +185,6 @@ export async function performFinanceStageAction(
       updateFields.finance_review = 'Documentation Required';
       updateFields.finance_review_at = nowIso;
       updateFields.finance_reviewed_by = actor.userId;
-      updateFields.finance_remarks = input.remarks.trim();
-      break;
-
-    case 'head_approve':
-      if (!canActAsFinanceHead(actor.roles))
-        throw new HttpError(
-          403,
-          'Only the Super Administrator, acting as Finance Head, can approve this stage.',
-        );
-      requireStatus(currentStatus, ['Pending Finance Head Review'], 'Finance Head approval');
-      nextStatus = 'Awaiting Hard Copy Verification';
-      actionLabel = 'Finance Head Approved';
-      nextWorkflow.head_status = 'Approved';
-      nextWorkflow.head_reviewed_at = nowIso;
-      nextWorkflow.head_reviewed_by = actor.email;
-      updateFields.finance_review = 'Head Approved';
-      updateFields.finance_review_at = nowIso;
-      updateFields.finance_remarks = input.remarks.trim() || request.finance_remarks || null;
-      break;
-
-    case 'head_reject':
-      if (!canActAsFinanceHead(actor.roles))
-        throw new HttpError(
-          403,
-          'Only the Super Administrator, acting as Finance Head, can decline this stage.',
-        );
-      requireStatus(currentStatus, ['Pending Finance Head Review'], 'Finance Head decline');
-      requireRemarks(input.remarks, 'Finance Head decline');
-      nextStatus = 'Returned to Requestor';
-      actionLabel = 'Finance Head Declined';
-      nextWorkflow.head_status = 'Declined';
-      nextWorkflow.head_reviewed_at = nowIso;
-      nextWorkflow.head_reviewed_by = actor.email;
-      updateFields.finance_review = 'Head Declined';
-      updateFields.finance_review_at = nowIso;
       updateFields.finance_remarks = input.remarks.trim();
       break;
 
@@ -312,13 +275,13 @@ export async function performFinanceStageAction(
 
   const rfpNumber = asText(request.rfp_number);
   if (input.action === 'member_approve') {
-    const heads = await emailsForRoles(db, ['super_administrator']);
+    const financeMembers = await emailsForRoles(db, ['finance_reviewer']);
     await queueNotifications(
       db,
       request,
-      heads,
-      'finance_head_review_required',
-      `Finance Head review required: ${rfpNumber}`,
+      financeMembers,
+      'hard_copy_verification_required',
+      `Hard-copy verification required: ${rfpNumber}`,
       { remarks: input.remarks.trim() || null },
       nextVersion,
     );
@@ -344,27 +307,6 @@ export async function performFinanceStageAction(
       recipients,
       'documentation_required',
       `${rfpNumber} needs supporting documents`,
-      { remarks: input.remarks.trim() },
-      nextVersion,
-    );
-  } else if (input.action === 'head_approve') {
-    const financeMembers = await emailsForRoles(db, ['finance_reviewer']);
-    await queueNotifications(
-      db,
-      request,
-      financeMembers,
-      'hard_copy_verification_required',
-      `Hard-copy verification required: ${rfpNumber}`,
-      { remarks: input.remarks.trim() || null },
-      nextVersion,
-    );
-  } else if (input.action === 'head_reject') {
-    await queueNotifications(
-      db,
-      request,
-      [asText(request.requestor_email)],
-      'finance_head_rejected',
-      `${rfpNumber} declined by Finance Head`,
       { remarks: input.remarks.trim() },
       nextVersion,
     );

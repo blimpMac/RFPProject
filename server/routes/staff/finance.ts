@@ -1,4 +1,4 @@
-import { financeRoles } from '../../domain/access.js';
+import { financeActionRoles } from '../../domain/access.js';
 import { flushEmailQueueForRequest } from '../../email/service.js';
 import { requireStaff } from '../../lib/auth.js';
 import { ensureMethod, HttpError, json, readJson } from '../../lib/http.js';
@@ -12,7 +12,13 @@ import type { RouteHandler } from '../context.js';
 export const handleFinanceRoutes: RouteHandler = async ({ event, route, db }) => {
   if (route === 'finance/action') {
     ensureMethod(event, 'POST');
-    const staff = await requireStaff(event, financeRoles);
+    const staff = await requireStaff(event, financeActionRoles);
+    if (staff.roles.includes('super_administrator')) {
+      throw new HttpError(
+        403,
+        'Finance Head accounts can monitor requests but cannot perform Finance workflow actions.',
+      );
+    }
     const input = financeSchema.parse(readJson(event));
     const normalizedAction =
       input.action === 'approve'
@@ -55,7 +61,13 @@ export const handleFinanceRoutes: RouteHandler = async ({ event, route, db }) =>
 
   if (route === 'finance/update') {
     ensureMethod(event, 'POST');
-    const staff = await requireStaff(event, financeRoles);
+    const staff = await requireStaff(event, financeActionRoles);
+    if (staff.roles.includes('super_administrator')) {
+      throw new HttpError(
+        403,
+        'Finance Head accounts can monitor requests but cannot perform Finance workflow actions.',
+      );
+    }
     const input = financeUpdateSchema.parse(readJson(event));
     let current = await db.from('rfp_requests').select('*').eq('id', input.requestId).single();
     if (current.error || !current.data) throw new HttpError(404, 'Request not found.');
@@ -243,3 +255,4 @@ export const handleFinanceRoutes: RouteHandler = async ({ event, route, db }) =>
 
   return undefined;
 };
+

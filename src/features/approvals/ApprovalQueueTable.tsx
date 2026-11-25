@@ -13,6 +13,7 @@ export function ApprovalQueueTable({
   pageSize,
   pageCount,
   finance,
+  financeMember,
   department,
   now,
   onPageChange,
@@ -26,6 +27,7 @@ export function ApprovalQueueTable({
   pageSize: number;
   pageCount: number;
   finance: boolean;
+  financeMember: boolean;
   department: boolean;
   now: number;
   onPageChange: (page: number) => void;
@@ -59,7 +61,7 @@ export function ApprovalQueueTable({
                 key={request.id}
                 onClick={() => {
                   if (finance) onOpenRequest(request, 'view');
-                  else if (department) onOpenRequest(request, 'edit');
+                  else if (department || financeMember) onOpenRequest(request, 'edit');
                 }}
               >
                 <td>
@@ -68,7 +70,10 @@ export function ApprovalQueueTable({
                     className="finance-rfp-link"
                     onClick={(event) => {
                       event.stopPropagation();
-                      onOpenRequest(request, finance ? 'view' : 'edit');
+                      onOpenRequest(
+                        request,
+                        finance && !financeMember && !department ? 'view' : 'edit',
+                      );
                     }}
                   >
                     {request.rfp_number}
@@ -99,7 +104,7 @@ export function ApprovalQueueTable({
                         <Eye size={14} /> View
                       </button>
                     )}
-                    {(finance || department) && (
+                    {(financeMember || department) && (
                       <button
                         type="button"
                         onClick={(event) => {
@@ -107,7 +112,7 @@ export function ApprovalQueueTable({
                           onOpenRequest(request, 'edit');
                         }}
                       >
-                        <Pencil size={14} /> {finance ? 'Edit' : 'Review'}
+                        <Pencil size={14} /> {financeMember ? 'Edit' : 'Review'}
                       </button>
                     )}
                     {finance && (
@@ -181,3 +186,4 @@ export function ApprovalQueueTable({
     </div>
   );
 }
+

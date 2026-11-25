@@ -232,12 +232,6 @@ export function DigitalRfpReceipt({
                 date={workflow.member_reviewed_at || request.finance_review_at}
                 status={workflow.member_status || request.finance_review}
               />
-              <ApprovalCard
-                stage="Finance Head"
-                actor={workflow.head_reviewed_by}
-                date={workflow.head_reviewed_at}
-                status={workflow.head_status || 'Pending'}
-              />
             </div>
           </ReceiptSection>
         </div>
@@ -422,3 +416,4 @@ function LineField({ label, value: detailValue }: { label: string; value: string
     </div>
   );
 }
+

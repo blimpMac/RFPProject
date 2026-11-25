@@ -7,7 +7,7 @@ import {
 } from '../../../shared/utils/processing-sla';
 
 export type Action = { value: string; label: string };
-export type QueueFocus = 'all' | 'member' | 'head' | 'hardcopy' | 'processing';
+export type QueueFocus = 'all' | 'member' | 'hardcopy' | 'processing';
 export type SlaInfo = {
   label: string;
   detail: string;
@@ -110,8 +110,8 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
   }
   if (status === 'Pending Finance Head Review') {
     return {
-      label: 'Finance Head decision',
-      detail: 'At least one Finance member has approved',
+      label: 'Finance member review',
+      detail: 'Finance Member action is required to continue this request',
       tone: 'warning',
     };
   }
@@ -122,7 +122,11 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
       tone: 'warning',
     };
   }
-  if (['Pending Finance Review', 'Documentation Required'].includes(status)) {
+  if (
+    ['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'].includes(
+      status,
+    )
+  ) {
     const days = elapsedDays(request.department_approval_at || request.submitted_at, now);
     return {
       label: `${status === 'Documentation Required' ? 'Documents' : 'Finance review'} · Day ${days + 1}`,
@@ -181,27 +185,23 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
   };
 }
 
-export const financeActionOptions = (status: string, financeHead: boolean): Action[] => {
+export const financeActionOptions = (status: string): Action[] => {
   if (status === 'Liquidation Submitted') {
     return [
       { value: 'liquidation_approve', label: 'Approve expense liquidation' },
       { value: 'liquidation_return', label: 'Return expense summary for correction' },
     ];
   }
-  if (['Pending Finance Review', 'Documentation Required'].includes(status)) {
+  if (
+    ['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'].includes(
+      status,
+    )
+  ) {
     return [
       { value: 'member_approve', label: 'Approve as Finance member' },
       { value: 'member_reject', label: 'Return to Department Head' },
       { value: 'request_documents', label: 'Request documents / clarification' },
     ];
-  }
-  if (status === 'Pending Finance Head Review') {
-    return financeHead
-      ? [
-          { value: 'head_approve', label: 'Finance Head approve' },
-          { value: 'head_reject', label: 'Finance Head decline and return to Requestor' },
-        ]
-      : [];
   }
   if (status === 'Awaiting Hard Copy Verification') {
     return [
@@ -228,3 +228,4 @@ export const financeActionOptions = (status: string, financeHead: boolean): Acti
   }
   return [];
 };
+

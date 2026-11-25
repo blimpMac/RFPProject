@@ -18,7 +18,7 @@ const request = {
 
 const url = 'https://greenlight-rfp.vercel.app/';
 
-test('real department approval messages display three secure action links, not old single CTA', () => {
+test('department approval messages offer only Finance handoff or requestor correction', () => {
   const email = renderEmail(
     'supervisor_review',
     request,
@@ -26,7 +26,7 @@ test('real department approval messages display three secure action links, not o
     url,
     [],
   );
-  for (const action of ['approve', 'reject', 'return']) {
+  for (const action of ['approve', 'return']) {
     assert.ok(
       email.html.includes(
         `https://greenlight-rfp.vercel.app/review/secure-department-token?action=${action}`,
@@ -34,14 +34,14 @@ test('real department approval messages display three secure action links, not o
       `Missing review button ${action}`,
     );
   }
-  assert.match(email.html, />Approve<\/a>/);
-  assert.match(email.html, />Reject<\/a>/);
-  assert.match(email.html, />Return for Correction<\/a>/);
+  assert.match(email.html, />Approve and send to Finance<\/a>/);
+  assert.doesNotMatch(email.html, />Reject<\/a>/);
+  assert.match(email.html, />Return to Requestor<\/a>/);
   assert.doesNotMatch(email.html, />Open secure review<\/a>/);
   assert.match(email.html, /confirm your choice/i);
   assert.match(
     email.html,
-    />Approve<\/a><\/td><td[^>]*>.*>Reject<\/a><\/td><td[^>]*>.*>Return for Correction<\/a><\/td><\/tr>/,
+    />Approve and send to Finance<\/a><\/td><td[^>]*>.*>Return to Requestor<\/a><\/td><\/tr>/,
   );
 });
 
@@ -54,7 +54,7 @@ test('empty review token does not generate a fake approval link', () => {
 test('emailed preview clearly disables sample approval buttons and invalid links', () => {
   const email = renderEmailPreview('supervisor_review', url);
   assert.match(email.html, /DEMO PREVIEW ONLY/);
-  assert.match(email.html, /Return for Correction/);
+  assert.match(email.html, /Return to Requestor/);
   assert.doesNotMatch(email.html, /href="[^"]*\/review\/preview-only-not-valid/);
 });
 

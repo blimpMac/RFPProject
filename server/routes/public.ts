@@ -486,7 +486,7 @@ export const handlePublicRoutes: RouteHandler = async ({ event, route, db, confi
     await assertCurrentDepartmentReviewToken(db, sha256(input.token));
     const decision = await db.rpc('consume_department_review', {
       p_token_hash: sha256(input.token),
-      p_decision: input.decision,
+      p_decision: input.decision === 'reject' ? 'return' : input.decision,
       p_remarks: input.remarks.trim(),
     });
     if (decision.error) throw new HttpError(409, decision.error.message);

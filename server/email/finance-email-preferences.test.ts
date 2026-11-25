@@ -32,6 +32,8 @@ test('RF-only checklist includes both Revolving Fund and RF Liquidation', () => 
 
 test('Cash Advance and historical classifications remain recognized', () => {
   assert.equal(financeEmailCategory('Cash Advance (CA)'), 'cash_advance');
+  assert.equal(financeEmailCategory('Cash Advance'), 'cash_advance');
+  assert.equal(financeEmailCategory('CA Liquidation'), 'cash_advance');
   assert.equal(financeEmailCategory('CA / EF Liquidation'), 'cash_advance');
   assert.equal(financeEmailCategory('Supplier Payment'), 'supplier_payment');
   assert.equal(financeEmailCategory('Unclassified'), 'other');
@@ -68,7 +70,6 @@ test('Finance Head-only endpoint and send-time protection are present', () => {
   assert.ok(queue.includes('p_template_key: notification.template_key'));
 });
 
-
 test('Unconfigured Finance Members default to no request alerts in the checklist and database', () => {
   const checklist = readFileSync('src/features/accounts/FinanceEmailChecklist.tsx', 'utf8');
   const migration = readFileSync(
@@ -76,5 +77,8 @@ test('Unconfigured Finance Members default to no request alerts in the checklist
     'utf8',
   );
   assert.ok(checklist.includes('user.financeNotificationTypes === null\n      ? []'));
-  assert.ok(migration.includes('if not is_finance_member or selected is null then return false; end if;'));
+  assert.ok(
+    migration.includes('if not is_finance_member or selected is null then return false; end if;'),
+  );
 });
+
