@@ -432,19 +432,19 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
                 className="input"
                 type="text"
                 required
-                minLength={8}
-                maxLength={8}
-                pattern="SOF[0-9]{5}"
+                minLength={4}
+                maxLength={160}
+                pattern="SOF[0-9]+"
                 autoCapitalize="characters"
                 autoCorrect="off"
                 spellCheck={false}
-                placeholder="SOF12345"
+                placeholder="SOF12"
                 aria-describedby="sof-number-help"
                 value={form.projectClass}
                 onChange={(e) => update('projectClass', normalizeSofNumber(e.target.value))}
               />
               <p id="sof-number-help" className="mt-1 text-xs text-slate-500">
-                Enter SOF followed by exactly five digits (for example, SOF12345).
+                Enter SOF followed by digits. The digit count may vary, such as SOF12, SOF123, or SOF12345678901234567.
               </p>
             </div>
             <Select
