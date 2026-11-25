@@ -175,6 +175,8 @@ export const financeSchema = z.object({
   originalsReceivedDate: z.iso.date().nullable().optional(),
   documentVerification: z.enum(['Complete', 'Incomplete']).nullable().optional(),
   verificationRemarks: z.string().trim().max(1500).nullable().optional(),
+  financeRemarks: z.string().trim().max(1500).nullable().optional(),
+  lateDocuments: z.array(z.string().trim().min(1).max(180)).max(40).optional(),
 });
 export const financeUpdateSchema = z.object({
   requestId: z.uuid(),
