@@ -21,6 +21,17 @@ testCase('Finance review SLA skips Saturday and Sunday', () => {
   assert.equal(manilaBusinessDaysElapsed(receivedAt, deadline), 2);
 });
 
+testCase('three-business-day Finance SLA applies the configured deadline', () => {
+  const receivedAt = '2026-11-23T09:00:00+08:00';
+  const deadline = addManilaBusinessDays(receivedAt, 3);
+  assert.equal(deadline, '2026-11-26T01:00:00.000Z');
+  assert.equal(isWithinManilaBusinessDaySla(receivedAt, deadline, 3), true);
+  assert.equal(
+    isWithinManilaBusinessDaySla(receivedAt, '2026-11-26T09:00:01+08:00', 3),
+    false,
+  );
+});
+
 testCase('same-day Finance approval remains within SLA', () => {
   const receivedAt = '2026-11-23T09:00:00+08:00';
   const approvedAt = '2026-11-23T16:30:00+08:00';
