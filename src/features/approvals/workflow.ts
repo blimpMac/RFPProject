@@ -37,7 +37,7 @@ export const processingOverdue = (request: RfpRequest, now: number) => {
   return Boolean(
     dueAt &&
     new Date(dueAt).getTime() < now &&
-    !/paid|returned to requestor|department rejected|liquidation/i.test(request.final_status),
+    !/paid|check released|payment released|returned to requestor|department rejected|liquidation/i.test(request.final_status),
   );
 };
 
@@ -54,7 +54,7 @@ export function getSlaInfo(request: RfpRequest, now: number): SlaInfo {
   const processingDue = financeWorkflow(request).processing_due_at;
   if (
     processingDue &&
-    !/paid|returned to requestor|department rejected|liquidation/i.test(status)
+    !/paid|check released|payment released|returned to requestor|department rejected|liquidation/i.test(status)
   ) {
     const processingStart =
       financeWorkflow(request).processing_started_at || request.submitted_at || now;
