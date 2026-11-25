@@ -2,7 +2,7 @@ import { z } from 'zod';
 import {
   normalizeSofNumber,
   SOF_NUMBER_FORMAT_MESSAGE,
-} from '../../shared/utils/sof-number.ts';
+} from '../../shared/utils/sof-number.js';
 const toCentavos = (amount: number) => Math.round(amount * 100);
 const rfExpenseRowsPerForm = (company: string) => (/greenmetal|gemcor/i.test(company) ? 35 : 49);
 
