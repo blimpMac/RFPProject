@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { administrativeRoles, departmentDecisionRoles, financeActionRoles, financeRoles } from './access.ts';
+import {
+  administrativeRoles,
+  departmentDecisionRoles,
+  financeActionRoles,
+  financeRoles,
+} from './access.ts';
 
 test('Finance authority excludes the legacy administrator role', () => {
   assert.deepEqual(financeRoles, ['super_administrator', 'finance_reviewer']);
@@ -14,3 +19,4 @@ test('legacy administrator has no application authority', () => {
   assert.equal(administrativeRoles.includes('administrator'), false);
   assert.equal(departmentDecisionRoles.includes('administrator'), false);
 });
+
