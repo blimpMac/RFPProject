@@ -160,6 +160,8 @@ export const financeSchema = z.object({
     'hard_copy_approve',
     'request_documents',
     'payment_processing',
+    'send_check_approval',
+    'check_releasing',
     'check_preparation',
     'awaiting_signatory',
     'check_released',
