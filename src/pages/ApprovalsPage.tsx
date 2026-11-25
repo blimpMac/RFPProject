@@ -119,6 +119,7 @@ export function ApprovalsPage() {
         (!query ||
           [
             request.rfp_number,
+            request.rfp_type,
             request.requestor_name,
             request.requestor_email,
             request.department,
