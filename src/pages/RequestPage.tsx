@@ -444,7 +444,8 @@ export function RequestPage({ embedded = false }: { embedded?: boolean }) {
                 onChange={(e) => update('projectClass', normalizeSofNumber(e.target.value))}
               />
               <p id="sof-number-help" className="mt-1 text-xs text-slate-500">
-                Enter SOF followed by digits. The digit count may vary, such as SOF12, SOF123, or SOF12345678901234567.
+                Enter SOF followed by digits. The digit count may vary, such as SOF12, SOF123, or
+                SOF12345678901234567.
               </p>
             </div>
             <Select
