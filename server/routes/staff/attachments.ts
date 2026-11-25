@@ -96,10 +96,10 @@ export const handleAttachmentRoutes: RouteHandler = async ({ event, route, db })
 
   ensureMethod(event, 'POST');
   const staff = await requireStaff(event, [
-      'super_administrator',
-      'finance_reviewer',
-      'department_approver',
-    ]);
+    'super_administrator',
+    'finance_reviewer',
+    'department_approver',
+  ]);
   const input = z.object({ attachmentId: z.uuid() }).parse(readJson(event));
   const item = await db
     .from('request_attachments')
@@ -129,3 +129,4 @@ export const handleAttachmentRoutes: RouteHandler = async ({ event, route, db })
   if (signed.error) throw signed.error;
   return json(200, { ok: true, url: signed.data.signedUrl });
 };
+
