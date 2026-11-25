@@ -4,11 +4,11 @@ import type { Action } from './workflow';
 
 const workflowSteps = [
   'Submit RFP / Department Head review',
-  'Finance Member review',
-  'Hard-copy receipt and verification',
-  '3-day processing window (3 PM Philippine-time cutoff)',
-  'Check preparation and approval',
-  'Check or payment release',
+  'Finance Member approval + original-document receipt and verification',
+  '3-day processing window (Philippine working days)',
+  'Check approval',
+  'Check releasing',
+  'Check released',
   'Payment completed',
   'CA / RF expense liquidation follow-up, where applicable',
 ];
