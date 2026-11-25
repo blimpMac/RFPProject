@@ -142,7 +142,7 @@ export function MonitoringPage() {
       ) : tab === 'finance-sla' ? (
         <FinanceSlaSection
           rows={(data?.rows || []) as unknown as FinanceSlaEntry[]}
-          targetBusinessDays={data?.targetBusinessDays ?? 2}
+          targetBusinessDays={data?.targetBusinessDays ?? 3}
         />
       ) : (
         <DataTable
