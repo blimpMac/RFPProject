@@ -12,7 +12,7 @@ const validRequest = {
   requestorEmail: 'demo@example.com',
   company: 'Greenlight Power Inc.',
   department: 'Finance',
-  projectClass: 'SOF12345',
+  projectClass: 'SOF12',
   rfpType: 'Supplier Payment',
   requestType: 'Regular',
   supplierPayee: 'Demo Supplier',
@@ -33,21 +33,19 @@ test('accepts each configured company', () => {
   );
 });
 
-test('requires SOF followed by exactly five digits and normalizes lowercase input', () => {
-  const parsed = requestSchema.parse({ ...validRequest, projectClass: ' sof12345 ' });
-  assert.equal(parsed.projectClass, 'SOF12345');
-  for (const projectClass of ['SOF1234', 'SOF123456', 'SOFABCDE', '12345', 'Plant Maintenance']) {
-    assert.equal(requestSchema.safeParse({ ...validRequest, projectClass }).success, false);
+test('accepts variable-length numeric SOF values and normalizes lowercase input', () => {
+  for (const digits of ['12', '123', '12345678901234567']) {
+    const parsed = requestSchema.parse({ ...validRequest, projectClass: ' sof' + digits + ' ' });
+    assert.equal(parsed.projectClass, 'SOF' + digits);
   }
-});
-
-test('applies the SOF format to returned-request corrections', () => {
+  for (const projectClass of ['SOF', 'SOF12A', 'SOF-12', '12345', 'Plant Maintenance']) {
+    assert.equal(requestSchema.saftest('applies variable-length SOF validation to returned-request corrections', () => {
   const input = {
     requestId: 'fe835b06-227f-4e9e-b4db-101833657814',
     trackingToken: 'tracking-token-value-that-is-long-enough',
     correctionNote: 'Updated the SOF number.',
     corrections: {
-      projectClass: 'sof12345',
+      projectClass: 'sof12345678901234567',
       supplierPayee: 'Demo Supplier',
       purposeDescription: 'Updated payment purpose.',
       amount: 1000,
@@ -56,9 +54,9 @@ test('applies the SOF format to returned-request corrections', () => {
     },
   };
   const parsed = resubmitSchema.parse(input);
-  assert.equal(parsed.corrections?.projectClass, 'SOF12345');
+  assert.equal(parsed.corrections?.projectClass, 'SOF12345678901234567');
   assert.equal(resubmitSchema.safeParse({
-    ...input, corrections: { ...input.corrections, projectClass: 'SOF1234' },
+    ...input, corrections: { ...input.corrections, projectClass: 'SOF12A' },
   }).success, false);
 });
 
