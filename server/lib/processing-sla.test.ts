@@ -36,6 +36,6 @@ test('time-zone-independent and handles next-year rollover', () => {
 test('processing schedule excludes Philippine holidays and weekends', () => {
   const plan = manilaReceiptSchedule('2026-12-23T14:00:00+08:00');
   assert.equal(plan.day1, '2026-12-23');
-  assert.equal(plan.day3, '2026-12-28');
-  assert.equal(plan.dueAt, '2026-12-28T15:59:59.999Z');
+  assert.equal(plan.day3, '2026-12-29');
+  assert.equal(plan.dueAt, '2026-12-29T15:59:59.999Z');
 });
