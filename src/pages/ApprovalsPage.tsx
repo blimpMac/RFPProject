@@ -127,7 +127,11 @@ function SubmittedRfpForm({ requestId }: { requestId: string }) {
               <div className="finance-table-wrap mt-2">
                 <table className="finance-request-table">
                   <thead>
-                    <tr><th>Date</th><th>Description</th><th>Amount</th></tr>
+                    <tr>
+                      <th>Date</th>
+                      <th>Description</th>
+                      <th>Amount</th>
+                    </tr>
                   </thead>
                   <tbody>
                     {liquidationExpenses.map((expense, index) => (
@@ -150,10 +154,12 @@ function SubmittedRfpForm({ requestId }: { requestId: string }) {
             attachments={data.attachments}
             workflow={(raw.finance_workflow || {}) as DigitalRfpWorkflow}
             financeOperations={(raw.finance_operations || {}) as DigitalRfpOperations}
-            financeReceipt={normalizeFinanceReceipt(raw, {
-              finalStatus: request.final_status,
-              plannedCheckDate: request.planned_check_date,
-            }) as FinanceReceipt}
+            financeReceipt={
+              normalizeFinanceReceipt(raw, {
+                finalStatus: request.final_status,
+                plannedCheckDate: request.planned_check_date,
+              }) as FinanceReceipt
+            }
             submissionChecklist={(raw.submission_checklist as string[]) || []}
             liquidationExpenses={liquidationExpenses}
             rfLiquidation={rfLiquidation}
@@ -217,13 +223,18 @@ export function ApprovalsPage() {
   }, [load]);
   useAutoRefresh(load);
   const finance = roles.some((role) => ['super_administrator', 'finance_reviewer'].includes(role));
-  const financeMember = roles.includes('finance_reviewer') && !roles.includes('super_administrator');
+  const financeMember =
+    roles.includes('finance_reviewer') && !roles.includes('super_administrator');
   const department = roles.includes('department_approver');
   const matchesQueueFocus = useCallback(
     (request: RfpRequest) => {
       if (queueFocus === 'all') return true;
       if (queueFocus === 'member')
-        return ['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'].includes(request.final_status);
+        return [
+          'Pending Finance Review',
+          'Documentation Required',
+          'Pending Finance Head Review',
+        ].includes(request.final_status);
       if (queueFocus === 'hardcopy')
         return request.final_status === 'Awaiting Hard Copy Verification';
       if (queueFocus === 'processing')
@@ -316,7 +327,11 @@ export function ApprovalsPage() {
     );
     return {
       member: activeRows.filter((request) =>
-        ['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'].includes(request.final_status),
+        [
+          'Pending Finance Review',
+          'Documentation Required',
+          'Pending Finance Head Review',
+        ].includes(request.final_status),
       ).length,
       hardcopy: activeRows.filter(
         (request) => request.final_status === 'Awaiting Hard Copy Verification',
@@ -650,9 +665,9 @@ export function ApprovalsPage() {
           {modalMode === 'view' && (department || finance) ? (
             <>
               <SubmittedRfpForm requestId={selected.id} />
-              {!/cash\s*advance|revolving\s*fund|\bCA\b|\bRF\b|liquidation/i.test(selected.rfp_type) && (
-                <AttachmentPreviewSection requestId={selected.id} />
-              )}
+              {!/cash\s*advance|revolving\s*fund|\bCA\b|\bRF\b|liquidation/i.test(
+                selected.rfp_type,
+              ) && <AttachmentPreviewSection requestId={selected.id} />}
             </>
           ) : (
             <>
@@ -750,3 +765,4 @@ export function ApprovalsPage() {
     </div>
   );
 }
+
