@@ -2564,3 +2564,156 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Company-aware public request header and staff sign-in shell. */
+.public-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-color: rgba(205, 220, 228, 0.85);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 5px 22px rgba(16, 42, 67, 0.045);
+}
+.public-header::after {
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, #087ea4 0%, #13a079 55%, #d8a23a 100%);
+  content: "";
+}
+.public-header-inner {
+  min-height: 4.5rem;
+  justify-content: space-between;
+}
+.public-header-inner .brand-lockup {
+  flex: 0 1 auto;
+  min-height: 2.8rem;
+  align-items: center;
+}
+.public-header-inner .brand-logo {
+  max-width: min(12rem, 36vw);
+  max-height: 2.65rem;
+  object-fit: contain;
+  object-position: left center;
+}
+.public-header-actions {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+.public-header-link {
+  border: 1px solid #d7e2e7;
+  background: #f7fafb;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+.public-header-link:hover {
+  border-color: #a9c8d3;
+  background: #eaf4f6;
+  transform: translateY(-1px);
+}
+.request-page-intro {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e0e9ed;
+  border-radius: 1.1rem;
+  background:
+    radial-gradient(circle at 94% 0%, rgba(8,126,164,.12), transparent 19rem),
+    linear-gradient(135deg,#fff,#f6fafb);
+  padding: clamp(1.15rem,2.2vw,1.7rem);
+  box-shadow: 0 10px 28px rgba(8,38,56,.045);
+  animation: request-intro-enter 420ms ease both;
+}
+.request-page-intro h1 {
+  color: #173a4b;
+  letter-spacing: -.04em;
+}
+@keyframes request-intro-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.staff-login-header {
+  min-height: 4.75rem;
+  border-bottom: 1px solid #e0e9ed;
+  background: rgba(255,255,255,.92);
+}
+.staff-login-brand {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  border-radius: .6rem;
+}
+.staff-login-brand img {
+  display: block;
+  width: min(12rem, 38vw);
+  max-height: 2.7rem;
+  object-fit: contain;
+  object-position: left center;
+}
+.staff-login-header-label {
+  color: #526a75;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.staff-login-card {
+  border: 1px solid #dce7eb;
+  border-radius: 1.15rem;
+  box-shadow: 0 18px 48px rgba(16,42,67,.1);
+}
+.dark .public-header,
+.dark .staff-login-header {
+  border-color: #2a414e;
+  background: rgba(12,31,42,.94);
+}
+.dark .public-header-link {
+  border-color: #35515f;
+  background: #142d3b;
+  color: #dce8ed;
+}
+.dark .request-page-intro {
+  border-color: #2a414e;
+  background:
+    radial-gradient(circle at 94% 0%, rgba(8,126,164,.18), transparent 19rem),
+    linear-gradient(135deg,#102733,#0d202b);
+}
+.dark .request-page-intro h1,
+.dark .staff-login-header-label {
+  color: #e7eff2;
+}
+.dark .staff-login-card {
+  border-color: #2a414e;
+}
+@media (max-width: 640px) {
+  .public-header-inner {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: .55rem;
+    padding-top: .55rem;
+    padding-bottom: .55rem;
+  }
+  .public-header-inner .brand-lockup {
+    width: auto;
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    padding: 0;
+  }
+  .public-header-inner .brand-logo {
+    max-width: min(9rem, 40vw);
+    height: 2rem;
+  }
+  .public-header-actions {
+    width: auto;
+    min-width: 0;
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+  .public-header-actions .public-header-link {
+    padding: .45rem .65rem;
+    white-space: nowrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .request-page-intro {
+    animation: none;
+  }
+}
