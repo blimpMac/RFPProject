@@ -134,6 +134,27 @@ export function DashboardPage() {
     });
     return [...map].map(([month, count]) => ({ month, count })).reverse();
   }, [requests]);
+  const monthlyStatus = useMemo(() => {
+    const map = new Map<string, { completed: number; returned: number; inProgress: number }>();
+    requests.forEach((request) => {
+      const date = new Date(request.submitted_at);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const counts = map.get(key) || { completed: 0, returned: 0, inProgress: 0 };
+      const status = String(request.final_status || '');
+      if (/paid|payment completed|check released|completed/i.test(status)) counts.completed += 1;
+      else if (/reject|return/i.test(status)) counts.returned += 1;
+      else counts.inProgress += 1;
+      map.set(key, counts);
+    });
+    return [...map.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-8)
+      .map(([key, counts]) => ({
+        month: new Intl.DateTimeFormat('en-PH', { month: 'short' }).format(new Date(`${key}-01T00:00:00`)),
+        ...counts,
+      }));
+  }, [requests]);
+
   const byDepartment = useMemo(() => {
     const map = new Map<string, number[]>();
     requests.forEach((request) => {
@@ -485,6 +506,23 @@ export function DashboardPage() {
           </ResponsiveContainer>
         </ChartCard>
       </div>
+
+      <ChartCard
+        title="Monthly workflow status"
+        subtitle="Completed, returned and in-progress requests from the same filtered records"
+      >
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={monthlyStatus} margin={{ top: 12, right: 12, left: -18, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="4 5" vertical={false} />
+            <XAxis dataKey="month" axisLine={false} tickLine={false} />
+            <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+            <Tooltip />
+            <Bar dataKey="completed" name="Completed" stackId="status" fill="#0f9f6e" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="returned" name="Returned" stackId="status" fill="#e45d59" />
+            <Bar dataKey="inProgress" name="In progress" stackId="status" fill="#f0a43c" radius={[5, 5, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
 
       <div className="grid gap-5 xl:grid-cols-[1.18fr_0.82fr]">
         <ChartCard title="Processing time" subtitle="Average hours by department">
