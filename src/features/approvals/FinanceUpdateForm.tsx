@@ -9,7 +9,6 @@ export function FinanceUpdateForm({
   verificationRemarks,
   checkDate,
   reason,
-  processingStatus,
   lateDocuments,
   financeNotes,
   busy,
@@ -28,7 +27,6 @@ export function FinanceUpdateForm({
   verificationRemarks: string;
   checkDate: string;
   reason: string;
-  processingStatus: string;
   lateDocuments: string;
   financeNotes: string;
   busy: boolean;
