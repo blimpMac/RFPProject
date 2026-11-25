@@ -1,4 +1,4 @@
-import { addPhilippineWorkingDaysToDate, isPhilippineWorkingDay, manilaDateKey } from './philippine-holidays.js';
+import { isPhilippineWorkingDay, manilaDateKey } from './philippine-holidays.js';
 
 const DAY_MS = 86_400_000;
 const NOON_MS = 12 * 60 * 60 * 1000;
