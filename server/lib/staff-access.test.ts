@@ -4,7 +4,6 @@ import test from 'node:test';
 import {
   accessRole,
   canAccessFinance,
-  canActAsFinanceHead,
   canPerformFinanceStageAction,
   canAccessDepartment,
   isDepartmentOnly,
@@ -22,13 +21,12 @@ test('keeps legacy administrators outside Finance permissions', () => {
   assert.equal(canAccessFinance(['administrator']), false);
   assert.equal(canAccessFinance(['finance_reviewer']), true);
   assert.equal(canAccessFinance(['super_administrator']), true);
-  assert.equal(canActAsFinanceHead(['finance_reviewer']), false);
-  assert.equal(canActAsFinanceHead(['administrator']), false);
-  assert.equal(canActAsFinanceHead(['super_administrator']), true);
   assert.equal(canPerformFinanceStageAction('member_approve', ['finance_reviewer']), true);
   assert.equal(canPerformFinanceStageAction('member_approve', ['administrator']), false);
   assert.equal(canPerformFinanceStageAction('head_approve', ['finance_reviewer']), false);
-  assert.equal(canPerformFinanceStageAction('head_approve', ['super_administrator']), true);
+  assert.equal(canPerformFinanceStageAction('head_approve', ['super_administrator']), false);
+  assert.equal(canPerformFinanceStageAction('member_approve', ['super_administrator']), false);
+  assert.equal(canPerformFinanceStageAction('member_approve', ['super_administrator', 'finance_reviewer']), false);
 });
 
 test('maps account access levels to workflow roles', () => {
