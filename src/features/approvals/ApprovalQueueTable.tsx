@@ -70,7 +70,10 @@ export function ApprovalQueueTable({
                     className="finance-rfp-link"
                     onClick={(event) => {
                       event.stopPropagation();
-                      onOpenRequest(request, finance && !financeMember && !department ? 'view' : 'edit');
+                      onOpenRequest(
+                        request,
+                        finance && !financeMember && !department ? 'view' : 'edit',
+                      );
                     }}
                   >
                     {request.rfp_number}
@@ -183,3 +186,4 @@ export function ApprovalQueueTable({
     </div>
   );
 }
+
