@@ -143,7 +143,8 @@ export function FinanceUpdateForm({
             onChange={(event) => onFinanceNotesChange(event.target.value)}
           />
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            Start with SOF followed by the actual number (e.g., SOF12345), then add any related Finance remarks.
+            Start with SOF followed by the actual number (e.g., SOF12345), then add any related
+            Finance remarks.
           </p>
         </div>
       </div>
@@ -160,3 +161,4 @@ export function FinanceUpdateForm({
     </section>
   );
 }
+
