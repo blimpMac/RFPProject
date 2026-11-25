@@ -23,6 +23,9 @@ export const canPerformFinanceStageAction = (action: string, roles: string[]) =>
     'member_reject',
     'request_documents',
     'hard_copy_approve',
+    'send_check_approval',
+    'check_releasing',
+    'check_released',
     'liquidation_approve',
     'liquidation_return',
   ].includes(action);
