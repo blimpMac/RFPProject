@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Eye, Pencil, Printer, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { Button, Modal, Spinner, StatusBadge } from '../components/ui';
 import { useAuth } from '../components/AuthProvider';
 import { get, post } from '../lib/api';
@@ -25,10 +24,80 @@ import {
   type QueueFocus,
 } from '../features/approvals/workflow';
 import { AttachmentPreviewSection } from '../components/AttachmentPreviewSection';
+import {
+  type DigitalRfpAttachment,
+  type DigitalRfpOperations,
+  type DigitalRfpWorkflow,
+} from '../components/DigitalRfpReceipt';
+import { RequestTrackingReceipt } from '../components/RequestTrackingReceipt';
+import type { FinanceReceipt } from '../../shared/contracts/digital-rfp';
+import type { RfLiquidation } from '../../shared/utils/rf-liquidation';
 import { normalizeFinanceReceipt } from '../../shared/contracts/digital-rfp';
 
 type Result = { rows: RfpRequest[] };
 type ModalMode = 'view' | 'edit';
+
+function SubmittedRfpForm({ requestId }: { requestId: string }) {
+  const [data, setData] = useState<{
+    request: RfpRequest;
+    attachments: DigitalRfpAttachment[];
+  }>();
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    get<{ request: RfpRequest; attachments: DigitalRfpAttachment[] }>(
+      `digital-rfp/${encodeURIComponent(requestId)}`,
+    )
+      .then((result) => {
+        if (active) setData(result);
+      })
+      .catch((cause: unknown) => {
+        if (active)
+          setError(cause instanceof Error ? cause.message : 'Could not load submitted form.');
+      });
+    return () => {
+      active = false;
+    };
+  }, [requestId]);
+
+  if (error)
+    return (
+      <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-700" role="alert">
+        {error}
+      </p>
+    );
+  if (!data) return <Spinner label="Loading submitted RFP form" />;
+
+  const raw = data.request.raw_record || {};
+  const workflow = (raw.finance_workflow || {}) as DigitalRfpWorkflow;
+  const operations = (raw.finance_operations || {}) as DigitalRfpOperations;
+  const financeReceipt = normalizeFinanceReceipt(raw, {
+    finalStatus: data.request.final_status,
+    plannedCheckDate: data.request.planned_check_date,
+  }) as FinanceReceipt;
+
+  return (
+    <div
+      className="finance-receipt-preview"
+      aria-label={`Submitted RFP form ${data.request.rfp_number}`}
+    >
+      <RequestTrackingReceipt
+        request={data.request}
+        attachments={data.attachments}
+        workflow={workflow}
+        financeOperations={operations}
+        financeReceipt={financeReceipt}
+        submissionChecklist={raw.submission_checklist || []}
+        liquidationExpenses={
+          (raw.liquidation_expenses as { date: string; description: string; amount: number }[]) ||
+          []
+        }
+        rfLiquidation={raw.rf_liquidation as RfLiquidation | undefined}
+      />
+    </div>
+  );
+}
 
 export function ApprovalsPage() {
   const { roles } = useAuth();
@@ -515,28 +584,14 @@ export function ApprovalsPage() {
               {notice}
             </p>
           )}
-          {modalMode === 'view' && finance ? (
-            <div className="card mt-5 space-y-3 p-5">
-              <h3 className="font-semibold">Digital RFP form</h3>
-              <p className="text-sm leading-6 text-slate-500">
-                Open this RFP in a dedicated page rather than nesting the form in the approval
-                queue. For demonstration layouts, use the Preview Forms tab.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  to={`/admin/rfp/${selected.id}/print`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn btn-primary"
-                >
-                  <Eye size={16} /> Open RFP form
-                </Link>
-                <Link to="/admin/preview-forms" className="btn btn-secondary">
-                  Preview Forms
-                </Link>
-              </div>
+          {modalMode === 'view' && (department || finance) ? (
+            <section className="mt-5" aria-labelledby="submitted-request-form-heading">
+              <h3 id="submitted-request-form-heading" className="finance-section-title">
+                Submitted request form
+              </h3>
+              <SubmittedRfpForm requestId={selected.id} />
               <AttachmentPreviewSection requestId={selected.id} />
-            </div>
+            </section>
           ) : (
             <>
               <h3 className="finance-section-title">Request overview</h3>

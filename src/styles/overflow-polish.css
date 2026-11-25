@@ -514,6 +514,24 @@
     overflow: visible !important;
     page-break-inside: auto !important;
   }
+body:has(.track-page) .track-page .tracking-receipt .fund-tracking-documents,
+  body:has(.track-page) .track-page .tracking-receipt .fund-tracking-receipt,
+  body:has(.track-page) .track-page .tracking-receipt .fund-attached-form,
+  body:has(.track-page) .track-page .tracking-receipt .fund-expense-attachment {
+    width: 198mm !important;
+    max-width: 198mm !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+  body:has(.track-page) .track-page .tracking-receipt .fund-attached-form {
+    break-before: page;
+    page-break-before: always;
+  }
+  body:has(.track-page) .track-page .tracking-receipt .fund-tracking-grid,
+  body:has(.track-page) .track-page .tracking-receipt .fund-tracking-header {
+    break-inside: avoid;
+  }
   body:has(.track-page) .track-page .tracking-receipt .digital-rfp-section {
     break-inside: avoid-page;
   }

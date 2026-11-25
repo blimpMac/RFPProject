@@ -22,6 +22,154 @@
   box-shadow: 0 18px 48px rgba(15, 39, 61, 0.1);
   font-size: 0.72rem;
 }
+.fund-tracking-documents {
+  width: min(100%, 72rem);
+  margin: 0 auto;
+  color: #17283a;
+}
+.fund-tracking-receipt {
+  overflow: hidden;
+  border: 1px solid #aebac6;
+  border-radius: 0.3rem;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(15, 39, 61, 0.1);
+  font-size: 0.875rem;
+}
+.fund-tracking-header {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr) minmax(10rem, auto);
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 3px solid #173d59;
+}
+.fund-tracking-header img {
+  width: 8rem;
+  max-height: 3.5rem;
+  object-fit: contain;
+}
+.fund-tracking-header p {
+  margin: 0 0 0.25rem;
+  color: #506477;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.fund-tracking-header h1 {
+  margin: 0;
+  color: #173d59;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+}
+.fund-tracking-reference {
+  min-width: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.fund-tracking-reference span,
+.fund-tracking-status span,
+.fund-tracking-field span {
+  display: block;
+  color: #526477;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.fund-tracking-reference strong {
+  overflow-wrap: anywhere;
+  color: #173d59;
+  font-size: 1rem;
+}
+.fund-tracking-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid #d7e0e8;
+  background: #f3f7fa;
+}
+.fund-tracking-status strong {
+  color: #173d59;
+  text-align: right;
+}
+.fund-tracking-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+}
+.fund-tracking-field {
+  min-width: 0;
+  min-height: 4rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #e0e6ec;
+  overflow-wrap: anywhere;
+}
+.fund-tracking-field strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-weight: 600;
+  white-space: pre-wrap;
+}
+.fund-tracking-wide {
+  grid-column: 1 / -1;
+}
+.fund-attached-form,
+.fund-expense-attachment {
+  margin-top: 1.25rem;
+}
+.fund-attached-form h2,
+.fund-expense-attachment h2 {
+  margin: 0 0 0.75rem;
+  color: #173d59;
+  font-size: 1rem;
+  font-weight: 800;
+}
+.fund-expense-attachment {
+  padding: 1rem;
+  border: 1px solid #aebac6;
+  background: #fff;
+}
+.fund-expense-scroll {
+  overflow-x: auto;
+}
+.fund-expense-attachment table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.fund-expense-attachment th,
+.fund-expense-attachment td {
+  padding: 0.55rem;
+  border: 1px solid #d7e0e8;
+  text-align: left;
+}
+.fund-expense-attachment th {
+  background: #f3f7fa;
+}
+@media (max-width: 640px) {
+  .fund-tracking-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 1rem;
+  }
+  .fund-tracking-header img {
+    grid-column: 1;
+    grid-row: 1;
+    width: 7rem;
+  }
+  .fund-tracking-header > div:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .fund-tracking-reference {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .fund-tracking-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fund-tracking-wide {
+    grid-column: auto;
+  }
+}
+
 .digital-rfp-header {
   display: grid;
   grid-template-columns: minmax(12rem, 1fr) minmax(16rem, 1.4fr) minmax(13rem, 0.9fr);

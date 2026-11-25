@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { BookOpen, Eye, FileText, Mail, Printer, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
-import { DigitalRfpReceipt, type DigitalRfpRequest } from '../components/DigitalRfpReceipt';
+import { type DigitalRfpRequest } from '../components/DigitalRfpReceipt';
+import { RequestTrackingReceipt } from '../components/RequestTrackingReceipt';
 import { EmailPreviewPanel } from '../components/EmailPreviewPanel';
 import type { RfLiquidation } from '../../shared/utils/rf-liquidation';
 
@@ -179,7 +180,7 @@ export function PreviewFormsPage() {
             >
               SAMPLE ONLY
             </div>
-            <DigitalRfpReceipt
+            <RequestTrackingReceipt
               key={selected}
               request={request}
               attachments={[]}
