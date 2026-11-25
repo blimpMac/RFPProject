@@ -5,7 +5,6 @@ import {
   type FinanceReceipt,
 } from '../../shared/contracts/digital-rfp';
 import { manilaDate, php } from '../lib/format';
-import { RfLiquidationPrint } from './RfLiquidationPrint';
 import type { RfLiquidation } from '../../shared/utils/rf-liquidation';
 
 export type DigitalRfpWorkflow = {
@@ -145,20 +144,6 @@ export function DigitalRfpReceipt({
     ? liquidationExpenses
     : request.raw_record?.liquidation_expenses || [];
   const expenseTotal = expenses.reduce((sum, row) => sum + Number(row.amount || 0), 0);
-
-  if (isRfLiquidation && rfLiquidation) {
-    return (
-      <article className="digital-rfp-sheet rf-liquidation-sheet">
-        <RfLiquidationPrint
-          form={rfLiquidation}
-          company={request.company || ''}
-          department={request.department}
-          departmentHead={request.approving_head}
-          reference={request.rfp_number}
-        />
-      </article>
-    );
-  }
 
   return (
     <article className="digital-rfp-sheet" aria-label={`Digital RFP ${request.rfp_number}`}>
