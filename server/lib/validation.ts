@@ -1,8 +1,18 @@
 import { z } from 'zod';
+import {
+  normalizeSofNumber,
+  SOF_NUMBER_FORMAT_MESSAGE,
+} from '../../shared/utils/sof-number.ts';
 const toCentavos = (amount: number) => Math.round(amount * 100);
 const rfExpenseRowsPerForm = (company: string) => (/greenmetal|gemcor/i.test(company) ? 35 : 49);
 
 const companies = ['Greenlight Power Inc.', 'Greenmetal Electric Manufacturing Corp.'] as const;
+const sofNumberSchema = z
+  .string()
+  .trim()
+  .max(160)
+  .transform(normalizeSofNumber)
+  .pipe(z.string().regex(/^SOF[0-9]{5}$/u, SOF_NUMBER_FORMAT_MESSAGE));
 
 export const allowedMimes = [
   'application/pdf',
@@ -64,7 +74,7 @@ export const requestSchema = z
     requestorEmail: z.string().trim().toLowerCase().email().max(160),
     company: z.enum(companies),
     department: z.string().trim().min(1).max(100),
-    projectClass: z.string().trim().min(1).max(160),
+    projectClass: sofNumberSchema
     rfpType: z.string().trim().min(1).max(100),
     requestType: z.enum(['Regular', 'Emergency']),
     supplierPayee: z.string().trim().min(1).max(180),
@@ -178,7 +188,7 @@ export const resubmitSchema = z.object({
   correctionNote: z.string().trim().min(2).max(1500),
   corrections: z
     .object({
-      projectClass: z.string().trim().min(1).max(160),
+      projectClass: sofNumberSchema
       supplierPayee: z.string().trim().min(1).max(180),
       purposeDescription: z.string().trim().min(5).max(3000),
       amount: z.coerce.number().positive().max(999999999999.99),
