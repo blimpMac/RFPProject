@@ -197,8 +197,7 @@ export function ApprovalsPage() {
   const [documentVerification, setDocumentVerification] = useState('');
   const [verificationRemarks, setVerificationRemarks] = useState('');
   const [financeNotes, setFinanceNotes] = useState('');
-  const [processingStatus, setProcessingStatus] = useState('');  const [lateDocuments, setLateDocuments] = useState('');  const [modalMode, setModalMode] = useState<ModalMode>('view');  const [updateBusy, setUpdateBusy] = useState(false);  const [notice, setNotice] = useState('');
-  const load = useCallback(
+  const [processingStatus, setProcessingStatus] = useState('');  const [lateDocuments, setLateDocuments] = useState('');  const [modalMode, setModalMode] = useState<ModalMode>('view');  const [updateBusy, setUpdateBusy] = useState(false);  const [notice, setNotice] = useState('');  const load = useCallback(
     () =>
       get<Result>('monitoring/requests?page=1&pageSize=200')
         .then((result) => {
@@ -397,8 +396,7 @@ export function ApprovalsPage() {
       ? [          {
             value: 'department_approve',            label: departmentReturn
               ? 'Re-approve and return to Finance'              : 'Approve and send to Finance',
-          },
-          { value: 'department_reject', label: 'Return to Requestor for correction' },
+          },          { value: 'department_reject', label: 'Return to Requestor for correction' },
         ]
       : financeMember
         ? financeActionOptions(selected.final_status)
@@ -597,8 +595,7 @@ export function ApprovalsPage() {
         paginatedRows={paginatedRows}
         view={view}        page={page}        pageSize={pageSize}        pageCount={pageCount}
         finance={finance}
-        financeMember={financeMember}        department={department}
-        now={now}
+        financeMember={financeMember}        department={department}        now={now}
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
         onOpenRequest={openRequest}
@@ -726,7 +723,6 @@ export function ApprovalsPage() {
               verificationRemarks={verificationRemarks}
               checkDate={checkDate}
               reason={reason}
-              processingStatus={processingStatus}
               lateDocuments={lateDocuments}
               financeNotes={financeNotes}
               busy={updateBusy}
