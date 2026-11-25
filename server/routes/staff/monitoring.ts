@@ -103,11 +103,7 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
       const result = await db
         .from('approval_logs')
         .select('id,request_id,rfp_number,occurred_at,action,actor_email,actor_user_id')
-        .in('action', [
-          'Department Approved',
-          'Department Re-approved',
-          'Finance Member Approved',
-        ])
+        .in('action', ['Department Approved', 'Department Re-approved', 'Finance Member Approved'])
         .order('occurred_at', { ascending: true })
         .order('id', { ascending: true })
         .range(offset, offset + batchSize - 1);
@@ -125,7 +121,11 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
       ...new Set(approvalLogs.map((log) => log.actor_user_id).filter(Boolean) as string[]),
     ];
 
-    const requestRows: { id: string; department_approval_at: string | null; amount: number | string | null }[] = [];
+    const requestRows: {
+      id: string;
+      department_approval_at: string | null;
+      amount: number | string | null;
+    }[] = [];
     for (let offset = 0; offset < requestIds.length; offset += 500) {
       const result = await db
         .from('rfp_requests')
@@ -170,11 +170,7 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
           else break;
         }
         const fallbackHandoff = requestById.get(log.request_id || '')?.department_approval_at;
-        if (
-          !receivedAt &&
-          fallbackHandoff &&
-          new Date(fallbackHandoff).getTime() <= approvedAt
-        ) {
+        if (!receivedAt && fallbackHandoff && new Date(fallbackHandoff).getTime() <= approvedAt) {
           receivedAt = fallbackHandoff;
         }
 
@@ -209,8 +205,7 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
         };
       })
       .sort(
-        (left, right) =>
-          new Date(right.approvedAt).getTime() - new Date(left.approvedAt).getTime(),
+        (left, right) => new Date(right.approvedAt).getTime() - new Date(left.approvedAt).getTime(),
       );
 
     return json(200, {
@@ -368,3 +363,4 @@ export const handleMonitoringRoutes: RouteHandler = async ({ event, route, db })
 
   return undefined;
 };
+
