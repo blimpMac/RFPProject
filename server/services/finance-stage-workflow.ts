@@ -10,6 +10,10 @@ type FinanceStageInput = {
   requestId: string;
   action: string;
   remarks: string;
+  originalsReceivedDate?: string | null;
+  documentVerification?: 'Complete' | 'Incomplete' | null;
+  verificationRemarks?: string | null;
+  plannedCheckDate?: string | null;
 };
 
 type FinanceActor = {
@@ -141,15 +145,40 @@ export async function performFinanceStageAction(
         ['Pending Finance Review', 'Documentation Required', 'Pending Finance Head Review'],
         'Finance member approval',
       );
-      nextStatus = 'Awaiting Hard Copy Verification';
-      actionLabel = 'Finance Member Approved';
+      if (!asText(input.originalsReceivedDate) || input.documentVerification !== 'Complete') {
+        throw new HttpError(
+          400,
+          'Record the original documents received date and mark document verification Complete before approving.',
+        );
+      }
+      const schedule = manilaReceiptSchedule(now);
+      const operations = {
+        ...financeOperations,
+        originals_received_date: input.originalsReceivedDate,
+        document_verification: 'Complete',
+        verification_remarks: asText(input.verificationRemarks) || null,
+        updated_at: nowIso,
+        updated_by: actor.email,
+      };
+      nextStatus = 'Check Approval';
+      actionLabel = 'Finance Member Approved · Documents Received · Processing Started';
       nextWorkflow.member_status = 'Approved';
       nextWorkflow.member_reviewed_at = nowIso;
       nextWorkflow.member_reviewed_by = actor.email;
-      updateFields.finance_review = 'Member Approved';
+      nextWorkflow.hard_copy_status = 'Approved';
+      nextWorkflow.hard_copy_approved_at = nowIso;
+      nextWorkflow.hard_copy_approved_by = actor.email;
+      nextWorkflow.processing_started_at = nowIso;
+      nextWorkflow.processing_due_at = schedule.dueAt;
+      nextWorkflow.processing_day1 = schedule.day1;
+      nextWorkflow.processing_day3 = schedule.day3;
+      nextWorkflow.received_after_cutoff = schedule.afterCutoff;
+      updateFields.finance_review = 'Approved';
       updateFields.finance_review_at = nowIso;
       updateFields.finance_reviewed_by = actor.userId;
       updateFields.finance_remarks = input.remarks.trim() || request.finance_remarks || null;
+      updateFields.planned_check_date = input.plannedCheckDate || schedule.day3;
+      raw.finance_operations = operations;
       break;
 
     case 'member_reject':
@@ -275,14 +304,21 @@ export async function performFinanceStageAction(
 
   const rfpNumber = asText(request.rfp_number);
   if (input.action === 'member_approve') {
-    const financeMembers = await emailsForRoles(db, ['finance_reviewer']);
+    const recipients = [
+      asText(request.requestor_email),
+      ...(await departmentHeadEmails(db, request)),
+    ];
     await queueNotifications(
       db,
       request,
-      financeMembers,
-      'hard_copy_verification_required',
-      `Hard-copy verification required: ${rfpNumber}`,
-      { remarks: input.remarks.trim() || null },
+      recipients,
+      'processing_started',
+      `${rfpNumber} is processing and ready for check approval`,
+      {
+        processingDueAt: asText(nextWorkflow.processing_due_at),
+        plannedCheckDate: asText(nextWorkflow.processing_day3),
+        remarks: input.remarks.trim() || null,
+      },
       nextVersion,
     );
   } else if (input.action === 'member_reject') {
