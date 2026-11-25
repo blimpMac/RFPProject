@@ -354,10 +354,10 @@
   margin: 0.75rem 0 1rem;
 }
 
-.rf-form-preview .rf-workbook-table th,
-.rf-form-preview .rf-workbook-table td,
-.rf-form-preview.rf-form-gpi .rf-workbook-expenses tbody td,
-.rf-form-preview.rf-form-gemcor .rf-workbook-expenses tbody td {
+.rf-form-preview .rf-form-page .rf-workbook-table th,
+.rf-form-preview .rf-form-page .rf-workbook-table td,
+.rf-form-preview .rf-form-page.rf-form-gpi .rf-workbook-expenses tbody td,
+.rf-form-preview .rf-form-page.rf-form-gemcor .rf-workbook-expenses tbody td {
   height: auto;
   min-height: 2rem;
   padding: 0.4rem;
