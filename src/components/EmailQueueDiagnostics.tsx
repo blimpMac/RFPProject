@@ -33,7 +33,7 @@ export function EmailQueueDiagnostics() {
   const [error, setError] = useState('');
   async function inspect() {
     const value = reference.trim().toUpperCase();
-    if (!/^(RFP|CA|RF)-\d{4,}$/.test(value)) {
+    if (!/^(?:RFP-\d{4}-\d{4,}|(?:RFP|CA|RF)-\d{4,})$/.test(value)) {
       setError('Enter a valid RFP-2026-0001 reference.');
       return;
     }
