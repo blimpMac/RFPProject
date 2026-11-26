@@ -124,9 +124,7 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
           message_id: delivery.messageId || null,
           smtp_response: delivery.response,
           accepted_recipients: delivery.acceptedRecipients,
-          rejected_recipients: [
-            ...new Set([...delivery.rejectedRecipients, ...unacceptedSources]),
-          ],
+          rejected_recipients: [...new Set([...delivery.rejectedRecipients, ...unacceptedSources])],
           error_code: !recipientAccepted
             ? 'recipient_not_accepted_by_smtp'
             : unacceptedSources.length > 0
