@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, Mail } from 'lucide-react';
 import { Button, Spinner } from '../components/ui';
@@ -163,6 +163,39 @@ export function PasswordRecoveryPage() {
 }
 
 export function PasswordResetPage() {
+  const [recoveryStatus, setRecoveryStatus] = useState<'checking' | 'ready' | 'invalid'>('checking');
+
+  useEffect(() => {
+    let active = true;
+    const params = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const recoveryMarker = params.has('code') || params.get('type') === 'recovery' || hash.get('type') === 'recovery';
+
+    // Subscribe before reading the current session so a PASSWORD_RECOVERY event
+    // cannot be missed while Supabase processes the callback URL.
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
+      if (event === 'PASSWORD_RECOVERY' && session) {
+        setRecoveryStatus('ready');
+      }
+    });
+
+    void supabase.auth.getSession().then(({ data: sessionData, error: sessionError }) => {
+      if (!active) return;
+      if (!sessionError && sessionData.session && recoveryMarker) {
+        setRecoveryStatus('ready');
+      } else {
+        setRecoveryStatus('invalid');
+      }
+    }).catch(() => {
+      if (active) setRecoveryStatus('invalid');
+    });
+
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
+  }, []);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -174,6 +207,10 @@ export function PasswordResetPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (busy) return;
+    if (recoveryStatus !== 'ready') {
+      setError('This recovery link is invalid or has expired. Request a new password reset email and use its latest link.');
+      return;
+    }
     if (password !== confirm) {
       setError('Passwords do not match.');
       return;
@@ -183,12 +220,17 @@ export function PasswordResetPage() {
     try {
       const { error: authError } = await supabase.auth.updateUser({ password });
       if (authError) throw authError;
+      // Password update is the success criterion. A local sign-out failure must
+      // never turn a successful password change into a misleading error.
       setDone(true);
-      await supabase.auth.signOut({ scope: 'local' });
-    } catch (cause) {
-      if (!done) {
-        setError(cause instanceof Error ? cause.message : 'Unable to update the password.');
+      window.history.replaceState({}, document.title, '/admin/reset-password');
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch {
+        // The password is already updated; the user can still proceed to login.
       }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to update the password. Request a new recovery link and try again.');
     } finally {
       setBusy(false);
     }
@@ -196,11 +238,11 @@ export function PasswordResetPage() {
 
   return (
     <RecoveryLayout
-      title={done ? 'Password updated' : 'Create a new password'}
+      title={done ? 'Password updated' : recoveryStatus === 'invalid' ? 'Recovery link expired' : 'Create a new password'}
       description={
         done
           ? 'Your RFP account password has been changed. Sign in again using your new password.'
-          : 'Set a new password to restore access to your RFP Monitoring System account.'
+          : recoveryStatus === 'invalid'\n          ? 'This link is invalid, expired, or already used. Request a new password reset email to continue.'\n          : 'Set a new password to restore access to your RFP Monitoring System account.'
       }
     >
       {done ? (
@@ -218,6 +260,18 @@ export function PasswordResetPage() {
           >
             Continue to Staff Login
           </Link>
+        </div>
+      ) : recoveryStatus === 'checking' ? (
+        <div className="mt-6 flex items-center gap-3 rounded-xl border border-[#304c5e] bg-[#142b3a] p-4 text-sm text-slate-200" role="status">
+          <Spinner label="Verifying recovery link" />
+        </div>
+      ) : recoveryStatus === 'invalid' ? (
+        <div className="mt-6 space-y-5">
+          <p className="rounded-xl border border-[#8b5b32] bg-[#3a291b] p-4 text-sm leading-6 text-[#ffe2bd]" role="alert">
+            This password reset link cannot be used. Recovery links are single-use and expire. Request a new one to continue.
+          </p>
+          <Link to="/admin/forgot-password" className="btn btn-primary focus-ring flex w-full items-center justify-center">Request a new reset link</Link>
+          <Link to="/admin/login" className="block text-center text-sm font-semibold text-[#8af1d8] hover:underline">Return to Staff Login</Link>
         </div>
       ) : (
         <form onSubmit={(event) => void submit(event)} className="mt-6 space-y-5">
