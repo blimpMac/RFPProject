@@ -32,3 +32,30 @@ test('sender keeps the configured SMTP address but displays RFP branding', () =>
   });
   assert.throws(() => recoveryFromAddress('RFP Desk'), /From address is invalid/);
 });
+
+test('recovery source copies include SMTP username and From mailbox without duplicates', () => {
+  assert.deepEqual(
+    recoverySourceRecipients(
+      'gpifinance.notifications@gmail.com',
+      'RFP Desk <gpifinance.notifications@gmail.com>',
+      'dfdcordon@gmail.com',
+    ),
+    ['gpifinance.notifications@gmail.com'],
+  );
+  assert.deepEqual(
+    recoverySourceRecipients(
+      'smtp-user@example.com',
+      'RFP Desk <notifications@example.com>',
+      'requestor@example.com',
+    ),
+    ['smtp-user@example.com', 'notifications@example.com'],
+  );
+  assert.deepEqual(
+    recoverySourceRecipients(
+      'source@example.com',
+      'source@example.com',
+      'source@example.com',
+    ),
+    [],
+  );
+});
