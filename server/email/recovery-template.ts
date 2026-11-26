@@ -24,29 +24,6 @@ export function recoveryFromAddress(configuredFrom: string) {
   return { name: 'RFP Monitoring System', address: mailboxAddress(configuredFrom) };
 }
 
-/**
- * Copy recovery mail to both the authenticated SMTP mailbox and the configured
- * From mailbox. Remove duplicates and avoid addressing the requestor twice.
- */
-export function recoverySourceRecipients(
-  smtpUser: string,
-  configuredFrom: string,
-  requestorEmail: string,
-) {
-  const requestor = requestorEmail.trim().toLowerCase();
-  const recipients = new Map<string, string>();
-  for (const candidate of [smtpUser, configuredFrom]) {
-    try {
-      const address = mailboxAddress(candidate);
-      const key = address.toLowerCase();
-      if (key !== requestor && !recipients.has(key)) recipients.set(key, address);
-    } catch {
-      // SMTP usernames are not always mailbox addresses; a valid From mailbox
-      // remains a required source-copy destination.
-    }
-  }
-  return [...recipients.values()];
-}
 
 export function renderRecoveryEmail(actionLink: string) {
   const link = new URL(actionLink);
