@@ -9,14 +9,43 @@ function escapeAttribute(value: string) {
     .replaceAll('>', '&gt;');
 }
 
+/** Parse a plain mailbox address or a standard "Display Name <address>" value. */
+function mailboxAddress(value: string) {
+  const bracketed = value.match(/<([^<>\\s]+@[^<>\\s]+)>/);
+  const address = (bracketed?.[1] || value).trim();
+  if (!/^[^\\s@<>]+@[^\\s@<>]+[.][^\\s@<>]+$/.test(address)) {
+    throw new Error('SMTP mailbox address is invalid');
+  }
+  return address;
+}
+
 /** Keep the authorized SMTP From address; replace only its display name. */
 export function recoveryFromAddress(configuredFrom: string) {
-  const bracketed = configuredFrom.match(/<([^<>\s]+@[^<>\s]+)>/);
-  const address = (bracketed?.[1] || configuredFrom).trim();
-  if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(address)) {
-    throw new Error('SMTP From address is invalid');
+  return { name: 'RFP Monitoring System', address: mailboxAddress(configuredFrom) };
+}
+
+/**
+ * Copy recovery mail to both the authenticated SMTP mailbox and the configured
+ * From mailbox. Remove duplicates and avoid addressing the requestor twice.
+ */
+export function recoverySourceRecipients(
+  smtpUser: string,
+  configuredFrom: string,
+  requestorEmail: string,
+) {
+  const requestor = requestorEmail.trim().toLowerCase();
+  const recipients = new Map<string, string>();
+  for (const candidate of [smtpUser, configuredFrom]) {
+    try {
+      const address = mailboxAddress(candidate);
+      const key = address.toLowerCase();
+      if (key !== requestor && !recipients.has(key)) recipients.set(key, address);
+    } catch {
+      // SMTP usernames are not always mailbox addresses; a valid From mailbox
+      // remains a required source-copy destination.
+    }
   }
-  return { name: 'RFP Monitoring System', address };
+  return [...recipients.values()];
 }
 
 export function renderRecoveryEmail(actionLink: string) {
