@@ -47,10 +47,17 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
   const emailLimit = await db.rpc('record_submission_attempt', {
     p_client_hash: clientHash(`auth-recovery:email:${email}`),
     p_window_minutes: 60,
-    p_max_attempts: 3,
+    p_max_attempts: 6,
   });
   if (emailLimit.error) throw emailLimit.error;
-  if (!emailLimit.data) return json(200, receipt);
+  // This limit runs before account lookup, so the same response applies to
+  // registered and unregistered addresses without exposing account existence.
+  if (!emailLimit.data) {
+    throw new HttpError(
+      429,
+      'Too many password reset requests for this address. Please wait up to 60 minutes before trying again.',
+    );
+  }
 
   // Only existing ACTIVE staff accounts may receive recovery links.
   // Unknown/inactive addresses receive the same response and no email.
@@ -181,6 +188,5 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
       name: errorName,
     });
   }
-  return json(200, receipt);
   return json(200, receipt);
 };
