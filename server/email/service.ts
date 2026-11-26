@@ -101,6 +101,7 @@ export async function deliverNotification(notification: Notification) {
   const result = await transport.sendMail({
     from: c.SMTP_FROM_EMAIL,
     to: notification.recipient_email,
+    bcc: c.SMTP_FROM_EMAIL,
     subject: rendered.subject,
     html: rendered.html,
     attachments,
