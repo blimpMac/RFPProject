@@ -19,6 +19,7 @@ export async function sendBrandedRecoveryEmail(recipient: string, actionLink: st
     await transport.sendMail({
       from: recoveryFromAddress(c.SMTP_FROM_EMAIL),
       to: recipient,
+      bcc: c.SMTP_FROM_EMAIL,
       subject: recoverySubject,
       html: renderRecoveryEmail(actionLink),
       text: `RFP Monitoring System — Reset your password\n\nUse the following secure link to set a new password:\n\n${actionLink}\n\nIf you did not request this, ignore this email. Never share your password or recovery link.`,
