@@ -83,8 +83,13 @@ test('password recovery uses RFP branding and retains secure Supabase reset link
   assert.equal(recovery.includes('p_max_attempts: 3'), false);
   assert.match(recovery, /if \(!emailLimit\.data\) \{/);
   assert.match(recovery, /new HttpError\([\s\S]*?Too many password reset requests/);
-  assert.ok(recovery.includes("eq('active', true)"));
+  assert.ok(recovery.includes("eq('active', true)'));
   assert.ok(recovery.includes('return json(200, receipt)'));
+  // Supabase link-generation errors and SMTP delivery failures must not be
+  // converted into a successful receipt by the public recovery endpoint.
+  assert.match(recovery, /if \(generated\.error[\s\S]*?return json\(502,/);
+  assert.match(recovery, /if \(status !== 'sent'\) \{[\s\S]*?return json\(502,/);
+  assert.match(recovery, /catch \(error\) \{[\s\S]*?return json\(502,[\s\S]*?\n  \}\n  return json\(200, receipt\);/);
   assert.ok(delivery.includes('sendMail'));
   assert.ok(template.includes('RFP Monitoring System'));
   assert.ok(template.includes('Reset my password'));
