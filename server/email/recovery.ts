@@ -43,11 +43,7 @@ export async function sendBrandedRecoveryEmail(
   }
 
   const from = recoveryFromAddress(c.SMTP_FROM_EMAIL);
-  const sourceRecipients = recoverySourceRecipients(
-    c.SMTP_USER,
-    c.SMTP_FROM_EMAIL,
-    recipient,
-  );
+  const sourceRecipients = recoverySourceRecipients(c.SMTP_USER, c.SMTP_FROM_EMAIL, recipient);
   const transport = nodemailer.createTransport({
     host: c.SMTP_HOST,
     port: c.SMTP_PORT,
