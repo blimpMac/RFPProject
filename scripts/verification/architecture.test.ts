@@ -89,7 +89,10 @@ test('password recovery uses RFP branding and retains secure Supabase reset link
   // converted into a successful receipt by the public recovery endpoint.
   assert.match(recovery, /if \(generated\.error[\s\S]*?return json\(502,/);
   assert.match(recovery, /if \(status !== 'sent'\) \{[\s\S]*?return json\(502,/);
-  assert.match(recovery, /catch \(error\) \{[\s\S]*?return json\(502,[\s\S]*?\n  \}\n  return json\(200, receipt\);/);
+  assert.match(
+    recovery,
+    /catch \(error\) \{[\s\S]*?return json\(502,[\s\S]*?\n  \}\n  return json\(200, receipt\);/,
+  );
   assert.ok(delivery.includes('sendMail'));
   assert.ok(template.includes('RFP Monitoring System'));
   assert.ok(template.includes('Reset my password'));
