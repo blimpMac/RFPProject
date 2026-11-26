@@ -243,7 +243,8 @@ export function PasswordResetPage() {
         done
           ? 'Your RFP account password has been changed. Sign in again using your new password.'
           : recoveryStatus === 'invalid'
-          ? 'This link is invalid, expired, or already used. Request a new password reset email to continue.'\n          : 'Set a new password to restore access to your RFP Monitoring System account.'
+          ? 'This link is invalid, expired, or already used. Request a new password reset email to continue.'
+          : 'Set a new password to restore access to your RFP Monitoring System account.'
       }
     >
       {done ? (
