@@ -163,14 +163,19 @@ export function PasswordRecoveryPage() {
 }
 
 export function PasswordResetPage() {
-  const [recoveryStatus, setRecoveryStatus] = useState<'checking' | 'ready' | 'invalid'>('checking');
+  const [recoveryStatus, setRecoveryStatus] = useState<
+    'checking' | 'ready' | 'invalid'
+  >('checking');
   const recoveryEventSeen = useRef(false);
 
   useEffect(() => {
     let active = true;
     const params = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-    const recoveryMarker = params.has('code') || params.get('type') === 'recovery' || hash.get('type') === 'recovery';
+    const recoveryMarker =
+      params.has('code') ||
+      params.get('type') === 'recovery' ||
+      hash.get('type') === 'recovery';
 
     // Subscribe before reading the current session so a PASSWORD_RECOVERY event
     // cannot be missed while Supabase processes the callback URL.
@@ -182,16 +187,23 @@ export function PasswordResetPage() {
       }
     });
 
-    void supabase.auth.getSession().then(({ data: sessionData, error: sessionError }) => {
-      if (!active) return;
-      if (!sessionError && sessionData.session && (recoveryMarker || recoveryEventSeen.current)) {
-        setRecoveryStatus('ready');
-      } else {
-        setRecoveryStatus('invalid');
-      }
-    }).catch(() => {
-      if (active) setRecoveryStatus('invalid');
-    });
+    void supabase.auth
+      .getSession()
+      .then(({ data: sessionData, error: sessionError }) => {
+        if (!active) return;
+        if (
+          !sessionError &&
+          sessionData.session &&
+          (recoveryMarker || recoveryEventSeen.current)
+        ) {
+          setRecoveryStatus('ready');
+        } else {
+          setRecoveryStatus('invalid');
+        }
+      })
+      .catch(() => {
+        if (active) setRecoveryStatus('invalid');
+      });
 
     return () => {
       active = false;
@@ -232,7 +244,11 @@ export function PasswordResetPage() {
         // The password is already updated; the user can still proceed to login.
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to update the password. Request a new recovery link and try again.');
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'Unable to update the password. Request a new recovery link and try again.',
+      );
     } finally {
       setBusy(false);
     }
@@ -240,13 +256,19 @@ export function PasswordResetPage() {
 
   return (
     <RecoveryLayout
-      title={done ? 'Password updated' : recoveryStatus === 'invalid' ? 'Recovery link expired' : 'Create a new password'}
+      title={
+        done
+          ? 'Password updated'
+          : recoveryStatus === 'invalid'
+            ? 'Recovery link expired'
+            : 'Create a new password'
+      }
       description={
         done
           ? 'Your RFP account password has been changed. Sign in again using your new password.'
           : recoveryStatus === 'invalid'
-          ? 'This link is invalid, expired, or already used. Request a new password reset email to continue.'
-          : 'Set a new password to restore access to your RFP Monitoring System account.'
+            ? 'This link is invalid, expired, or already used. Request a new password reset email to continue.'
+            : 'Set a new password to restore access to your RFP Monitoring System account.'
       }
     >
       {done ? (
@@ -266,16 +288,32 @@ export function PasswordResetPage() {
           </Link>
         </div>
       ) : recoveryStatus === 'checking' ? (
-        <div className="mt-6 flex items-center gap-3 rounded-xl border border-[#304c5e] bg-[#142b3a] p-4 text-sm text-slate-200" role="status">
+        <div
+          className="mt-6 flex items-center gap-3 rounded-xl border border-[#304c5e] bg-[#142b3a] p-4 text-sm text-slate-200"
+          role="status"
+        >
           <Spinner label="Verifying recovery link" />
         </div>
       ) : recoveryStatus === 'invalid' ? (
         <div className="mt-6 space-y-5">
-          <p className="rounded-xl border border-[#8b5b32] bg-[#3a291b] p-4 text-sm leading-6 text-[#ffe2bd]" role="alert">
+          <p
+            className="rounded-xl border border-[#8b5b32] bg-[#3a291b] p-4 text-sm leading-6 text-[#ffe2bd]"
+            role="alert"
+          >
             This password reset link cannot be used. Recovery links are single-use and expire. Request a new one to continue.
           </p>
-          <Link to="/admin/forgot-password" className="btn btn-primary focus-ring flex w-full items-center justify-center">Request a new reset link</Link>
-          <Link to="/admin/login" className="block text-center text-sm font-semibold text-[#8af1d8] hover:underline">Return to Staff Login</Link>
+          <Link
+            to="/admin/forgot-password"
+            className="btn btn-primary focus-ring flex w-full items-center justify-center"
+          >
+            Request a new reset link
+          </Link>
+          <Link
+            to="/admin/login"
+            className="block text-center text-sm font-semibold text-[#8af1d8] hover:underline"
+          >
+            Return to Staff Login
+          </Link>
         </div>
       ) : (
         <form onSubmit={(event) => void submit(event)} className="mt-6 space-y-5">
