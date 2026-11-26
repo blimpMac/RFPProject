@@ -92,8 +92,10 @@ export function PasswordRecoveryPage() {
             <div>
               <p className="font-semibold text-[#d5fff2]">Recovery request received</p>
               <p className="mt-1 text-sm leading-6 text-slate-200">
-                Check your inbox and spam folder. For your security, we do not confirm whether an
-                email address is registered.
+                Check your inbox and spam folder. This screen confirms only that the request
+                was received, not that an email reached your mailbox. For your security, we do not
+                confirm whether an email address is registered. If nothing arrives after a few
+                minutes, contact IT so the SMTP delivery record can be checked.
               </p>
             </div>
           </div>
