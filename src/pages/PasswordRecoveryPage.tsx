@@ -75,11 +75,11 @@ export function PasswordRecoveryPage() {
 
   return (
     <RecoveryLayout
-      title={sent ? 'Check your email' : 'Forgot your password?'}
+      title={sent ? 'Request submitted' : 'Forgot your password?'}
       description={
         sent
-          ? 'If this address belongs to an RFP staff account, password recovery instructions will arrive shortly.'
-          : 'Enter the work email linked to your RFP account. We will send you a secure link to choose a new password.'
+          ? 'This page cannot confirm that a reset email was sent or delivered. A recovery link is generated only when the address exactly matches an active RFP staff account.'
+          : 'Enter the exact work email address registered to your active RFP staff account. We will send a secure link if the address matches.'
       }
     >
       {sent ? (
@@ -90,12 +90,13 @@ export function PasswordRecoveryPage() {
           >
             <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-[#8af1d8]" aria-hidden="true" />
             <div>
-              <p className="font-semibold text-[#d5fff2]">Recovery request received</p>
+              <p className="font-semibold text-[#d5fff2]">Request received — email not confirmed</p>
               <p className="mt-1 text-sm leading-6 text-slate-200">
-                Check your inbox and spam folder. This screen confirms only that the request was
-                received, not that an email reached your mailbox. For your security, we do not
-                confirm whether an email address is registered. If nothing arrives after a few
-                minutes, contact IT so the SMTP delivery record can be checked.
+                A reset link is generated only for the exact email address saved on an active RFP
+                staff profile. Unknown or inactive addresses receive the same confirmation for
+                security, but no link is generated. Check Spam and All Mail. If nothing arrives,
+                contact IT to verify your registered email address and check the SMTP acceptance
+                record. SMTP acceptance does not guarantee Inbox delivery.
               </p>
             </div>
           </div>
