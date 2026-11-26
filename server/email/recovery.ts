@@ -2,7 +2,6 @@ import nodemailer from 'nodemailer';
 import { config } from '../lib/config.js';
 import {
   recoveryFromAddress,
-  recoverySourceRecipients,
   recoverySubject,
   renderRecoveryEmail,
 } from './recovery-template.js';
@@ -10,7 +9,6 @@ import {
 export type RecoveryDeliveryResult = {
   messageId: string;
   response: string;
-  sourceRecipients: string[];
   acceptedRecipients: string[];
   rejectedRecipients: string[];
 };
@@ -30,7 +28,7 @@ function normalizeMailboxes(values: unknown[]): string[] {
 
 /**
  * Sends a branded recovery message and returns SMTP envelope results so the
- * caller can distinguish recipient acceptance from a missing source-mail copy.
+ * caller can distinguish recipient acceptance from delivery failure.
  * Recovery links are never logged or returned from this module.
  */
 export async function sendBrandedRecoveryEmail(
@@ -43,7 +41,6 @@ export async function sendBrandedRecoveryEmail(
   }
 
   const from = recoveryFromAddress(c.SMTP_FROM_EMAIL);
-  const sourceRecipients = recoverySourceRecipients(c.SMTP_USER, c.SMTP_FROM_EMAIL, recipient);
   const transport = nodemailer.createTransport({
     host: c.SMTP_HOST,
     port: c.SMTP_PORT,
@@ -58,7 +55,6 @@ export async function sendBrandedRecoveryEmail(
     const result = await transport.sendMail({
       from,
       to: recipient,
-      bcc: sourceRecipients,
       subject: recoverySubject,
       html: renderRecoveryEmail(actionLink),
       text: `RFP Monitoring System — Reset your password
@@ -73,7 +69,6 @@ If you did not request this, ignore this email. Never share your password or rec
     return {
       messageId: result.messageId || '',
       response: String(result.response || '').slice(0, 1000),
-      sourceRecipients,
       acceptedRecipients: normalizeMailboxes(result.accepted || []),
       rejectedRecipients: normalizeMailboxes(result.rejected || []),
     };
