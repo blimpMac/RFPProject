@@ -69,16 +69,24 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
     options: { redirectTo },
   });
   if (generated.error || !generated.data.properties?.action_link) {
-    // No account state, token, or internal Auth error is exposed to a caller.
+    // Preserve account-enumeration protection, but leave a sanitized diagnostic
+    // for operators. Never log the email, action link, or token-bearing error.
+    console.warn('RFP password recovery link generation failed.', {
+      code: generated.error?.code || 'missing_action_link',
+    });
     return json(200, receipt);
   }
 
   try {
     await sendBrandedRecoveryEmail(email, generated.data.properties.action_link);
-  } catch {
-    // Avoid account enumeration through SMTP delivery failures.
-    // Never log an exception that may contain a token-bearing recovery URL.
-    console.warn('RFP password recovery email delivery failed.');
+  } catch (error) {
+    // Avoid account enumeration through SMTP delivery failures. Log only a
+    // provider error code/name, never the recipient or token-bearing URL.
+    const safeError = error && typeof error === 'object' ? error as { code?: unknown; name?: unknown } : {};
+    console.warn('RFP password recovery email delivery failed.', {
+      code: typeof safeError.code === 'string' ? safeError.code : 'smtp_delivery_failed',
+      name: typeof safeError.name === 'string' ? safeError.name : 'Error',
+    });
     return json(200, receipt);
   }
   return json(200, receipt);
