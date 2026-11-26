@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, Mail } from 'lucide-react';
 import { Button, Spinner } from '../components/ui';
@@ -164,6 +164,7 @@ export function PasswordRecoveryPage() {
 
 export function PasswordResetPage() {
   const [recoveryStatus, setRecoveryStatus] = useState<'checking' | 'ready' | 'invalid'>('checking');
+  const recoveryEventSeen = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -176,13 +177,14 @@ export function PasswordResetPage() {
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
       if (event === 'PASSWORD_RECOVERY' && session) {
+        recoveryEventSeen.current = true;
         setRecoveryStatus('ready');
       }
     });
 
     void supabase.auth.getSession().then(({ data: sessionData, error: sessionError }) => {
       if (!active) return;
-      if (!sessionError && sessionData.session && recoveryMarker) {
+      if (!sessionError && sessionData.session && (recoveryMarker || recoveryEventSeen.current)) {
         setRecoveryStatus('ready');
       } else {
         setRecoveryStatus('invalid');
