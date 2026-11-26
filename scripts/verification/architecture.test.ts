@@ -86,6 +86,10 @@ test('password recovery uses RFP branding and retains secure Supabase reset link
   assert.ok(recovery.includes("eq('active', true)"));
   assert.match(recovery, /if \(!profile\.data\) return json\(200, receipt\);/);
   assert.ok(recovery.includes("'smtp_accepted'"));
+  assert.ok(recovery.includes('bcc_recipients: []'));
+  assert.equal(recovery.includes('recoverySourceRecipients'), false);
+  assert.equal(delivery.includes('bcc:'), false);
+  assert.equal(delivery.includes('sourceRecipients'), false);
   assert.ok(page.includes('exactly matches an active RFP staff account'));
   assert.ok(page.includes('SMTP acceptance does not guarantee Inbox delivery'));
   assert.ok(recovery.includes('return json(200, receipt)'));
