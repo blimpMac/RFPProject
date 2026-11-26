@@ -82,7 +82,10 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
     console.warn('RFP password recovery link generation failed.', {
       code: generated.error?.code || 'missing_action_link',
     });
-    return json(200, receipt);
+    return json(502, {
+      ok: false,
+      error: 'We could not generate a password reset link. Please try again later or contact IT.',
+    });
   }
 
   const fromAddress = recoveryFromAddress(config.SMTP_FROM_EMAIL).address;
@@ -153,6 +156,13 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
         sourceCopiesAccepted: unacceptedSources.length === 0,
         smtpResponseCode: delivery.response.match(/^\\d{3}/)?.[0] || 'unavailable',
       });
+      return json(502, {
+        ok: false,
+        error:
+          status === 'partial'
+            ? 'The reset email was not accepted by every configured mailbox. Please contact IT before requesting another link.'
+            : 'The reset email could not be accepted by the recipient mailbox. Please try again later or contact IT.',
+      });
     }
   } catch (error) {
     // Avoid account enumeration and never log the recipient or token-bearing URL.
@@ -186,6 +196,10 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
     console.warn('RFP password recovery SMTP delivery failed.', {
       code: errorCode,
       name: errorName,
+    });
+    return json(502, {
+      ok: false,
+      error: 'We could not send the password reset email. Please try again later or contact IT.',
     });
   }
   return json(200, receipt);
