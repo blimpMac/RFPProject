@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { recoveryFromAddress, recoverySourceRecipients, recoverySubject, renderRecoveryEmail } from './recovery-template.ts';
+import {
+  recoveryFromAddress,
+  recoverySourceRecipients,
+  recoverySubject,
+  renderRecoveryEmail,
+} from './recovery-template.ts';
 
 test('recovery email uses RFP Monitoring System identity and a secure link', () => {
   const tokenLink =
@@ -51,11 +56,7 @@ test('recovery source copies include SMTP username and From mailbox without dupl
     ['smtp-user@example.com', 'notifications@example.com'],
   );
   assert.deepEqual(
-    recoverySourceRecipients(
-      'source@example.com',
-      'source@example.com',
-      'source@example.com',
-    ),
+    recoverySourceRecipients('source@example.com', 'source@example.com', 'source@example.com'),
     [],
   );
 });
