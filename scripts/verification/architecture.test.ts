@@ -68,7 +68,7 @@ test('password recovery uses RFP branding and retains secure Supabase reset link
   const authConfig = read('supabase/config.toml');
 
   assert.ok(page.includes('RFP Monitoring System'));
-  assert.ok(page.includes('Recovery request received'));
+  assert.ok(page.includes('Request received — email not confirmed'));
   assert.ok(page.includes("fetch('/api/auth/recover'"));
   assert.equal(page.includes('supabase.auth.resetPasswordForEmail'), false);
   assert.ok(page.includes('supabase.auth.updateUser'));
@@ -84,11 +84,15 @@ test('password recovery uses RFP branding and retains secure Supabase reset link
   assert.match(recovery, /if \(!emailLimit\.data\) \{/);
   assert.match(recovery, /new HttpError\([\s\S]*?Too many password reset requests/);
   assert.ok(recovery.includes("eq('active', true)"));
+  assert.match(recovery, /if \(!profile\.data\) return json\(200, receipt\);/);
+  assert.ok(recovery.includes("'smtp_accepted'"));
+  assert.ok(page.includes('exactly matches an active RFP staff account'));
+  assert.ok(page.includes('SMTP acceptance does not guarantee Inbox delivery'));
   assert.ok(recovery.includes('return json(200, receipt)'));
   // Supabase link-generation errors and SMTP delivery failures must not be
   // converted into a successful receipt by the public recovery endpoint.
   assert.match(recovery, /if \(generated\.error[\s\S]*?return json\(502,/);
-  assert.match(recovery, /if \(status !== 'sent'\) \{[\s\S]*?return json\(502,/);
+  assert.match(recovery, /if \(status !== 'smtp_accepted'\) \{[\s\S]*?return json\(502,/);
   assert.match(
     recovery,
     /catch \(error\) \{[\s\S]*?return json\(502,[\s\S]*?\n\s*\}\n\s*return json\(200, receipt\);/,
