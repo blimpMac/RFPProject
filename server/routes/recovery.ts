@@ -14,7 +14,7 @@ const inputSchema = z
 const receipt = {
   ok: true,
   message:
-    'If the email belongs to an active RFP staff account, check its inbox for recovery instructions.',
+    'If this address matches an active RFP staff account, the recovery request will be processed. Inbox delivery is not confirmed by this response.',
 };
 
 /** The public endpoint never reveals account existence or sends links to the browser. */
