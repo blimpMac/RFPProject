@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { clientHash } from '../lib/crypto.js';
 import { ensureMethod, HttpError, json, readJson } from '../lib/http.js';
 import { sendBrandedRecoveryEmail } from '../email/recovery.js';
-import { recoveryFromAddress, recoverySourceRecipients } from '../email/recovery-template.js';
+import { recoveryFromAddress } from '../email/recovery-template.js';
 import type { RouteHandler } from './context.js';
 
 const inputSchema = z
@@ -89,11 +89,6 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
   }
 
   const fromAddress = recoveryFromAddress(config.SMTP_FROM_EMAIL).address;
-  const sourceRecipients = recoverySourceRecipients(
-    config.SMTP_USER,
-    config.SMTP_FROM_EMAIL,
-    email,
-  );
   const auditInsert = await db
     .from('password_recovery_delivery_logs')
     .insert({
@@ -101,7 +96,8 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
       recipient_email: email,
       smtp_user: config.SMTP_USER,
       from_email: fromAddress,
-      bcc_recipients: sourceRecipients,
+      // Recovery links are confidential: no finance/source mailbox BCC.
+      bcc_recipients: [],
       status: 'generated',
     })
     .select('id')
@@ -118,16 +114,9 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
     const delivery = await sendBrandedRecoveryEmail(email, generated.data.properties.action_link);
     const accepted = new Set(delivery.acceptedRecipients);
     const recipientAccepted = accepted.has(email);
-    const unacceptedSources = delivery.sourceRecipients.filter(
-      (address) => !accepted.has(address.toLowerCase()),
-    );
     // SMTP acceptance confirms the receiving mail server accepted the message,
     // not that it reached the recipient's Inbox. Keep that distinction in the audit.
-    const status = !recipientAccepted
-      ? 'failed'
-      : unacceptedSources.length > 0
-        ? 'partial'
-        : 'smtp_accepted';
+    const status = recipientAccepted ? 'smtp_accepted' : 'failed';
     if (auditId !== null) {
       const updated = await db
         .from('password_recovery_delivery_logs')
@@ -136,12 +125,8 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
           message_id: delivery.messageId || null,
           smtp_response: delivery.response,
           accepted_recipients: delivery.acceptedRecipients,
-          rejected_recipients: [...new Set([...delivery.rejectedRecipients, ...unacceptedSources])],
-          error_code: !recipientAccepted
-            ? 'recipient_not_accepted_by_smtp'
-            : unacceptedSources.length > 0
-              ? 'source_copy_not_accepted_by_smtp'
-              : null,
+          rejected_recipients: delivery.rejectedRecipients,
+          error_code: recipientAccepted ? null : 'recipient_not_accepted_by_smtp',
           updated_at: new Date().toISOString(),
         })
         .eq('id', auditId);
@@ -155,15 +140,12 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
       console.warn('RFP recovery email was not accepted for every destination.', {
         status,
         recipientAccepted,
-        sourceCopiesAccepted: unacceptedSources.length === 0,
         smtpResponseCode: delivery.response.match(/^\\d{3}/)?.[0] || 'unavailable',
       });
       return json(502, {
         ok: false,
         error:
-          status === 'partial'
-            ? 'The reset email was not accepted by every configured mailbox. Please contact IT before requesting another link.'
-            : 'The reset email could not be accepted by the recipient mailbox. Please try again later or contact IT.',
+          'The reset email could not be accepted by the recipient mailbox. Please try again later or contact IT.',
       });
     }
   } catch (error) {
