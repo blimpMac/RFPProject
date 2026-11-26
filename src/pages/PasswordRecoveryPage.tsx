@@ -92,8 +92,8 @@ export function PasswordRecoveryPage() {
             <div>
               <p className="font-semibold text-[#d5fff2]">Recovery request received</p>
               <p className="mt-1 text-sm leading-6 text-slate-200">
-                Check your inbox and spam folder. This screen confirms only that the request
-                was received, not that an email reached your mailbox. For your security, we do not
+                Check your inbox and spam folder. This screen confirms only that the request was
+                received, not that an email reached your mailbox. For your security, we do not
                 confirm whether an email address is registered. If nothing arrives after a few
                 minutes, contact IT so the SMTP delivery record can be checked.
               </p>
@@ -165,9 +165,9 @@ export function PasswordRecoveryPage() {
 }
 
 export function PasswordResetPage() {
-  const [recoveryStatus, setRecoveryStatus] = useState<
-    'checking' | 'ready' | 'invalid'
-  >('checking');
+  const [recoveryStatus, setRecoveryStatus] = useState<'checking' | 'ready' | 'invalid'>(
+    'checking',
+  );
   const recoveryEventSeen = useRef(false);
 
   useEffect(() => {
@@ -175,9 +175,7 @@ export function PasswordResetPage() {
     const params = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const recoveryMarker =
-      params.has('code') ||
-      params.get('type') === 'recovery' ||
-      hash.get('type') === 'recovery';
+      params.has('code') || params.get('type') === 'recovery' || hash.get('type') === 'recovery';
 
     // Subscribe before reading the current session so a PASSWORD_RECOVERY event
     // cannot be missed while Supabase processes the callback URL.
@@ -193,11 +191,7 @@ export function PasswordResetPage() {
       .getSession()
       .then(({ data: sessionData, error: sessionError }) => {
         if (!active) return;
-        if (
-          !sessionError &&
-          sessionData.session &&
-          (recoveryMarker || recoveryEventSeen.current)
-        ) {
+        if (!sessionError && sessionData.session && (recoveryMarker || recoveryEventSeen.current)) {
           setRecoveryStatus('ready');
         } else {
           setRecoveryStatus('invalid');
@@ -224,7 +218,9 @@ export function PasswordResetPage() {
     event.preventDefault();
     if (busy) return;
     if (recoveryStatus !== 'ready') {
-      setError('This recovery link is invalid or has expired. Request a new password reset email and use its latest link.');
+      setError(
+        'This recovery link is invalid or has expired. Request a new password reset email and use its latest link.',
+      );
       return;
     }
     if (password !== confirm) {
@@ -302,7 +298,8 @@ export function PasswordResetPage() {
             className="rounded-xl border border-[#8b5b32] bg-[#3a291b] p-4 text-sm leading-6 text-[#ffe2bd]"
             role="alert"
           >
-            This password reset link cannot be used. Recovery links are single-use and expire. Request a new one to continue.
+            This password reset link cannot be used. Recovery links are single-use and expire.
+            Request a new one to continue.
           </p>
           <Link
             to="/admin/forgot-password"
