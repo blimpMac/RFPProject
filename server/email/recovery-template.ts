@@ -11,9 +11,9 @@ function escapeAttribute(value: string) {
 
 /** Parse a plain mailbox address or a standard "Display Name <address>" value. */
 function mailboxAddress(value: string) {
-  const bracketed = value.match(/<([^<>\\s]+@[^<>\\s]+)>/);
+  const bracketed = value.match(/<([^<>\s]+@[^<>\s]+)>/);
   const address = (bracketed?.[1] || value).trim();
-  if (!/^[^\\s@<>]+@[^\\s@<>]+[.][^\\s@<>]+$/.test(address)) {
+  if (!/^[^\s@<>]+@[^\s@<>]+[.][^\s@<>]+$/.test(address)) {
     throw new Error('SMTP mailbox address is invalid');
   }
   return address;
