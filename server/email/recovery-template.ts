@@ -14,7 +14,7 @@ function mailboxAddress(value: string) {
   const bracketed = value.match(/<([^<>\s]+@[^<>\s]+)>/);
   const address = (bracketed?.[1] || value).trim();
   if (!/^[^\s@<>]+@[^\s@<>]+[.][^\s@<>]+$/.test(address)) {
-    throw new Error('SMTP mailbox address is invalid');
+    throw new Error('SMTP From address is invalid');
   }
   return address;
 }
