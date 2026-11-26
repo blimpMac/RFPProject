@@ -82,7 +82,10 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
   } catch (error) {
     // Avoid account enumeration through SMTP delivery failures. Log only a
     // provider error code/name, never the recipient or token-bearing URL.
-    const safeError = error && typeof error === 'object' ? error as { code?: unknown; name?: unknown } : {};
+    const safeError =
+      error && typeof error === 'object'
+        ? (error as { code?: unknown; name?: unknown })
+        : {};
     console.warn('RFP password recovery email delivery failed.', {
       code: typeof safeError.code === 'string' ? safeError.code : 'smtp_delivery_failed',
       name: typeof safeError.name === 'string' ? safeError.name : 'Error',
