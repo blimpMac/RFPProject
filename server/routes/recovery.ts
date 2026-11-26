@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { clientHash } from '../lib/crypto.js';
 import { ensureMethod, HttpError, json, readJson } from '../lib/http.js';
 import { sendBrandedRecoveryEmail } from '../email/recovery.js';
+import { recoveryFromAddress, recoverySourceRecipients } from '../email/recovery-template.js';
 import type { RouteHandler } from './context.js';
 
 const inputSchema = z
@@ -77,20 +78,111 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
     return json(200, receipt);
   }
 
+  const fromAddress = recoveryFromAddress(config.SMTP_FROM_EMAIL).address;
+  const sourceRecipients = recoverySourceRecipients(
+    config.SMTP_USER,
+    config.SMTP_FROM_EMAIL,
+    email,
+  );
+  const auditInsert = await db
+    .from('password_recovery_delivery_logs')
+    .insert({
+      user_id: profile.data.id,
+      recipient_email: email,
+      smtp_user: config.SMTP_USER,
+      from_email: fromAddress,
+      bcc_recipients: sourceRecipients,
+      status: 'generated',
+    })
+    .select('id')
+    .maybeSingle();
+  const auditId = auditInsert.data?.id ?? null;
+  if (auditInsert.error) {
+    // The email path should continue even if diagnostics storage is unavailable.
+    console.warn('RFP recovery audit insert failed.', {
+      code: auditInsert.error.code || 'audit_insert_failed',
+    });
+  }
+
   try {
-    await sendBrandedRecoveryEmail(email, generated.data.properties.action_link);
+    const delivery = await sendBrandedRecoveryEmail(email, generated.data.properties.action_link);
+    const accepted = new Set(delivery.acceptedRecipients);
+    const recipientAccepted = accepted.has(email);
+    const unacceptedSources = delivery.sourceRecipients.filter(
+      (address) => !accepted.has(address.toLowerCase()),
+    );
+    const status = !recipientAccepted
+      ? 'failed'
+      : unacceptedSources.length > 0
+        ? 'partial'
+        : 'sent';
+    if (auditId !== null) {
+      const updated = await db
+        .from('password_recovery_delivery_logs')
+        .update({
+          status,
+          message_id: delivery.messageId || null,
+          smtp_response: delivery.response,
+          accepted_recipients: delivery.acceptedRecipients,
+          rejected_recipients: [
+            ...new Set([...delivery.rejectedRecipients, ...unacceptedSources]),
+          ],
+          error_code: !recipientAccepted
+            ? 'recipient_not_accepted_by_smtp'
+            : unacceptedSources.length > 0
+              ? 'source_copy_not_accepted_by_smtp'
+              : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', auditId);
+      if (updated.error) {
+        console.warn('RFP recovery audit update failed.', {
+          code: updated.error.code || 'audit_update_failed',
+        });
+      }
+    }
+    if (status !== 'sent') {
+      console.warn('RFP recovery email was not accepted for every destination.', {
+        status,
+        recipientAccepted,
+        sourceCopiesAccepted: unacceptedSources.length === 0,
+        smtpResponseCode: delivery.response.match(/^\\d{3}/)?.[0] || 'unavailable',
+      });
+    }
   } catch (error) {
-    // Avoid account enumeration through SMTP delivery failures. Log only a
-    // provider error code/name, never the recipient or token-bearing URL.
+    // Avoid account enumeration and never log the recipient or token-bearing URL.
     const safeError =
       error && typeof error === 'object'
-        ? (error as { code?: unknown; name?: unknown })
+        ? (error as { code?: unknown; name?: unknown; responseCode?: unknown })
         : {};
-    console.warn('RFP password recovery email delivery failed.', {
-      code: typeof safeError.code === 'string' ? safeError.code : 'smtp_delivery_failed',
-      name: typeof safeError.name === 'string' ? safeError.name : 'Error',
+    const errorCode =
+      typeof safeError.code === 'string'
+        ? safeError.code
+        : typeof safeError.responseCode === 'number'
+          ? String(safeError.responseCode)
+          : 'smtp_delivery_failed';
+    const errorName = typeof safeError.name === 'string' ? safeError.name : 'Error';
+    if (auditId !== null) {
+      const updated = await db
+        .from('password_recovery_delivery_logs')
+        .update({
+          status: 'failed',
+          error_code: errorCode,
+          error_name: errorName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', auditId);
+      if (updated.error) {
+        console.warn('RFP recovery audit update failed.', {
+          code: updated.error.code || 'audit_update_failed',
+        });
+      }
+    }
+    console.warn('RFP password recovery SMTP delivery failed.', {
+      code: errorCode,
+      name: errorName,
     });
-    return json(200, receipt);
   }
+  return json(200, receipt);
   return json(200, receipt);
 };
