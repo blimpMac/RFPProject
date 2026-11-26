@@ -121,11 +121,13 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
     const unacceptedSources = delivery.sourceRecipients.filter(
       (address) => !accepted.has(address.toLowerCase()),
     );
+    // SMTP acceptance confirms the receiving mail server accepted the message,
+    // not that it reached the recipient's Inbox. Keep that distinction in the audit.
     const status = !recipientAccepted
       ? 'failed'
       : unacceptedSources.length > 0
         ? 'partial'
-        : 'sent';
+        : 'smtp_accepted';
     if (auditId !== null) {
       const updated = await db
         .from('password_recovery_delivery_logs')
@@ -149,7 +151,7 @@ export const handleRecoveryRoutes: RouteHandler = async ({ event, route, db, con
         });
       }
     }
-    if (status !== 'sent') {
+    if (status !== 'smtp_accepted') {
       console.warn('RFP recovery email was not accepted for every destination.', {
         status,
         recipientAccepted,
