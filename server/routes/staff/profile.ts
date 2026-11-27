@@ -1,10 +1,11 @@
 import { randomInt } from 'node:crypto';
 import { z } from 'zod';
 import { requireStaff } from '../../lib/auth.js';
-import { hashProfileEmailChangeOtp, maskEmailAddress } from '../../lib/email-change-otp.js';
 import {
   EMAIL_CHANGE_OTP_DAILY_LIMIT,
   EMAIL_CHANGE_OTP_TTL_SECONDS,
+  hashProfileEmailChangeOtp,
+  maskEmailAddress,
 } from '../../lib/email-change-otp.js';
 import { ensureMethod, HttpError, json, readJson } from '../../lib/http.js';
 import { normalizeDepartment } from '../../lib/staff-access.js';
@@ -57,6 +58,18 @@ async function profileEmail(db: Parameters<RouteHandler>[0]['db'], userId: strin
   return String(result.data.email).trim().toLowerCase();
 }
 
+async function currentAccountEmail(
+  db: Parameters<RouteHandler>[0]['db'],
+  userId: string,
+  authEmail: string | undefined,
+) {
+  const email = await profileEmail(db, userId);
+  if (authEmail?.trim().toLowerCase() !== email) {
+    throw new HttpError(409, 'Your login email and staff profile email are not synchronized. Contact IT before changing this address.');
+  }
+  return email;
+}
+
 export const handleProfileRoutes: RouteHandler = async ({ event, route, db }) => {
   if (!['profile/name', 'profile/email/request', 'profile/email/verify'].includes(route)) {
     return undefined;
@@ -101,7 +114,7 @@ export const handleProfileRoutes: RouteHandler = async ({ event, route, db }) =>
       .object({ newEmail: z.string().trim().email().max(254) })
       .parse(readJson(event));
     const newEmail = input.newEmail.trim().toLowerCase();
-    const currentEmail = await profileEmail(db, staff.user.id);
+    const currentEmail = await currentAccountEmail(db, staff.user.id, staff.user.email);
 
     if (newEmail === currentEmail) throw new HttpError(400, 'Enter an email address different from your current one.');
     await ensureEmailAvailable(db, staff.user.id, newEmail);
@@ -158,7 +171,7 @@ export const handleProfileRoutes: RouteHandler = async ({ event, route, db }) =>
   }
 
   const newEmail = challenge.new_email.trim().toLowerCase();
-  const oldEmail = await profileEmail(db, staff.user.id);
+  const oldEmail = await currentAccountEmail(db, staff.user.id, staff.user.email);
   if (newEmail === oldEmail) throw new HttpError(400, 'This email address is already set on your account.');
   await ensureEmailAvailable(db, staff.user.id, newEmail);
 
