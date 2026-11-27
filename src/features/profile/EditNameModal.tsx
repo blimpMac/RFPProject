@@ -206,9 +206,6 @@ export function EditNameModal({
                   placeholder="name@example.com"
                 />
               </div>
-              <p className="text-xs text-slate-500">
-                A six-digit code will be sent only to the new address. The Finance notification email will not contain the code. Maximum 3 code requests per day.
-              </p>
               {emailError && <p className="error">{emailError}</p>}
               {emailSuccess && <p className="text-sm text-emerald-700">{emailSuccess}</p>}
               <div className="flex justify-end gap-2">
