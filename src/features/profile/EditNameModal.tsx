@@ -3,7 +3,7 @@ import { Button, Modal, Spinner } from '../../components/ui';
 import { patch, post } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 
-type RequestEmailResponse = { expiresInSeconds?: number; financeNotified?: boolean };
+type RequestEmailResponse = { sentTo?: string; expiresInSeconds?: number; financeNotified?: boolean };
 type VerifyEmailResponse = { email?: string; financeNotified?: boolean };
 
 function formatRemaining(seconds: number) {
@@ -68,16 +68,17 @@ export function EditNameModal({
     setEmailSuccess('');
     try {
       const result = await post<RequestEmailResponse>('profile/email/request', { newEmail: address });
+      const deliveredTo = String(result.sentTo || address).trim().toLowerCase();
       const ttl = Math.max(1, Math.min(600, Number(result.expiresInSeconds || 600)));
-      setNewEmail(address);
+      setNewEmail(deliveredTo);
       setOtp('');
       setExpiresAt(Date.now() + ttl * 1000);
       setRemainingSeconds(ttl);
       setStage('otp');
       setEmailSuccess(
         result.financeNotified === false
-          ? `A verification code was sent to ${address}. Finance notification could not be delivered; IT should be informed.`
-          : `A verification code was sent to ${address}. Check your inbox and spam folder.`,
+          ? `A verification code was sent to the new mailbox: ${deliveredTo}. Finance notification could not be delivered; IT should be informed.`
+          : `A verification code was sent to the new mailbox: ${deliveredTo}. Check that inbox and its spam folder.`,
       );
     } catch (cause) {
       setEmailError(cause instanceof Error ? cause.message : 'Could not send a verification code.');
@@ -96,10 +97,11 @@ export function EditNameModal({
       const result = await post<VerifyEmailResponse>('profile/email/verify', { otp });
       const refreshed = await supabase.auth.refreshSession();
       await onSaved();
-      if (refreshed.error || result.financeNotified === false) {
+      if (refreshed.error || result.financeNotified === false || result.verificationConsumed === false) {
         const messages = [
           refreshed.error ? 'Your email was updated. Please sign out and sign in again using your new email address.' : '',
           result.financeNotified === false ? 'Finance could not be notified of the change. Please contact IT.' : '',
+          result.verificationConsumed === false ? 'Your email was updated, but verification cleanup needs IT review.' : '',
         ].filter(Boolean);
         setEmailSuccess(messages.join(' '));
         setStage('email');
@@ -124,14 +126,16 @@ export function EditNameModal({
     setEmailSuccess('');
     try {
       const result = await post<RequestEmailResponse>('profile/email/request', { newEmail: address });
+      const deliveredTo = String(result.sentTo || address).trim().toLowerCase();
       const ttl = Math.max(1, Math.min(600, Number(result.expiresInSeconds || 600)));
+      setNewEmail(deliveredTo);
       setOtp('');
       setExpiresAt(Date.now() + ttl * 1000);
       setRemainingSeconds(ttl);
       setEmailSuccess(
         result.financeNotified === false
-          ? `A new code was sent to ${address}. Finance notification could not be delivered; IT should be informed.`
-          : `A new verification code was sent to ${address}.`,
+          ? `A new code was sent to the new mailbox: ${deliveredTo}. Finance notification could not be delivered; IT should be informed.`
+          : `A new verification code was sent to the new mailbox: ${deliveredTo}.`,
       );
     } catch (cause) {
       setEmailError(cause instanceof Error ? cause.message : 'Could not send a new verification code.');
