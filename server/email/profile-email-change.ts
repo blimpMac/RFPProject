@@ -22,8 +22,8 @@ export function renderProfileEmailChangeOtp(otp: string) {
   const safeOtp = escapeHtml(otp);
   return {
     subject: 'RFP Monitoring System | Verify your new email address',
-    text: \`Your RFP Monitoring System verification code is \${otp}. It expires in 10 minutes. Enter it only in the RFP website. Never share this code.\`,
-    html: \`<!doctype html>
+    text: `Your RFP Monitoring System verification code is ${otp}. It expires in 10 minutes. Enter it only in the RFP website. Never share this code.`,
+    html: `<!doctype html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verify your email</title></head>
 <body style="margin:0;padding:32px 12px;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#21384a">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
@@ -34,12 +34,12 @@ export function renderProfileEmailChangeOtp(otp: string) {
 <h1 style="margin:0 0 14px;font-size:25px;color:#102a3a">Verify your new email</h1>
 <p style="font-size:15px;line-height:24px;color:#40596b">Enter this one-time code in the Edit Profile section of your RFP workspace to confirm that you can access this mailbox.</p>
 <div style="margin:26px 0;padding:20px;text-align:center;border-radius:10px;background:#f0f6f5;border:1px solid #d6e8e5">
-<div style="font-size:32px;letter-spacing:9px;font-weight:800;color:#164b4c;font-family:monospace">\${safeOtp}</div>
+<div style="font-size:32px;letter-spacing:9px;font-weight:800;color:#164b4c;font-family:monospace">${safeOtp}</div>
 </div>
 <p style="font-size:14px;line-height:22px;color:#40596b">This code expires in <strong>10 minutes</strong> and can be used only once. Do not forward or share it with anyone, including Finance or IT personnel.</p>
 <p style="font-size:13px;line-height:21px;color:#637987">If you did not request this change, ignore this email. Your existing email address will remain on your account.</p>
 </td></tr><tr><td style="padding:20px 30px;background:#f8fafb;border-top:1px solid #e8edf0;font-size:12px;line-height:19px;color:#637987">RFP Monitoring System — automated account-security message.</td></tr>
-</table></td></tr></table></body></html>\`,
+</table></td></tr></table></body></html>`,
   };
 }
 
@@ -54,24 +54,24 @@ export function renderFinanceEmailChangeNotice(notice: FinanceNotice) {
     ['Time', new Date().toISOString()],
   ];
   const safeRows = rows
-    .map(([label, value]) => \`<tr><td style="padding:8px 10px;color:#64748b;font-size:13px">\${escapeHtml(label)}</td><td style="padding:8px 10px;color:#1e293b;font-size:13px;font-weight:600">\${escapeHtml(value)}</td></tr>\`)
+    .map(([label, value]) => `<tr><td style="padding:8px 10px;color:#64748b;font-size:13px">${escapeHtml(label)}</td><td style="padding:8px 10px;color:#1e293b;font-size:13px;font-weight:600">${escapeHtml(value)}</td></tr>`)
     .join('');
   return {
-    subject: \`RFP Monitoring System | \${eventLabel}\`,
+    subject: `RFP Monitoring System | ${eventLabel}`,
     text: [
       'RFP Monitoring System — account event',
-      ...rows.map(([label, value]) => \`\${label}: \${value}\`),
+      ...rows.map(([label, value]) => `${label}: ${value}`),
       '',
       'Security note: the one-time verification code and any verification credentials are intentionally excluded from this notification.',
-    ].join('\\n'),
-    html: \`<!doctype html><html lang="en"><body style="margin:0;padding:28px;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#21384a">
+    ].join('\n'),
+    html: `<!doctype html><html lang="en"><body style="margin:0;padding:28px;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#21384a">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border:1px solid #d9e3e9;border-radius:12px;overflow:hidden">
 <tr><td style="padding:22px 26px;background:#0b2232;color:#fff;font-size:19px;font-weight:800">RFP Monitoring System</td></tr>
-<tr><td style="padding:26px"><h1 style="margin:0 0 18px;font-size:21px;color:#102a3a">\${escapeHtml(eventLabel)}</h1>
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0">\${safeRows}</table>
+<tr><td style="padding:26px"><h1 style="margin:0 0 18px;font-size:21px;color:#102a3a">${escapeHtml(eventLabel)}</h1>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0">${safeRows}</table>
 <p style="margin:20px 0 0;padding:14px;background:#f0f6f5;border-radius:8px;color:#40596b;font-size:12px;line-height:19px">The one-time verification code and verification credentials are intentionally excluded from this notification. The actual code is sent only to the proposed email address.</p>
-</td></tr></table></td></tr></table></body></html>\`,
+</td></tr></table></td></tr></table></body></html>`,
   };
 }
 
