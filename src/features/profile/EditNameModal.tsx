@@ -4,7 +4,7 @@ import { patch, post } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 
 type RequestEmailResponse = { sentTo?: string; expiresInSeconds?: number; financeNotified?: boolean };
-type VerifyEmailResponse = { email?: string; financeNotified?: boolean };
+type VerifyEmailResponse = { email?: string; financeNotified?: boolean; verificationConsumed?: boolean };
 
 function formatRemaining(seconds: number) {
   const minutes = Math.floor(seconds / 60);
