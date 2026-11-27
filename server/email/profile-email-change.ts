@@ -105,17 +105,24 @@ function wasAccepted(result: unknown, address: string) {
   return mailboxes.includes(address.toLowerCase());
 }
 
+/** Explicit OTP-only recipient payload. Finance is never added as CC or BCC. */
+export function profileEmailChangeOtpMessage(recipient: string, otp: string) {
+  const rendered = renderProfileEmailChangeOtp(otp);
+  return {
+    to: recipient,
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+  };
+}
+
 /** Sends the code exclusively to the proposed mailbox; no CC or BCC is used. */
 export async function sendProfileEmailChangeOtp(recipient: string, otp: string) {
   const { transport, from } = smtp();
-  const rendered = renderProfileEmailChangeOtp(otp);
   try {
     const result = await transport.sendMail({
       from,
-      to: recipient,
-      subject: rendered.subject,
-      text: rendered.text,
-      html: rendered.html,
+      ...profileEmailChangeOtpMessage(recipient, otp),
     });
     if (!wasAccepted(result, recipient)) throw new Error('SMTP did not accept the verification recipient.');
     return { messageId: result.messageId || '' };
