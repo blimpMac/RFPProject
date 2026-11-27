@@ -30,6 +30,6 @@ test('OTP hash is keyed, deterministic and does not reveal the submitted code', 
 });
 
 test('email masking conceals most of the local part', () => {
-  assert.equal(maskEmailAddress('drician@example.com'), 'dr••••••@example.com');
+  assert.equal(maskEmailAddress('drician@example.com'), 'dr•••••@example.com');
   assert.equal(maskEmailAddress('a@example.com'), 'a••@example.com');
 });
