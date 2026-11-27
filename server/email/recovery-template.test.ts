@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   recoveryFromAddress,
@@ -39,5 +40,6 @@ test('sender keeps the configured SMTP address but displays RFP branding', () =>
 
 
 test('recovery template has no finance/source mailbox recipient helper', () => {
+  const template = readFileSync('server/email/recovery-template.ts', 'utf8');
   assert.equal(template.includes('recoverySourceRecipients'), false);
 });
