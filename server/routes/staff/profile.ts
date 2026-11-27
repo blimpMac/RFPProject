@@ -41,11 +41,12 @@ async function ensureEmailAvailable(
   for (let page = 1; page <= 100; page += 1) {
     const result = await db.auth.admin.listUsers({ page, perPage: 1000 });
     if (result.error) throw new HttpError(503, 'Could not verify whether this email is available.');
-    const duplicate = result.data.users.find(
+    const users = result.data.users as unknown as Array<{ id: string; email?: string | null }>;
+    const duplicate = users.find(
       (user) => user.id !== userId && user.email?.trim().toLowerCase() === email,
     );
     if (duplicate) throw new HttpError(409, 'That email address is already assigned to another account.');
-    if (result.data.users.length < 1000) return;
+    if (users.length < 1000) return;
   }
   throw new HttpError(503, 'The account directory is too large to verify safely. Contact IT.');
 }
