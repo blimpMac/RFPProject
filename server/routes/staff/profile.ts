@@ -15,10 +15,14 @@ import {
 } from '../../email/profile-email-change.js';
 import type { RouteHandler } from '../context.js';
 
+// Self-service profile maintenance is available to every active staff role.
+// IT administrators are represented by the separate it_administrators table.
 const staffRoles = [
   'it_administrator',
   'super_administrator',
+  'administrator',
   'finance_reviewer',
+  'finance_head',
   'department_approver',
 ];
 
@@ -34,10 +38,12 @@ async function ensureEmailAvailable(
     .neq('id', userId)
     .limit(1);
   if (profileMatch.error) throw new HttpError(503, 'Could not verify whether this email is available.');
-  if (profileMatch.data?.length) throw new HttpError(409, 'That email address is already assigned to another account.');
+  if (profileMatch.data?.length) {
+    throw new HttpError(409, 'That email address is already assigned to another staff profile.');
+  }
 
-  // Auth is the source of truth for uniqueness. Page through the full user list
-  // rather than checking only the first page and risking a duplicate beyond it.
+  // Auth is the source of truth for uniqueness. Check all pages rather than
+  // only the first page so a duplicate cannot hide beyond the result limit.
   for (let page = 1; page <= 100; page += 1) {
     const result = await db.auth.admin.listUsers({ page, perPage: 1000 });
     if (result.error) throw new HttpError(503, 'Could not verify whether this email is available.');
@@ -45,7 +51,7 @@ async function ensureEmailAvailable(
     const duplicate = users.find(
       (user) => user.id !== userId && user.email?.trim().toLowerCase() === email,
     );
-    if (duplicate) throw new HttpError(409, 'That email address is already assigned to another account.');
+    if (duplicate) throw new HttpError(409, 'That email address is already assigned to another login.');
     if (users.length < 1000) return;
   }
   throw new HttpError(503, 'The account directory is too large to verify safely. Contact IT.');
@@ -53,22 +59,43 @@ async function ensureEmailAvailable(
 
 async function profileEmail(db: Parameters<RouteHandler>[0]['db'], userId: string) {
   const result = await db.from('profiles').select('email').eq('id', userId).single();
-  if (result.error || !result.data?.email) {
-    throw new HttpError(409, 'Your account email is not configured. Contact IT.');
+  if (result.error || !result.data) {
+    throw new HttpError(409, 'Your staff profile is not configured. Contact IT.');
   }
-  return String(result.data.email).trim().toLowerCase();
+  return typeof result.data.email === 'string' ? result.data.email.trim().toLowerCase() : '';
 }
 
+/**
+ * Auth is canonical for the login identity. A stale profiles.email value must
+ * not prevent an already-authenticated staff member from verifying a new one.
+ * The verify route synchronizes the profile after the new mailbox is proven.
+ */
 async function currentAccountEmail(
   db: Parameters<RouteHandler>[0]['db'],
   userId: string,
   authEmail: string | undefined,
 ) {
+  const normalizedAuthEmail = authEmail?.trim().toLowerCase();
+  if (normalizedAuthEmail) return normalizedAuthEmail;
   const email = await profileEmail(db, userId);
-  if (authEmail?.trim().toLowerCase() !== email) {
-    throw new HttpError(409, 'Your login email and staff profile email are not synchronized. Contact IT before changing this address.');
-  }
+  if (!email) throw new HttpError(409, 'Your account email is not configured. Contact IT.');
   return email;
+}
+
+async function updateProfileEmail(
+  db: Parameters<RouteHandler>[0]['db'],
+  userId: string,
+  email: string,
+) {
+  const result = await db
+    .from('profiles')
+    .update({ email, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select('id')
+    .maybeSingle();
+  if (result.error || !result.data) {
+    throw new HttpError(500, 'Your staff profile email could not be synchronized. Contact IT.');
+  }
 }
 
 export const handleProfileRoutes: RouteHandler = async ({ event, route, db }) => {
@@ -117,40 +144,42 @@ export const handleProfileRoutes: RouteHandler = async ({ event, route, db }) =>
     const newEmail = input.newEmail.trim().toLowerCase();
     const currentEmail = await currentAccountEmail(db, staff.user.id, staff.user.email);
 
-    if (newEmail === currentEmail) throw new HttpError(400, 'Enter an email address different from your current one.');
+    if (newEmail === currentEmail) {
+      throw new HttpError(400, 'Enter an email address different from your current login email.');
+    }
     await ensureEmailAvailable(db, staff.user.id, newEmail);
 
     const otp = String(randomInt(100000, 1_000_000));
+    const otpHash = hashProfileEmailChangeOtp(otp);
     const issued = await db.rpc('issue_profile_email_change_otp', {
       p_user_id: staff.user.id,
       p_new_email: newEmail,
-      p_otp_hash: hashProfileEmailChangeOtp(otp),
+      p_otp_hash: otpHash,
     });
     if (issued.error) {
       if (issued.error.message.includes('EMAIL_CHANGE_DAILY_LIMIT')) {
         throw new HttpError(429, 'You have reached the limit of 3 email verification codes for today. Try again tomorrow.');
       }
-      throw issued.error;
+      throw new HttpError(503, 'A verification code could not be created. Please try again or contact IT.');
     }
 
     try {
-      // Deliver the sensitive code first and exclusively to the proposed mailbox.
+      // This is the only recipient of the code: the mailbox the user is
+      // requesting to use as their new RFP login.
       await sendProfileEmailChangeOtp(newEmail, otp);
     } catch {
-      // A code that was not delivered must not remain usable.
       await db
         .from('profile_email_change_otps')
         .update({ consumed_at: new Date().toISOString() })
         .eq('user_id', staff.user.id)
-        .eq('otp_hash', hashProfileEmailChangeOtp(otp))
+        .eq('otp_hash', otpHash)
         .is('consumed_at', null);
-      throw new HttpError(503, 'The verification email could not be sent. Check the address or contact IT before trying again.');
+      console.error('Profile email OTP delivery failed; the challenge was invalidated.');
+      throw new HttpError(503, 'The verification code could not be delivered to the new email address. Check the address or contact IT.');
     }
 
     let financeNotified = true;
     try {
-      // Finance receives a separate process notice with a masked address only.
-      // This notice is intentionally sent after the OTP email and contains no code.
       await sendFinanceEmailChangeNotice({
         actorEmail: currentEmail,
         maskedAddress: maskEmailAddress(newEmail),
@@ -163,6 +192,7 @@ export const handleProfileRoutes: RouteHandler = async ({ event, route, db }) =>
 
     return json(200, {
       ok: true,
+      sentTo: newEmail,
       expiresInSeconds: EMAIL_CHANGE_OTP_TTL_SECONDS,
       dailyLimit: EMAIL_CHANGE_OTP_DAILY_LIMIT,
       financeNotified,
@@ -171,11 +201,12 @@ export const handleProfileRoutes: RouteHandler = async ({ event, route, db }) =>
 
   ensureMethod(event, 'POST');
   const input = z.object({ otp: z.string().regex(/^\d{6}$/) }).parse(readJson(event));
+  const otpHash = hashProfileEmailChangeOtp(input.otp);
   const verified = await db.rpc('verify_profile_email_change_otp', {
     p_user_id: staff.user.id,
-    p_otp_hash: hashProfileEmailChangeOtp(input.otp),
+    p_otp_hash: otpHash,
   });
-  if (verified.error) throw verified.error;
+  if (verified.error) throw new HttpError(503, 'The verification service could not validate this code. Try again.');
 
   const challenge = Array.isArray(verified.data) ? verified.data[0] : verified.data;
   const status = challenge?.status as string | undefined;
@@ -188,45 +219,60 @@ export const handleProfileRoutes: RouteHandler = async ({ event, route, db }) =>
   }
 
   const newEmail = challenge.new_email.trim().toLowerCase();
-  const oldEmail = await currentAccountEmail(db, staff.user.id, staff.user.email);
-  if (newEmail === oldEmail) throw new HttpError(400, 'This email address is already set on your account.');
-  await ensureEmailAvailable(db, staff.user.id, newEmail);
+  const oldAuthEmail = await currentAccountEmail(db, staff.user.id, staff.user.email);
+  const oldProfileEmail = await profileEmail(db, staff.user.id);
 
-  // Keep profiles.email and auth.users.email synchronized. Update the profile
-  // first, then Auth; if Auth rejects the change, compensate by restoring the
-  // profile value before reporting failure.
-  const profileUpdate = await db
-    .from('profiles')
-    .update({ email: newEmail, updated_at: new Date().toISOString() })
-    .eq('id', staff.user.id)
-    .select('id')
-    .maybeSingle();
-  if (profileUpdate.error || !profileUpdate.data) {
-    throw new HttpError(500, 'Your profile email could not be updated. No Auth email change was made.');
+  if (newEmail !== oldAuthEmail) {
+    await ensureEmailAvailable(db, staff.user.id, newEmail);
+
+    // Update the actual login identity first. Supabase's admin update applies
+    // directly without triggering a second confirmation email; the custom OTP
+    // above is the proof that the user controls the new mailbox.
+    const authUpdate = await db.auth.admin.updateUserById(staff.user.id, {
+      email: newEmail,
+      email_confirm: true,
+    });
+    if (authUpdate.error || !authUpdate.data.user) {
+      throw new HttpError(409, 'The new email could not be applied to your login. Your existing email remains active. You can retry with the same code while it is valid.');
+    }
   }
 
-  const authUpdate = await db.auth.admin.updateUserById(staff.user.id, {
-    email: newEmail,
-    email_confirm: true,
-  });
-  if (authUpdate.error || !authUpdate.data.user) {
-    const rollback = await db
-      .from('profiles')
-      .update({ email: oldEmail, updated_at: new Date().toISOString() })
-      .eq('id', staff.user.id);
-    if (rollback.error) {
-      console.error('Profile email rollback failed; manual account reconciliation is required.');
-      throw new HttpError(500, 'Email synchronization needs IT assistance. Contact IT before signing out.');
+  // Also repairs profiles.email if it was already out of sync with Auth.
+  try {
+    if (oldProfileEmail !== newEmail) {
+      await updateProfileEmail(db, staff.user.id, newEmail);
     }
-    throw new HttpError(409, 'The new email address could not be applied to your login. Your existing email remains active.');
+  } catch (profileError) {
+    if (newEmail !== oldAuthEmail) {
+      const rollback = await db.auth.admin.updateUserById(staff.user.id, {
+        email: oldAuthEmail,
+        email_confirm: true,
+      });
+      if (rollback.error) {
+        console.error('Auth email rollback failed; manual account reconciliation is required.');
+        throw new HttpError(500, 'The login email changed but the staff profile could not be synchronized. Contact IT immediately.');
+      }
+    }
+    throw profileError;
+  }
+
+  // Consume only after both Auth and public.profiles are synchronized. If this
+  // final bookkeeping call fails, the same verified OTP can safely be retried.
+  const consumed = await db.rpc('consume_profile_email_change_otp', {
+    p_user_id: staff.user.id,
+    p_otp_hash: otpHash,
+  });
+  const verificationConsumed = !consumed.error && consumed.data === true;
+  if (!verificationConsumed) {
+    console.error('Email change completed, but OTP consumption needs reconciliation.');
   }
 
   let financeNotified = true;
   try {
     await sendFinanceEmailChangeNotice({
-      actorEmail: oldEmail,
+      actorEmail: oldAuthEmail,
       maskedAddress: maskEmailAddress(newEmail),
-      previousAddress: maskEmailAddress(oldEmail),
+      previousAddress: maskEmailAddress(oldAuthEmail),
       event: 'email_changed',
     });
   } catch {
@@ -234,5 +280,10 @@ export const handleProfileRoutes: RouteHandler = async ({ event, route, db }) =>
     console.error('Finance email-change notification could not be delivered.');
   }
 
-  return json(200, { ok: true, email: newEmail, financeNotified });
+  return json(200, {
+    ok: true,
+    email: newEmail,
+    financeNotified,
+    verificationConsumed,
+  });
 };
