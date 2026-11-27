@@ -92,10 +92,16 @@ function smtp() {
   return { transport, from: recoveryFromAddress(c.SMTP_FROM_EMAIL) };
 }
 
-function wasAccepted(result: nodemailer.SentMessageInfo, address: string) {
-  const mailboxes = (result.accepted || []).map((item) =>
-    typeof item === 'string' ? item.toLowerCase() : String(item.address || '').toLowerCase(),
-  );
+function wasAccepted(result: unknown, address: string) {
+  if (!result || typeof result !== 'object') return false;
+  const accepted = (result as { accepted?: unknown[] }).accepted || [];
+  const mailboxes = accepted.map((item) => {
+    if (typeof item === 'string') return item.toLowerCase();
+    if (item && typeof item === 'object' && 'address' in item) {
+      return String(item.address || '').toLowerCase();
+    }
+    return '';
+  });
   return mailboxes.includes(address.toLowerCase());
 }
 
