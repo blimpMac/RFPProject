@@ -108,7 +108,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [clearSession, loadStaff]);
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // Supabase emits TOKEN_REFRESHED when a backgrounded tab becomes active.
+      // Keep the current staff identity and page state; only replace the token.
+      // Treating this as a new login caused the whole admin shell to show loading.
+      if (event === 'TOKEN_REFRESHED' && nextSession) {
+        setSession(nextSession);
+        return;
+      }
+
       const version = ++sessionVersion.current;
       if (!nextSession) {
         // Clear immediately so protected pages cannot keep displaying stale data.
