@@ -50,6 +50,8 @@ test('staff sign-out redirects immediately without stale auth state or blocked p
   assert.ok(auth.includes('onAuthStateChange((_event, nextSession) => {'));
   assert.ok(auth.includes('window.setTimeout(() => {'));
   assert.equal(auth.includes('onAuthStateChange(() => void refresh())'), false);
+  assert.ok(auth.includes("event === 'TOKEN_REFRESHED' && nextSession"));
+  assert.match(auth, /if \(event === 'TOKEN_REFRESHED' && nextSession\) \{[\s\S]*?setSession\(nextSession\);[\s\S]*?return;/);
   assert.match(auth, /if \(!nextSession\) \{[\s\S]*?clearSession\(\);/);
 
   // Stale /api/me results must not reinstate a user after they sign out.
