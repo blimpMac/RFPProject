@@ -3,7 +3,7 @@ import { Button, Modal, Spinner } from '../../components/ui';
 import { patch, post } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 
-type RequestEmailResponse = { expiresInSeconds?: number };
+type RequestEmailResponse = { expiresInSeconds?: number; financeNotified?: boolean };
 type VerifyEmailResponse = { email?: string; financeNotified?: boolean };
 
 function formatRemaining(seconds: number) {
@@ -74,7 +74,11 @@ export function EditNameModal({
       setExpiresAt(Date.now() + ttl * 1000);
       setRemainingSeconds(ttl);
       setStage('otp');
-      setEmailSuccess(`A verification code was sent to ${address}. Check your inbox and spam folder.`);
+      setEmailSuccess(
+        result.financeNotified === false
+          ? `A verification code was sent to ${address}. Finance notification could not be delivered; IT should be informed.`
+          : `A verification code was sent to ${address}. Check your inbox and spam folder.`,
+      );
     } catch (cause) {
       setEmailError(cause instanceof Error ? cause.message : 'Could not send a verification code.');
     } finally {
@@ -124,7 +128,11 @@ export function EditNameModal({
       setOtp('');
       setExpiresAt(Date.now() + ttl * 1000);
       setRemainingSeconds(ttl);
-      setEmailSuccess(`A new verification code was sent to ${address}.`);
+      setEmailSuccess(
+        result.financeNotified === false
+          ? `A new code was sent to ${address}. Finance notification could not be delivered; IT should be informed.`
+          : `A new verification code was sent to ${address}.`,
+      );
     } catch (cause) {
       setEmailError(cause instanceof Error ? cause.message : 'Could not send a new verification code.');
     } finally {
