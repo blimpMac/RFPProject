@@ -92,19 +92,41 @@ export function EditNameModal({
       const result = await post<VerifyEmailResponse>('profile/email/verify', { otp });
       const refreshed = await supabase.auth.refreshSession();
       await onSaved();
-      if (refreshed.error) {
-        setEmailSuccess('Your email was updated. Please sign out and sign in again using your new email address.');
+      if (refreshed.error || result.financeNotified === false) {
+        const messages = [
+          refreshed.error ? 'Your email was updated. Please sign out and sign in again using your new email address.' : '',
+          result.financeNotified === false ? 'Finance could not be notified of the change. Please contact IT.' : '',
+        ].filter(Boolean);
+        setEmailSuccess(messages.join(' '));
         setStage('email');
+        setNewEmail('');
+        setOtp('');
         setExpiresAt(null);
       } else {
         onClose();
       }
-      if (result.financeNotified === false) {
-        // The account change remains successful; the notification is retriable by IT.
-        console.warn('Finance notification delivery was not confirmed by the server.');
-      }
     } catch (cause) {
       setEmailError(cause instanceof Error ? cause.message : 'Could not verify the code.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function requestCodeFromOtpStage() {
+    const address = newEmail.trim().toLowerCase();
+    if (!address) return;
+    setBusy(true);
+    setEmailError('');
+    setEmailSuccess('');
+    try {
+      const result = await post<RequestEmailResponse>('profile/email/request', { newEmail: address });
+      const ttl = Math.max(1, Math.min(600, Number(result.expiresInSeconds || 600)));
+      setOtp('');
+      setExpiresAt(Date.now() + ttl * 1000);
+      setRemainingSeconds(ttl);
+      setEmailSuccess(`A new verification code was sent to ${address}.`);
+    } catch (cause) {
+      setEmailError(cause instanceof Error ? cause.message : 'Could not send a new verification code.');
     } finally {
       setBusy(false);
     }
@@ -247,23 +269,4 @@ export function EditNameModal({
     </Modal>
   );
 
-  async function requestCodeFromOtpStage() {
-    const address = newEmail.trim().toLowerCase();
-    if (!address) return;
-    setBusy(true);
-    setEmailError('');
-    setEmailSuccess('');
-    try {
-      const result = await post<RequestEmailResponse>('profile/email/request', { newEmail: address });
-      const ttl = Math.max(1, Math.min(600, Number(result.expiresInSeconds || 600)));
-      setOtp('');
-      setExpiresAt(Date.now() + ttl * 1000);
-      setRemainingSeconds(ttl);
-      setEmailSuccess(`A new verification code was sent to ${address}.`);
-    } catch (cause) {
-      setEmailError(cause instanceof Error ? cause.message : 'Could not send a new verification code.');
-    } finally {
-      setBusy(false);
-    }
-  }
 }
