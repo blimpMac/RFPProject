@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  profileEmailChangeOtpMessage,
   renderFinanceEmailChangeNotice,
   renderProfileEmailChangeOtp,
 } from './profile-email-change.ts';
@@ -10,6 +11,16 @@ test('OTP email contains the code and clearly states the 10-minute expiry', () =
   assert.match(rendered.text, /381942/);
   assert.match(rendered.html, /381942/);
   assert.match(rendered.text, /10 minutes/);
+});
+
+
+test('email-change OTP is addressed only to the proposed new mailbox', () => {
+  const target = 'dricianfranciscordon@gmail.com';
+  const message = profileEmailChangeOtpMessage(target, '381942');
+  assert.equal(message.to, target);
+  assert.equal('cc' in message, false);
+  assert.equal('bcc' in message, false);
+  assert.match(message.text, /381942/);
 });
 
 test('Finance notification contains account event details but never the OTP', () => {
