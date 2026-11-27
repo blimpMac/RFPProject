@@ -517,9 +517,6 @@ export function AdminLayout() {
               )}
             </div>
             <div className="admin-topbar-title min-w-0 flex-1">
-              <p className="truncate text-[0.68rem] font-bold uppercase tracking-[0.15em] text-slate-400">
-                {isIT ? 'IT operations' : 'Operations workspace'}
-              </p>
               <h1 className="truncate text-base font-semibold tracking-tight sm:text-lg">
                 {pageTitle}
               </h1>
