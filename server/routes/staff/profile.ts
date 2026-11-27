@@ -134,22 +134,38 @@ export const handleProfileRoutes: RouteHandler = async ({ event, route, db }) =>
     }
 
     try {
-      // Finance receives a separate process notification with a masked address.
-      // The OTP itself is delivered only to the proposed email address.
+      // Deliver the sensitive code first and exclusively to the proposed mailbox.
+      await sendProfileEmailChangeOtp(newEmail, otp);
+    } catch {
+      // A code that was not delivered must not remain usable.
+      await db
+        .from('profile_email_change_otps')
+        .update({ consumed_at: new Date().toISOString() })
+        .eq('user_id', staff.user.id)
+        .eq('otp_hash', hashProfileEmailChangeOtp(otp))
+        .is('consumed_at', null);
+      throw new HttpError(503, 'The verification email could not be sent. Check the address or contact IT before trying again.');
+    }
+
+    let financeNotified = true;
+    try {
+      // Finance receives a separate process notice with a masked address only.
+      // This notice is intentionally sent after the OTP email and contains no code.
       await sendFinanceEmailChangeNotice({
         actorEmail: currentEmail,
         maskedAddress: maskEmailAddress(newEmail),
         event: 'verification_requested',
       });
-      await sendProfileEmailChangeOtp(newEmail, otp);
     } catch {
-      throw new HttpError(503, 'The verification email could not be sent. Check the address or contact IT before trying again.');
+      financeNotified = false;
+      console.error('Finance email-change request notification could not be delivered.');
     }
 
     return json(200, {
       ok: true,
       expiresInSeconds: EMAIL_CHANGE_OTP_TTL_SECONDS,
       dailyLimit: EMAIL_CHANGE_OTP_DAILY_LIMIT,
+      financeNotified,
     });
   }
 
