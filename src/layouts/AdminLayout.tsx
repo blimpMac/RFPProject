@@ -601,6 +601,7 @@ export function AdminLayout() {
       {editingName && identity && (
         <EditNameModal
           currentName={identity.fullName}
+          currentEmail={identity.email}
           onClose={() => setEditingName(false)}
           onSaved={refresh}
         />
