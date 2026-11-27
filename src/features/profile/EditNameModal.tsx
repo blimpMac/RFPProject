@@ -9,7 +9,7 @@ type VerifyEmailResponse = { email?: string; financeNotified?: boolean };
 function formatRemaining(seconds: number) {
   const minutes = Math.floor(seconds / 60);
   const remainder = seconds % 60;
-  return \`\${minutes}:\${String(remainder).padStart(2, '0')}\`;
+  return `${minutes}:${String(remainder).padStart(2, '0')}`;
 }
 
 export function EditNameModal({
@@ -74,7 +74,7 @@ export function EditNameModal({
       setExpiresAt(Date.now() + ttl * 1000);
       setRemainingSeconds(ttl);
       setStage('otp');
-      setEmailSuccess(\`A verification code was sent to \${address}. Check your inbox and spam folder.\`);
+      setEmailSuccess(`A verification code was sent to ${address}. Check your inbox and spam folder.`);
     } catch (cause) {
       setEmailError(cause instanceof Error ? cause.message : 'Could not send a verification code.');
     } finally {
@@ -209,7 +209,7 @@ export function EditNameModal({
                 />
                 <p className="mt-1 text-xs text-slate-500" aria-live="polite">
                   {remainingSeconds > 0
-                    ? \`Code expires in \${formatRemaining(remainingSeconds)}\`
+                    ? `Code expires in ${formatRemaining(remainingSeconds)}`
                     : 'This code has expired. Request a new one.'}
                 </p>
               </div>
@@ -259,7 +259,7 @@ export function EditNameModal({
       setOtp('');
       setExpiresAt(Date.now() + ttl * 1000);
       setRemainingSeconds(ttl);
-      setEmailSuccess(\`A new verification code was sent to \${address}.\`);
+      setEmailSuccess(`A new verification code was sent to ${address}.`);
     } catch (cause) {
       setEmailError(cause instanceof Error ? cause.message : 'Could not send a new verification code.');
     } finally {
